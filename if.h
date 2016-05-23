@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include <vector>
+#include <map>
 #include <string>
 #include <sstream>
 
@@ -14,6 +15,7 @@ namespace bscotch {
     VAL_CONST,
     VAL_PHI, VAL_SELECT,
     VAL_ARG,
+    VAL_LD_GLOBAL, VAL_ST_GLOBAL,
     VAL_LD_STATIC, VAL_ST_STATIC,
     VAL_LD_IDX, VAL_ST_IDX,
     VAL_LD_IDX_STATIC, VAL_ST_IDX_STATIC,
@@ -26,7 +28,9 @@ namespace bscotch {
 
   const char *if_op_str[] = {
     "const", "phi", "select", "arg",
-    "ld_static", "st_static", "ld_idx", "st_idx_static", "ld_idx_static",
+    "ld_global", "st_global",
+    "ld_static", "st_static",
+    "ld_idx", "st_idx_static", "ld_idx_static",
     "neg", "not",
     "add", "sub", "mul", "div", "and", "or", "xor"
     "call_static", "call",
@@ -53,9 +57,20 @@ namespace bscotch {
     if_bb *suc_0, *suc_1;
   };
 
+  struct if_staticvar {
+    type t;
+    std::vector<bool> initial_val;
+  };
+
   struct if_func {
+    std::map<std::string, if_staticvar> static_vars;
     std::vector<type> args;
     std::vector<if_bb> bbs;
+  };
+
+  struct if_prog {
+    std::map<std::string, if_staticvar> global_vars;
+    std::map<std::string, if_func> functions;
   };
 };
 
@@ -63,9 +78,14 @@ void print(std::ostream &out, bscotch::if_val &v) {
   using namespace std;
   using namespace bscotch;
 
-  cout << if_op_str[v.op] << " (";
+  out << "  ";
+  out << if_op_str[v.op];
+
+  /* TODO: Print args */
+  
+  cout << " (";
   print(out, v.t);
-  cout << ')' << endl;
+  out << ')' << endl;
 }
 
 void print(std::ostream &out, bscotch::if_bb &b) {
@@ -80,8 +100,21 @@ void print(std::ostream &out, bscotch::if_func &f) {
   using namespace std;
   using namespace bscotch;
 
-  for (auto &b : f.bbs)
-    print(out, b);
+  for (unsigned i = 0; i < f.bbs.size(); ++i) {
+    out << "  bb " << i << ':' << endl;
+    print(out, f.bbs[i]);
+  }
+}
+
+void print(std::ostream &out, bscotch::if_prog &p) {
+  using namespace std;
+  using namespace bscotch;
+
+  for (auto &f : p.functions) {
+    out << ": " << endl;
+    print(out, f.second);
+  }
+
 }
 
 #endif

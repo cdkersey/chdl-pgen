@@ -1,0 +1,17 @@
+The test program for the cgen-0 test:
+
+  void main() {
+    static u32 x = 0;
+    for (;;) {
+      x = x + 1;
+    }
+  }
+
+  function main:
+    static var x : u32, initial val 0
+    bb0:
+      %5 = const #1
+      %10 = ld_static @x
+      %15 = add %10, %5
+      %20 = st_static %15, @x
+      %30 = branch bb0
