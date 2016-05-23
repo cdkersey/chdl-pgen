@@ -78,7 +78,7 @@ void print(std::ostream &out, bscotch::if_val &v) {
   using namespace std;
   using namespace bscotch;
 
-  out << "  ";
+  out << "    ";
   out << if_op_str[v.op];
 
   /* TODO: Print args */
@@ -96,10 +96,36 @@ void print(std::ostream &out, bscotch::if_bb &b) {
     print(out, v);
 }
 
+// Print vector of bools as hex. TODO: move to separate utility library?
+void print(std::ostream &out, std::vector<bool> &v) {
+  if (v.size() == 0) out << '0';
+
+  for (int i = (v.size() + 3)/4*4 - 4; i >= 0; i -= 4) {
+    unsigned x = 0;
+    if (v.size() > i + 0 && v[i + 0]) x += 1;
+    if (v.size() > i + 1 && v[i + 1]) x += 2;
+    if (v.size() > i + 2 && v[i + 2]) x += 4;
+    if (v.size() > i + 3 && v[i + 3]) x += 8;
+    out << "0123456789abcdef"[x];
+  }
+}
+
+void print(std::ostream &out, bscotch::if_staticvar &v) {
+    print(out, v.t);
+    out << " = ";
+    print(out, v.initial_val);
+}
+
 void print(std::ostream &out, bscotch::if_func &f) {
   using namespace std;
   using namespace bscotch;
 
+  for (auto &v : f.static_vars) {
+    out << "  " << v.first << " : ";
+    print(out, v.second);
+    out << endl;
+  }
+  
   for (unsigned i = 0; i < f.bbs.size(); ++i) {
     out << "  bb " << i << ':' << endl;
     print(out, f.bbs[i]);
@@ -110,8 +136,14 @@ void print(std::ostream &out, bscotch::if_prog &p) {
   using namespace std;
   using namespace bscotch;
 
+  for (auto &v : p.global_vars) {
+    out << v.first << " : ";
+    print(out, v.second);
+    out << endl;
+  }
+  
   for (auto &f : p.functions) {
-    out << ": " << endl;
+    out << f.first << ": " << endl;
     print(out, f.second);
   }
 
