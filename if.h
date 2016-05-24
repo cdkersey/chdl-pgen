@@ -98,7 +98,6 @@ void print(std::ostream &out, bscotch::if_val &v) {
   out << "    ";
   out << '<' << &v << "> = " << if_op_str[v.op];
 
-  /* TODO: Print args */
   if (v.op == VAL_CONST) {
     out << " 0x";
     print(out, v.const_val);

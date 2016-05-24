@@ -35,6 +35,19 @@ if_staticvar u32staticvar(string name, unsigned initial = 0) {
   return s;
 }
 
+void gen_val(ostream &out, if_val &v) {
+}
+
+void gen_bb(ostream &out, if_bb &b) {
+}
+
+void gen_func(ostream &out, if_func &f) {
+}
+
+void gen_prog(ostream &out, if_prog &p) {
+    
+}
+
 void test_func(if_func &f) {
   // Test function:
   // static var x : u32, initial val 0
@@ -88,5 +101,7 @@ int main() {
 
   print(cout, p);
 
+  gen_prog(cout, p);
+  
   return 0;
 }
