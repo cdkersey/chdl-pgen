@@ -62,7 +62,10 @@ std::string bscotch::type::str(int s) {
 void print(std::ostream &out, bscotch::type &t) {
   using namespace std;
 
-  cout << t.str();
+  if (t.type_vec.size() == 0)
+    out << "void";
+  else
+    out << t.str();
 }
 
 #endif

@@ -23,7 +23,6 @@ namespace bscotch {
     VAL_ADD, VAL_SUB, VAL_MUL, VAL_DIV, VAL_AND, VAL_OR, VAL_XOR,
     VAL_CONCATENATE,
     VAL_CALL_STATIC, VAL_CALL,
-    VAL_BRANCH
   };
 
   const char *if_op_str[] = {
@@ -34,12 +33,18 @@ namespace bscotch {
     "neg", "not",
     "add", "sub", "mul", "div", "and", "or", "xor"
     "call_static", "call",
-    "branch"
+  };
+
+  struct if_staticvar {
+    std::string name;
+    type t;
+    std::vector<bool> initial_val;
   };
   
   struct if_val {
     std::vector<if_val *> args;
-
+    if_staticvar *static_arg;
+    
     // If VAL_CONST, this contains the value
     std::vector<bool> const_val;
     
@@ -53,13 +58,11 @@ namespace bscotch {
     // Set by liveness analysis.
     std::vector<if_val*> live;
 
+    // Branch predicate, one of this block's vals (if needed)
+    if_val *branch_pred;
+    
     // Successors; may be NULL.
-    if_bb *suc_0, *suc_1;
-  };
-
-  struct if_staticvar {
-    type t;
-    std::vector<bool> initial_val;
+    std::vector<if_bb *> suc;
   };
 
   struct if_func {

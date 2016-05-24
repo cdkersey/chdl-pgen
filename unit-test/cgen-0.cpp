@@ -24,9 +24,10 @@ type u32() {
   return t;
 }
 
-if_staticvar u32staticvar(unsigned initial = 0) {
+if_staticvar u32staticvar(string name, unsigned initial = 0) {
   if_staticvar s;
 
+  s.name = name;
   to_vec_bool<32>(s.initial_val, initial);
 
   s.t = u32();
@@ -42,16 +43,34 @@ void test_func(if_func &f) {
   //    %10 = ld_static @x
   //    %15 = add %10, %5
   //    %20 = st_static %15, @x
-  //    %30 = branch bb0
 
-  f.static_vars["x"] = u32staticvar(0);
+  f.static_vars["x"] = u32staticvar("x", 0);
 
   f.bbs.push_back(if_bb());
 
   f.bbs[0].vals.push_back(if_val());
+  f.bbs[0].vals[0].t = u32();
   f.bbs[0].vals[0].op = VAL_CONST;
   to_vec_bool<32>(f.bbs[0].vals[0].const_val, 1);
 
+  f.bbs[0].vals.push_back(if_val());
+  f.bbs[0].vals[1].t = u32();
+  f.bbs[0].vals[1].op = VAL_LD_STATIC;
+  f.bbs[0].vals[1].static_arg = &f.static_vars["x"];
+
+  f.bbs[0].vals.push_back(if_val());
+  f.bbs[0].vals[2].t = u32();
+  f.bbs[0].vals[2].op = VAL_ADD;
+  f.bbs[0].vals[2].args.push_back(&f.bbs[0].vals[1]);
+  f.bbs[0].vals[2].args.push_back(&f.bbs[0].vals[0]);
+
+  f.bbs[0].vals.push_back(if_val());
+  f.bbs[0].vals[3].op = VAL_ST_STATIC;
+  f.bbs[0].vals[3].static_arg = &f.static_vars["x"];
+  f.bbs[0].vals[3].args.push_back(&f.bbs[0].vals[2]);
+
+  f.bbs[0].suc.push_back(&f.bbs[0]);
+  f.bbs[0].branch_pred = NULL;
 }
 
 void test_prog(if_prog &p) {
@@ -59,7 +78,6 @@ void test_prog(if_prog &p) {
 
   test_func(p.functions["main"]);
 }
-
 
 int main() {
   if_prog p;
