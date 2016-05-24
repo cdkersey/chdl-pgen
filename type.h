@@ -24,8 +24,40 @@ namespace bscotch {
     std::vector<int> type_vec;
     std::string str(int start = 0, int &chars = *((int*)NULL));
     std::map<int, std::string> field_name;
+    unsigned size(int start = 0, int &chars = *((int*)NULL));
   };
 };
+
+unsigned bscotch::type::size(int s, int &end) {
+  using namespace bscotch;
+  using namespace std;
+
+  unsigned sz = 0, i;
+
+  for (i = s; i < type_vec.size() && type_vec[i] != TYPE_FIELD_DELIM; ++i) {
+    if (type_vec[i] == TYPE_BIT) {
+      sz += 1;
+    } else if (type_vec[i] == TYPE_S || type_vec[i] == TYPE_U) {
+      sz += type_vec[++i];
+    } else if (type_vec[i] == TYPE_ARRAY) {
+      /* sz *= type_vec[++i]; TODO: what's the "size" of an SRAM? */
+    } else if (type_vec[i] == TYPE_STATIC_ARRAY) {
+      sz *= type_vec[++i];
+    } else if (type_vec[i] == TYPE_STRUCT_BEGIN) {
+      unsigned fields = type_vec[++i];
+      for (unsigned j = 0; j < fields; ++j) {
+	++i;
+	int pos;
+	sz += size(i, pos);
+	i = pos;
+      }
+    }
+  }
+
+  if (&end) end = i;
+  
+  return sz;
+}
 
 std::string bscotch::type::str(int s, int &end) {
   using namespace bscotch;

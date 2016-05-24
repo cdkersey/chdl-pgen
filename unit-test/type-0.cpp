@@ -80,12 +80,19 @@ type cpx(unsigned e, unsigned m) {
 }
 
 type cpx_float() { return cpx(8, 23); }
-type cpx_double() { return cpx(11, 53); }
+type cpx_double() { return cpx(11, 52); }
+
+type cpx_double_1024() {
+  type t = cpx_double();
+  t.type_vec.push_back(TYPE_STATIC_ARRAY);
+  t.type_vec.push_back(1024);
+  return t;
+}
 
 void print_type(type (*f)()) {
   type t = f();
   print(cout, t);
-  cout << endl;
+  cout << ' ' << t.size() << endl;
 }
 
 int main() {
@@ -98,6 +105,7 @@ int main() {
   print_type(s32);
   print_type(cpx_float);
   print_type(cpx_double);
+  print_type(cpx_double_1024);
 
   return 0;
 }

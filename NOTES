@@ -15,3 +15,101 @@ The test program for the cgen-0 test:
       %15 = add %10, %5
       %20 = st_static %15, @x
       %30 = branch bb0
+
+Expected CHDL output:
+
+  // Function main()
+  STATIC_VAR(main, x, ui<32>, 0x00000000);
+
+  // Function main() interfaces
+  typedef flit<chdl_void> main_call_t;
+  typedef flit<chdl_void> main_ret_t;
+  typedef flit<chdl_void> main_bb0_in_t;
+  typedef flit<chdl_void> main_bb0_out_t;
+
+  // main() function interfaces
+  main_call_t main_call;
+  main_ret_t main_ret;
+
+  // main() basic block 0 interfaces
+  main_bb0_in_t main_bb0_in;
+  vec<1, main_bb0_out_t> main_bb0_out_prebuf, main_bb0_out;
+
+  // main() basic block 0
+  vec<2, main_bb0_in_t> main_bb0_arb_in;
+  _(main_bb0_arb_in[0], "valid") = _(main_call, "valid");
+  _(main_call, "ready") = _(main_bb0_arb_in[0], "ready");
+
+  _(main_bb0_arb_in[1], "valid") = _(main_bb0_out, "valid");
+  _(main_call, "ready") = _(main_bb0_arb_in[1], "ready");
+
+  Arbiter(main_bb0_in, ArbRR<2>, main_bb0_arb_in);
+
+  node main_bb0_run(_(main_bb0_in, "valid") &&
+    _(main_bb0_out_prebuf[0], "ready"));
+  
+
+  ui<32> main_0 = Lit<32>(0x00000001);
+  ui<32> main_1 = LD_STATIC(main, x);
+  ui<32> main_2 = main_1 + main_0;
+  ST_STATIC(main, x, main_2, main_bb0_run);
+
+  _(main_bb0_out_prebuf[0], "valid") = _(main_bb0_in, "valid");
+  _(main_bb0_in, "ready") = _(main_bb0_out_prebuf[0], "ready");
+
+  for (unsigned i = 0; i < 1; ++i)
+    Buffer<1>(main_bb0_out[i], main_bb0_out_prebuf[i]);
+  
+
+  STATIC_VAR_GEN(main, x);
+
+Expected C output:
+
+
+tasks/goals in order of planned completion:
+
+  - Language definition
+    - Function replication?
+    - Decide what to do about bit casts.
+    - Do we really want a C-style preprocessor?
+  - Sample programs
+    - h3.bpi
+    - gpu_cache.bpi
+    - risc.bpi
+    - cache.bpi
+    - sort.bpi
+    - coalesce.bpi
+  - Code gen/back end
+    . Build a simple basic block level program for testing.
+    . Test some simple structs and a type printing test program.
+    - Write code generator that will build simple program.
+      - Write a CHDL runtime with support for static and global variables.
+      - Try out the CHDL runtime with some sample code.
+      - Write a "to CHDL" type string converter.
+      - Write a "to C" type string converter.
+    - Build a basic block level program that has control flow and live values.
+    - Write code generator that will build the with-control-flow program.
+      - Write expected CHDL output.
+    - Build a basic block level program that uses structs and static arrays.
+    - Write code generator that will build the struct-based program.
+    - Build a basic block level program that uses SRAM arrays.
+    - Add support for SRAM arrays to code generator.
+    - Build a basic block level program that uses stalls.
+    - Add support for stalls to code generator.
+    - Build a basic block level program that uses bypassed SRAM arrays.
+    - Add support for bypass networks to code generator.
+    - Build a basic block level program that uses speculation.
+    - Add support for speculation to code generator.
+  - Parser/front end
+    - Build a skeleton flex/bison parser
+    - Get simple static function to parse to AST.
+    - Get counter to parse to AST.
+    - Get generic function to parse to AST.
+    - Get simple AST to convert to IF.
+    - Get generic function to parse to AST.
+    - Get generic AST to convert to IF.
+    - Get h3.bpi working.
+    - Get risc.bpi working.
+    - Get cache.bpi working.
+  - Evaluation
+    - 
