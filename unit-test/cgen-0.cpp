@@ -51,18 +51,20 @@ void test_func(if_func &f) {
   f.bbs[0].vals.push_back(if_val());
   f.bbs[0].vals[0].t = u32();
   f.bbs[0].vals[0].op = VAL_CONST;
+  f.bbs[0].vals[0].static_arg = NULL;
   to_vec_bool<32>(f.bbs[0].vals[0].const_val, 1);
 
   f.bbs[0].vals.push_back(if_val());
   f.bbs[0].vals[1].t = u32();
   f.bbs[0].vals[1].op = VAL_LD_STATIC;
   f.bbs[0].vals[1].static_arg = &f.static_vars["x"];
-
+  
   f.bbs[0].vals.push_back(if_val());
   f.bbs[0].vals[2].t = u32();
   f.bbs[0].vals[2].op = VAL_ADD;
   f.bbs[0].vals[2].args.push_back(&f.bbs[0].vals[1]);
   f.bbs[0].vals[2].args.push_back(&f.bbs[0].vals[0]);
+  f.bbs[0].vals[2].static_arg = NULL;
 
   f.bbs[0].vals.push_back(if_val());
   f.bbs[0].vals[3].op = VAL_ST_STATIC;

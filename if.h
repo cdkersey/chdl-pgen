@@ -29,7 +29,7 @@ namespace bscotch {
     "const", "phi", "select", "arg",
     "ld_global", "st_global",
     "ld_static", "st_static",
-    "ld_idx", "st_idx_static", "ld_idx_static",
+    "ld_idx", "st_idx", "st_idx_static", "ld_idx_static",
     "neg", "not",
     "add", "sub", "mul", "div", "and", "or", "xor"
     "call_static", "call",
@@ -77,28 +77,6 @@ namespace bscotch {
   };
 };
 
-void print(std::ostream &out, bscotch::if_val &v) {
-  using namespace std;
-  using namespace bscotch;
-
-  out << "    ";
-  out << if_op_str[v.op];
-
-  /* TODO: Print args */
-  
-  cout << " (";
-  print(out, v.t);
-  out << ')' << endl;
-}
-
-void print(std::ostream &out, bscotch::if_bb &b) {
-  using namespace std;
-  using namespace bscotch;
-
-  for (auto &v : b.vals)
-    print(out, v);
-}
-
 // Print vector of bools as hex. TODO: move to separate utility library?
 void print(std::ostream &out, std::vector<bool> &v) {
   if (v.size() == 0) out << '0';
@@ -113,9 +91,43 @@ void print(std::ostream &out, std::vector<bool> &v) {
   }
 }
 
+void print(std::ostream &out, bscotch::if_val &v) {
+  using namespace std;
+  using namespace bscotch;
+
+  out << "    ";
+  out << '<' << &v << "> = " << if_op_str[v.op];
+
+  /* TODO: Print args */
+  if (v.op == VAL_CONST) {
+    out << " 0x";
+    print(out, v.const_val);
+  } else {
+    if (v.static_arg) out << " @" << v.static_arg->name;
+    bool comma = (v.static_arg ? 1 : 0);
+    for (auto &a : v.args) {
+      if (comma) out << ',';
+      else comma = true;
+      out << " <" << a << '>';
+    }
+  }
+
+  cout << " (";
+  print(out, v.t);
+  out << ')' << endl;
+}
+
+void print(std::ostream &out, bscotch::if_bb &b) {
+  using namespace std;
+  using namespace bscotch;
+
+  for (auto &v : b.vals)
+    print(out, v);
+}
+
 void print(std::ostream &out, bscotch::if_staticvar &v) {
     print(out, v.t);
-    out << " = ";
+    out << " = 0x";
     print(out, v.initial_val);
 }
 
