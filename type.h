@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <map>
 
 namespace bscotch {
   // Types are represented by vectors of integers.
@@ -13,20 +14,20 @@ namespace bscotch {
     TYPE_BIT = -100,
     TYPE_S = -101,             // Followed by #bits
     TYPE_U = -102,             // Followed by #bits
-    TYPE_ARRAY = -1000,        // Followed by dimension, then array type.
-    TYPE_STATIC_ARRAY = -1001, // Followed by dimension, then array type.
+    TYPE_ARRAY = -1000,        // Followed by dimension, follows element type.
+    TYPE_STATIC_ARRAY = -1001, // Followed by dimension, follows element type.
     TYPE_STRUCT_BEGIN = -1002, // Followed by #elements.
     TYPE_FIELD_DELIM = -1003   // Next element of struct.
   };
 
-  // TODO: add operations on types.
   struct type {
     std::vector<int> type_vec;
-    std::string str(int start = 0);
+    std::string str(int start = 0, int &chars = *((int*)NULL));
+    std::map<int, std::string> field_name;
   };
 };
 
-std::string bscotch::type::str(int s) {
+std::string bscotch::type::str(int s, int &end) {
   using namespace bscotch;
   using namespace std;
 
@@ -47,15 +48,20 @@ std::string bscotch::type::str(int s) {
     } else if (type_vec[i] == TYPE_STRUCT_BEGIN) {
       unsigned fields = type_vec[++i];
       oss << '{';
-      for (unsigned j = 0; j < fields; ++i) {
+      for (unsigned j = 0; j < fields; ++j) {
 	if (j != 0) oss << ", ";
-	oss << str(i);
-	while (type_vec[++i] != TYPE_FIELD_DELIM);
+	++i;
+	if (field_name.count(i)) oss << field_name[i] << " : ";
+	int pos;
+	oss << str(i, pos);
+	i = pos;
       }
       oss << '}';
     }
   }
 
+  if (&end) end = i;
+  
   return oss.str();
 }
 
