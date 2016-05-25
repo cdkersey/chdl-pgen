@@ -84,7 +84,7 @@ int main() {
   _(main_call, "ready") = _(main_bb0_arb_in[0], "ready");
 
   _(main_bb0_arb_in[1], "valid") = _(main_bb0_out[0], "valid");
-  _(main_call, "ready") = _(main_bb0_arb_in[1], "ready");
+  _(main_bb0_out[0], "ready") = _(main_bb0_arb_in[1], "ready");
 
   Arbiter(main_bb0_in, ArbRR<2>, main_bb0_arb_in);
 

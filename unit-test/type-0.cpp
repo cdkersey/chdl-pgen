@@ -91,8 +91,10 @@ type cpx_double_1024() {
 
 void print_type(type (*f)()) {
   type t = f();
+  cout << " === " << endl << "bpi:  ";
   print(cout, t);
-  cout << ' ' << t.size() << endl;
+  cout << endl << "chdl: " << type_chdl(t) << endl;
+  cout << "size: " << t.size() << endl;
 }
 
 int main() {

@@ -83,11 +83,13 @@ tasks/goals in order of planned completion:
     . Build a simple basic block level program for testing.
     . Test some simple structs and a type printing test program.
     - Write code generator that will build simple program.
-      - Write a CHDL runtime with support for static and global variables.
-      - Try out the CHDL runtime with some sample code.
-      - Write a "to CHDL" type string converter.
+      . Write a "to CHDL" type string converter.
       - Write a "to C" type string converter.
+      . Decide how to identify values (funcname_idx)
+      . Write a CHDL runtime with support for static and global variables.
+      - Try out the CHDL runtime with some sample code.
     - Build a basic block level program that has control flow and live values.
+      - Expand CHDL runtime to support block level control flow and live values.
     - Write code generator that will build the with-control-flow program.
       - Write expected CHDL output.
     - Build a basic block level program that uses structs and static arrays.

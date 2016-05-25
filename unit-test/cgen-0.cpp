@@ -35,17 +35,61 @@ if_staticvar u32staticvar(string name, unsigned initial = 0) {
   return s;
 }
 
-void gen_val(ostream &out, if_val &v) {
+bool is_store(if_op op) {
+  return op == VAL_ST_GLOBAL || op == VAL_ST_STATIC ||
+         op == VAL_ST_IDX || op == VAL_ST_IDX_STATIC;
 }
 
-void gen_bb(ostream &out, if_bb &b) {
+void gen_static_var(ostream &out, if_staticvar &s, string fname, bool global) {
+  out << "  STATIC_VAR(" << fname << ", " << s.name << ", " << type_chdl(s.t)
+      << ", 0x" << to_hex(s.initial_val) << ");" << endl;
 }
 
-void gen_func(ostream &out, if_func &f) {
+void gen_val(ostream &out, string fname, int bbidx, int idx, if_val &v) {
+  out << "  ";
+  
+  if (!is_store(v.op)) {
+    out << type_chdl(v.t) << ' ' << fname << '_' << v.id << " = ";
+  }
+  
+  if (v.op == VAL_CONST) {
+    out << "Lit<" << v.t.size() << ">(0x" << to_hex(v.const_val) << ')';
+  } else if (v.op == VAL_LD_STATIC) {
+    out << "LD_STATIC(" << fname << ", " << v.static_arg->name << ')';
+  } else if (v.op == VAL_ADD) {
+    out << fname << '_' << v.args[0]->id << " + "
+	<< fname << '_' << v.args[1]->id;
+  } else if (v.op == VAL_ST_STATIC) {
+    out << "ST_STATIC(" << fname << ", " << v.static_arg->name << ", "
+        << fname << '_' << v.args[0]->id << ", "
+        << fname << "_bb" << bbidx << "_run)";
+  } else {
+    out << "UNSUPPORTED_OP " << if_op_str[v.op];
+  }
+
+  out << ';' << endl;
+}
+
+void gen_bb(ostream &out, string fname, int idx, if_bb &b) {
+  for (unsigned i = 0; i < b.vals.size(); ++i) {
+    gen_val(out, fname, idx, i, b.vals[i]);
+  }
+}
+
+void gen_func(ostream &out, string name, if_func &f) {
+  for (auto &s : f.static_vars) {
+    gen_static_var(out, s.second, name, false);
+  }
+  
+  for (unsigned i = 0; i < f.bbs.size(); ++i) {
+    gen_bb(out, name, i, f.bbs[i]);
+  }
 }
 
 void gen_prog(ostream &out, if_prog &p) {
-    
+  for (auto &f : p.functions) {
+    gen_func(out, f.first, f.second);
+  }
 }
 
 void test_func(if_func &f) {
@@ -65,11 +109,13 @@ void test_func(if_func &f) {
   f.bbs[0].vals[0].t = u32();
   f.bbs[0].vals[0].op = VAL_CONST;
   f.bbs[0].vals[0].static_arg = NULL;
+  f.bbs[0].vals[0].id = 0;
   to_vec_bool<32>(f.bbs[0].vals[0].const_val, 1);
 
   f.bbs[0].vals.push_back(if_val());
   f.bbs[0].vals[1].t = u32();
   f.bbs[0].vals[1].op = VAL_LD_STATIC;
+  f.bbs[0].vals[1].id = 1;
   f.bbs[0].vals[1].static_arg = &f.static_vars["x"];
   
   f.bbs[0].vals.push_back(if_val());
@@ -78,11 +124,13 @@ void test_func(if_func &f) {
   f.bbs[0].vals[2].args.push_back(&f.bbs[0].vals[1]);
   f.bbs[0].vals[2].args.push_back(&f.bbs[0].vals[0]);
   f.bbs[0].vals[2].static_arg = NULL;
+  f.bbs[0].vals[2].id = 2;
 
   f.bbs[0].vals.push_back(if_val());
   f.bbs[0].vals[3].op = VAL_ST_STATIC;
   f.bbs[0].vals[3].static_arg = &f.static_vars["x"];
   f.bbs[0].vals[3].args.push_back(&f.bbs[0].vals[2]);
+  f.bbs[0].vals[3].id = 3;
 
   f.bbs[0].suc.push_back(&f.bbs[0]);
   f.bbs[0].branch_pred = NULL;

@@ -50,6 +50,7 @@ namespace bscotch {
     
     if_op op;
     type t;
+    int id;
   };
 
   struct if_bb {
@@ -78,7 +79,9 @@ namespace bscotch {
 };
 
 // Print vector of bools as hex. TODO: move to separate utility library?
-void print(std::ostream &out, std::vector<bool> &v) {
+std::string to_hex(std::vector<bool> &v) {
+  std::ostringstream out;
+
   if (v.size() == 0) out << '0';
 
   for (int i = (v.size() + 3)/4*4 - 4; i >= 0; i -= 4) {
@@ -89,6 +92,12 @@ void print(std::ostream &out, std::vector<bool> &v) {
     if (v.size() > i + 3 && v[i + 3]) x += 8;
     out << "0123456789abcdef"[x];
   }
+
+  return out.str();
+}
+
+void print(std::ostream &out, std::vector<bool> &v) {
+  out << to_hex(v);
 }
 
 void print(std::ostream &out, bscotch::if_val &v) {
