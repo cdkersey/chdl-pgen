@@ -46,10 +46,10 @@ unsigned bscotch::type::size(int s, int &end) {
     } else if (type_vec[i] == TYPE_STRUCT_BEGIN) {
       unsigned fields = type_vec[++i];
       for (unsigned j = 0; j < fields; ++j) {
-	++i;
-	int pos;
-	sz += size(i, pos);
-	i = pos;
+        ++i;
+        int pos;
+        sz += size(i, pos);
+        i = pos;
       }
     }
   }
@@ -92,6 +92,8 @@ std::string bscotch::type::str(int s, int &end) {
     }
   }
 
+  if (i == s) oss << "void";
+  
   if (&end) end = i;
   
   return oss.str();
@@ -122,20 +124,26 @@ std::string type_chdl(bscotch::type &t, int s = 0, int &end = *(int*)NULL) {
       oss << "vec<" << t.type_vec[++i] << ", " << s << " >";
     } else if (t.type_vec[i] == TYPE_STRUCT_BEGIN) {
       unsigned fields = t.type_vec[++i];
-      oss << "ag<";
-      for (unsigned j = 0; j < fields; ++j) {
-	if (j != 0) oss << ", ag<";
-	++i;
-	if (t.field_name.count(i))
-	  oss << "STP(\"" << t.field_name[i] << "\"), ";
-	int pos;
-	oss << type_chdl(t, i, pos);
-	i = pos;
+      if (fields == 0) {
+	oss << "chdl_void";
+      } else {
+        oss << "ag<";
+        for (unsigned j = 0; j < fields; ++j) {
+          if (j != 0) oss << ", ag<";
+          ++i;
+          if (t.field_name.count(i))
+            oss << "STP(\"" << t.field_name[i] << "\"), ";
+          int pos;
+          oss << type_chdl(t, i, pos);
+          i = pos;
+        }
+        for (unsigned i = 0; i < fields; ++i) oss << " >";
       }
-      for (unsigned i = 0; i < fields; ++i) oss << " >";
     }
   }
 
+  if (i == s) oss << "chdl_void";
+  
   if (&end) end = i;
   
   return oss.str();

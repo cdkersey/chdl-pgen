@@ -40,6 +40,8 @@ namespace bscotch {
     type t;
     std::vector<bool> initial_val;
   };
+
+  struct if_bb;
   
   struct if_val {
     std::vector<if_val *> args;
@@ -51,6 +53,7 @@ namespace bscotch {
     if_op op;
     type t;
     int id;
+    if_bb *bb;
   };
 
   struct if_bb {
@@ -62,12 +65,13 @@ namespace bscotch {
     // Branch predicate, one of this block's vals (if needed)
     if_val *branch_pred;
     
-    // Successors; may be NULL.
-    std::vector<if_bb *> suc;
+    // Successor and predecessor blocks.
+    std::vector<if_bb *> suc, pred;
   };
 
   struct if_func {
     std::map<std::string, if_staticvar> static_vars;
+    type rtype;
     std::vector<type> args;
     std::vector<if_bb> bbs;
   };

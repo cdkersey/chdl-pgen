@@ -24,6 +24,11 @@ type u32() {
   return t;
 }
 
+type void_type() {
+  type t;
+  return t;
+}
+
 if_staticvar u32staticvar(string name, unsigned initial = 0) {
   if_staticvar s;
 
@@ -70,9 +75,27 @@ void gen_val(ostream &out, string fname, int bbidx, int idx, if_val &v) {
   out << ';' << endl;
 }
 
-void gen_bb(ostream &out, string fname, int idx, if_bb &b) {
+void gen_bb(ostream &out, string fname, int idx, if_bb &b, bool entry) {
+  // Typedef input/output types (TODO)
+  // Declare input/output (TODO)
+  // Set up arbiter inputs (TODO)
+  // Instantiate arbiter (TODO)
+  
   for (unsigned i = 0; i < b.vals.size(); ++i) {
     gen_val(out, fname, idx, i, b.vals[i]);
+  }
+}
+
+void print_arg_type(ostream &out, vector<type> &v) {
+  if (v.size() == 0) {
+    out << "chdl_void";
+  } else {
+    for (unsigned i = 0; i < v.size(); ++i) {
+      out << "ag<STP(\"" << "arg" << i << "\"), " << type_chdl(v[i]);
+      if (i != v.size() - 1) out << ", ";
+    }
+    for (unsigned i = 0; i < v.size(); ++i)
+      out << " >";
   }
 }
 
@@ -80,9 +103,17 @@ void gen_func(ostream &out, string name, if_func &f) {
   for (auto &s : f.static_vars) {
     gen_static_var(out, s.second, name, false);
   }
+
+  // Typedef call/ret types
+  out << "  typedef flit<";
+  print_arg_type(out, f.args);
+  out << " > " << name << "_call_t;" << endl;
+
+  out << "  typedef flit<" << type_chdl(f.rtype) << " > "
+      << name << "_ret_t;" << endl;
   
   for (unsigned i = 0; i < f.bbs.size(); ++i) {
-    gen_bb(out, name, i, f.bbs[i]);
+    gen_bb(out, name, i, f.bbs[i], i == 0);
   }
 }
 
@@ -102,6 +133,8 @@ void test_func(if_func &f) {
   //    %20 = st_static %15, @x
 
   f.static_vars["x"] = u32staticvar("x", 0);
+  
+  f.rtype = void_type();
 
   f.bbs.push_back(if_bb());
 
@@ -110,12 +143,14 @@ void test_func(if_func &f) {
   f.bbs[0].vals[0].op = VAL_CONST;
   f.bbs[0].vals[0].static_arg = NULL;
   f.bbs[0].vals[0].id = 0;
+  f.bbs[0].vals[0].bb = &f.bbs[0];
   to_vec_bool<32>(f.bbs[0].vals[0].const_val, 1);
 
   f.bbs[0].vals.push_back(if_val());
   f.bbs[0].vals[1].t = u32();
   f.bbs[0].vals[1].op = VAL_LD_STATIC;
   f.bbs[0].vals[1].id = 1;
+  f.bbs[0].vals[1].bb = &f.bbs[0];
   f.bbs[0].vals[1].static_arg = &f.static_vars["x"];
   
   f.bbs[0].vals.push_back(if_val());
@@ -124,6 +159,7 @@ void test_func(if_func &f) {
   f.bbs[0].vals[2].args.push_back(&f.bbs[0].vals[1]);
   f.bbs[0].vals[2].args.push_back(&f.bbs[0].vals[0]);
   f.bbs[0].vals[2].static_arg = NULL;
+  f.bbs[0].vals[2].bb = &f.bbs[0];
   f.bbs[0].vals[2].id = 2;
 
   f.bbs[0].vals.push_back(if_val());
@@ -131,8 +167,10 @@ void test_func(if_func &f) {
   f.bbs[0].vals[3].static_arg = &f.static_vars["x"];
   f.bbs[0].vals[3].args.push_back(&f.bbs[0].vals[2]);
   f.bbs[0].vals[3].id = 3;
-
+  f.bbs[0].vals[3].bb = &f.bbs[0];
+  
   f.bbs[0].suc.push_back(&f.bbs[0]);
+  f.bbs[0].pred.push_back(&f.bbs[0]);
   f.bbs[0].branch_pred = NULL;
 }
 
