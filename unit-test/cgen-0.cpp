@@ -75,17 +75,6 @@ void gen_val(ostream &out, string fname, int bbidx, int idx, if_val &v) {
   out << ';' << endl;
 }
 
-void gen_bb(ostream &out, string fname, int idx, if_bb &b, bool entry) {
-  // Typedef input/output types (TODO)
-  // Declare input/output (TODO)
-  // Set up arbiter inputs (TODO)
-  // Instantiate arbiter (TODO)
-  
-  for (unsigned i = 0; i < b.vals.size(); ++i) {
-    gen_val(out, fname, idx, i, b.vals[i]);
-  }
-}
-
 void print_arg_type(ostream &out, vector<type> &v) {
   if (v.size() == 0) {
     out << "chdl_void";
@@ -97,6 +86,49 @@ void print_arg_type(ostream &out, vector<type> &v) {
     for (unsigned i = 0; i < v.size(); ++i)
       out << " >";
   }
+}
+
+void print_live_type(ostream &out, vector<if_val*> &v) {
+  if (v.size() == 0) {
+    out << "chdl_void";
+  } else {
+    for (unsigned i = 0; i < v.size(); ++i) {
+      out << "ag<STP(\"" << "val" << v[i]->id << "\"), " << type_chdl(v[i]->t);
+      if (i != v.size() - 1) out << ", ";
+    }
+    for (unsigned i = 0; i < v.size(); ++i)
+      out << " >";
+  }
+}
+
+void gen_bb(ostream &out, string fname, int idx, if_bb &b, bool entry) {
+  // Typedef input/output types
+  out << "  typedef ";
+  print_live_type(out, b.live_in);
+  out << ' ' << fname << "_bb" << idx << "_in_t;" << endl;
+  
+  out << "  typedef ";
+  print_live_type(out, b.live_out);
+  out << ' ' << fname << "_bb" << idx << "_out_t;" << endl;
+  
+  // Declare input/output arrays
+  out << "  " << fname << "_bb" << idx << "_in_t "
+      << fname << "_bb" << idx << "_in;" << endl;
+
+  int n_suc = b.suc.size();
+  out << "  vec<" << n_suc << ", " << fname << "_bb" << idx << "_out_t> "
+      << fname << "_bb" << idx << "_out_prebuf, " << fname << "_bb" << idx
+      << "_out;" << endl;
+  
+  // Set up arbiter inputs (TODO)
+  // Instantiate arbiter (TODO)
+  
+  for (unsigned i = 0; i < b.vals.size(); ++i) {
+    gen_val(out, fname, idx, i, b.vals[i]);
+  }
+
+  // Connect preubuf outputs (TODO)
+  // Instantiate prebuf (TODO)
 }
 
 void gen_func(ostream &out, string name, if_func &f) {

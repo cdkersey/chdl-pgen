@@ -60,7 +60,7 @@ namespace bscotch {
     std::vector<if_val> vals;
 
     // Set by liveness analysis.
-    std::vector<if_val*> live;
+    std::vector<if_val*> live_in, live_out;
 
     // Branch predicate, one of this block's vals (if needed)
     if_val *branch_pred;
@@ -109,7 +109,7 @@ void print(std::ostream &out, bscotch::if_val &v) {
   using namespace bscotch;
 
   out << "    ";
-  out << '<' << &v << "> = " << if_op_str[v.op];
+  out << '<' << v.id << "> = " << if_op_str[v.op];
 
   if (v.op == VAL_CONST) {
     out << " 0x";
@@ -120,7 +120,7 @@ void print(std::ostream &out, bscotch::if_val &v) {
     for (auto &a : v.args) {
       if (comma) out << ',';
       else comma = true;
-      out << " <" << a << '>';
+      out << " <" << a->id << '>';
     }
   }
 

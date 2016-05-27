@@ -48,7 +48,6 @@ Expected CHDL output:
   node main_bb0_run(_(main_bb0_in, "valid") &&
     _(main_bb0_out_prebuf[0], "ready"));
   
-
   ui<32> main_0 = Lit<32>(0x00000001);
   ui<32> main_1 = LD_STATIC(main, x);
   ui<32> main_2 = main_1 + main_0;
