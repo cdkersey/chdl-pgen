@@ -57,6 +57,19 @@ template <typename T> struct staticvar {
 
 typedef bvec<0> chdl_void;
 
+// TODO: Output buffers
+template <unsigned S, typename T>
+  void BBOutputBuf(bvec<CLOG2(S)> sel, vec<S, flit<T> > &out, flit<T> &in)
+{
+  // TODO
+}
+
+template <typename T>
+void BBOutputBuf(vec<S>, flit<T> > &out, flit<T> &in)
+{
+  // TODO
+}
+
 int main() {
   STATIC_VAR(main, x, ui<32>, 0x00000000);
 
@@ -74,9 +87,12 @@ int main() {
 
   // main() basic block 0 interfaces
   main_bb0_in_t main_bb0_in;
-  vec<1, main_bb0_out_t> main_bb0_out_prebuf, main_bb0_out;
+  main_bb0_out_t main_bb0_out_prebuf, main_bb0_out_postbuf;
+  vec<1, main_bb0_out_t> main_bb0_out;
   TAP(main_bb0_in);
   TAP(main_bb0_out);
+  TAP(main_bb0_out_prebuf);
+  TAP(main_bb0_out_postbuf);
 
   // main() basic block 0
   vec<2, main_bb0_in_t> main_bb0_arb_in;
@@ -101,11 +117,15 @@ int main() {
   TAP(main_1);
   TAP(main_2);
 
-  _(main_bb0_out_prebuf[0], "valid") = _(main_bb0_in, "valid");
-  _(main_bb0_in, "ready") = _(main_bb0_out_prebuf[0], "ready");
+  _(main_bb0_out_prebuf, "valid") = _(main_bb0_in, "valid");
+  _(main_bb0_in, "ready") = _(main_bb0_out_prebuf, "ready");
 
-  for (unsigned i = 0; i < 1; ++i)
-    Buffer<1>(main_bb0_out[i], main_bb0_out_prebuf[i]);
+  Buffer<1>(main_bb0_out_postbuf, main_bb0_out_prebuf);
+  
+  for (unsigned i = 0; i < 1; ++i) {
+    _(main_bb0_prebuf, "ready") = _(main_bb0_out[i], "ready");
+    _(main_bb0_out[i], "valid") = _(main_bb0_out_prebuf, "valid");
+  }
   
   STATIC_VAR_GEN(main, x);
 

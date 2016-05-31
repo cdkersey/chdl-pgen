@@ -101,6 +101,19 @@ void print_live_type(ostream &out, vector<if_val*> &v) {
   }
 }
 
+string input_signal(string fname, int bbidx, int vidx, string signal) {
+  ostringstream oss;
+  oss << "_(" << fname << "_bb" << bbidx << "_arb_in[" <<  vidx << "], \""
+      << signal << "\")";
+  return oss.str();
+}
+
+string output_signal(string fname, int bbidx, string signal) {
+  ostringstream oss;
+  oss << "_(" << fname << "_bb" << bbidx << "_out, \"" << signal << "\")";
+  return oss.str();
+}
+
 void gen_bb(ostream &out, string fname, int idx, if_bb &b, bool entry) {
   // Typedef input/output types
   out << "  typedef ";
@@ -119,9 +132,32 @@ void gen_bb(ostream &out, string fname, int idx, if_bb &b, bool entry) {
   out << "  vec<" << n_suc << ", " << fname << "_bb" << idx << "_out_t> "
       << fname << "_bb" << idx << "_out_prebuf, " << fname << "_bb" << idx
       << "_out;" << endl;
+
+  int n_pred = b.pred.size();
+  if (entry) n_pred++;
+  out << "  vec<" << n_pred << ", " << fname << "_bb" << idx << "_in_t> "
+      << fname << "_bb" << idx << "_arb_in;" << endl;
   
-  // Set up arbiter inputs (TODO)
-  // Instantiate arbiter (TODO)
+  // Set up arbiter inputs
+  for (unsigned i = 0; i < b.pred.size(); ++i) {
+    out << "  " << input_signal(fname, idx, i, "valid")
+        << " = " << output_signal(fname, b.pred[i]->id, "valid") << ';' << endl
+        << "  " << output_signal(fname, b.pred[i]->id, "ready") << " = "
+        << input_signal(fname, idx, i, "ready") << ';' << endl;
+  }
+  if (entry) {
+    out << "  " << input_signal(fname, idx, b.pred.size(), "valid")
+        << " = _(" << fname << "_call, \"valid\");" << endl
+        << "  _(" << fname << "_call, \"ready\") = "
+        << input_signal(fname, idx, b.pred.size(), "ready") << ';' << endl;
+  }
+  
+  // Instantiate arbiter
+  out << "  Arbiter(" << fname << "_bb" << idx << "_in, ArbRR<" << n_pred
+      << ">, " << fname << "_bb" << idx << "_arb_in);" << endl;
+
+  // Create block's run signal
+  out << "  node " << fname << "_bb" << idx << "_run(_(" << fname << "_bb" << idx << "_in, \"valid\") && _(" << fname << "_bb" << idx << "_out_prebuf 
   
   for (unsigned i = 0; i < b.vals.size(); ++i) {
     gen_val(out, fname, idx, i, b.vals[i]);
@@ -169,6 +205,7 @@ void test_func(if_func &f) {
   f.rtype = void_type();
 
   f.bbs.push_back(if_bb());
+  f.bbs[0].id = 0;
 
   f.bbs[0].vals.push_back(if_val());
   f.bbs[0].vals[0].t = u32();
@@ -184,7 +221,7 @@ void test_func(if_func &f) {
   f.bbs[0].vals[1].id = 1;
   f.bbs[0].vals[1].bb = &f.bbs[0];
   f.bbs[0].vals[1].static_arg = &f.static_vars["x"];
-  
+
   f.bbs[0].vals.push_back(if_val());
   f.bbs[0].vals[2].t = u32();
   f.bbs[0].vals[2].op = VAL_ADD;
