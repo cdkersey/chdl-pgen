@@ -57,17 +57,17 @@ template <typename T> struct staticvar {
 
 typedef bvec<0> chdl_void;
 
-// TODO: Output buffers
+// Output buffers
 template <unsigned S, typename T>
   void BBOutputBuf(bvec<CLOG2(S)> sel, vec<S, flit<T> > &out, flit<T> &in)
 {
-  // TODO
+  // TODO: Switch
 }
 
 template <typename T>
-void BBOutputBuf(vec<S>, flit<T> > &out, flit<T> &in)
+  void BBOutputBuf(vec<1, flit<T> > &out, flit<T> &in)
 {
-  // TODO
+  Buffer<1>(out[0], in);
 }
 
 int main() {
@@ -87,12 +87,11 @@ int main() {
 
   // main() basic block 0 interfaces
   main_bb0_in_t main_bb0_in;
-  main_bb0_out_t main_bb0_out_prebuf, main_bb0_out_postbuf;
+  main_bb0_out_t main_bb0_out_prebuf;
   vec<1, main_bb0_out_t> main_bb0_out;
   TAP(main_bb0_in);
   TAP(main_bb0_out);
   TAP(main_bb0_out_prebuf);
-  TAP(main_bb0_out_postbuf);
 
   // main() basic block 0
   vec<2, main_bb0_in_t> main_bb0_arb_in;
@@ -105,7 +104,7 @@ int main() {
   Arbiter(main_bb0_in, ArbRR<2>, main_bb0_arb_in);
 
   node main_bb0_run(_(main_bb0_in, "valid") &&
-    _(main_bb0_out_prebuf[0], "ready"));
+    _(main_bb0_out_prebuf, "ready"));
   TAP(main_bb0_run);
   
   ui<32> main_0 = Lit<32>(0x00000001);
@@ -120,17 +119,18 @@ int main() {
   _(main_bb0_out_prebuf, "valid") = _(main_bb0_in, "valid");
   _(main_bb0_in, "ready") = _(main_bb0_out_prebuf, "ready");
 
-  Buffer<1>(main_bb0_out_postbuf, main_bb0_out_prebuf);
-  
   for (unsigned i = 0; i < 1; ++i) {
-    _(main_bb0_prebuf, "ready") = _(main_bb0_out[i], "ready");
-    _(main_bb0_out[i], "valid") = _(main_bb0_out_prebuf, "valid");
+    // _(main_bb0_out_prebuf, "ready") = _(main_bb0_out[i], "ready");
+    // _(main_bb0_out[i], "valid") = _(main_bb0_out_prebuf, "valid");
   }
+
+  BBOutputBuf(main_bb0_out, main_bb0_out_prebuf);
+  // Buffer<1>(main_bb0_out[0], main_bb0_out_prebuf);
   
   STATIC_VAR_GEN(main, x);
 
   // TODO: better starter
-  _(main_call, "valid") = Wreg(Reg(_(main_call, "ready")), Lit(0), 1);
+  _(main_call, "valid") = Wreg(_(main_call, "ready"), Lit(0), 1);
   
   optimize();
   
