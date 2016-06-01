@@ -88,6 +88,11 @@ tasks/goals in order of planned completion:
       . Write a CHDL runtime with support for static and global variables.
       - Try out the CHDL runtime with some sample code.
     - Build a basic block level program that has control flow and live values.
+      . Get the code written in a cgen-1 example.
+      - How do we handle block-to-block communication/generation? SSA/phi?
+        - Use phis; the input of a block containing <1> = phi <0>, <11> will
+	  contain val_1, not val_0 and val_11. Phi just copies from input.
+	- All other external values are also copied from input.
       - Expand CHDL runtime to support block level control flow and live values.
     - Write code generator that will build the with-control-flow program.
       - Write expected CHDL output.

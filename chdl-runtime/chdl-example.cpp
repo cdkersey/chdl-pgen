@@ -150,7 +150,6 @@ int main() {
 _(main_bb0_in, "ready") = _(main_bb0_out_prebuf, "ready");
   BBOutputBuf(main_bb0_out, main_bb0_out_prebuf);
   STATIC_VAR_GEN(main, x);
-
   
   // TODO: better starter
   _(main_call, "valid") = Wreg(_(main_call, "ready"), Lit(0), 1);

@@ -29,7 +29,7 @@ namespace bscotch {
     "const", "phi", "select", "arg",
     "ld_global", "st_global",
     "ld_static", "st_static",
-    "ld_idx", "st_idx", "st_idx_static", "ld_idx_static",
+    "ld_idx", "st_idx", "ld_idx_static", "st_idx_static",
     "neg", "not",
     "add", "sub", "mul", "div", "and", "or", "xor"
     "call_static", "call",
@@ -138,6 +138,14 @@ void print(std::ostream &out, bscotch::if_bb &b) {
 
   for (auto &v : b.vals)
     print(out, v);
+
+  out << "    br ";
+  if (b.branch_pred) out << '<' << b.branch_pred->id << ">, ";
+  for (unsigned i = 0; i < b.suc.size(); ++i) {
+    out << "bb " << b.suc[i]->id;
+    if (i != b.suc.size() - 1) out << ", ";
+  }
+  out << endl;
 }
 
 void print(std::ostream &out, bscotch::if_staticvar &v) {
