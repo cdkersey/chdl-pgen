@@ -50,6 +50,12 @@ void gen_static_var(ostream &out, if_staticvar &s, string fname, bool global) {
       << ", 0x" << to_hex(s.initial_val) << ");" << endl;
 }
 
+void gen_static_var_bottom
+  (ostream &out, if_staticvar &s, string fname, bool global)
+{
+  out << "  STATIC_VAR_GEN(" << fname << ", " << s.name << ");" << endl;
+}
+
 void gen_val(ostream &out, string fname, int bbidx, int idx, if_val &v) {
   out << "  ";
   
@@ -108,30 +114,45 @@ string input_signal(string fname, int bbidx, int vidx, string signal) {
   return oss.str();
 }
 
+string input_signal(string fname, int bbidx, string signal) {
+  ostringstream oss;
+  oss << "_(" << fname << "_bb" << bbidx << "_in, \"" << signal << "\")";
+  return oss.str();
+}
+
+string output_signal(string fname, int bbidx, int vidx, string signal) {
+  ostringstream oss;
+  oss << "_(" << fname << "_bb" << bbidx << "_out[" <<  vidx << "], \""
+      << signal << "\")";
+  return oss.str();
+}
+
 string output_signal(string fname, int bbidx, string signal) {
   ostringstream oss;
-  oss << "_(" << fname << "_bb" << bbidx << "_out, \"" << signal << "\")";
+  oss << "_(" << fname << "_bb" << bbidx << "_out_prebuf, \"" << signal
+      << "\")";
   return oss.str();
 }
 
 void gen_bb(ostream &out, string fname, int idx, if_bb &b, bool entry) {
   // Typedef input/output types
-  out << "  typedef ";
+  out << "  typedef flit<";
   print_live_type(out, b.live_in);
-  out << ' ' << fname << "_bb" << idx << "_in_t;" << endl;
+  out << "> " << fname << "_bb" << idx << "_in_t;" << endl;
   
-  out << "  typedef ";
+  out << "  typedef flit<";
   print_live_type(out, b.live_out);
-  out << ' ' << fname << "_bb" << idx << "_out_t;" << endl;
+  out << "> " << fname << "_bb" << idx << "_out_t;" << endl;
   
   // Declare input/output arrays
   out << "  " << fname << "_bb" << idx << "_in_t "
       << fname << "_bb" << idx << "_in;" << endl;
 
   int n_suc = b.suc.size();
-  out << "  vec<" << n_suc << ", " << fname << "_bb" << idx << "_out_t> "
-      << fname << "_bb" << idx << "_out_prebuf, " << fname << "_bb" << idx
-      << "_out;" << endl;
+  out << "  " << fname << "_bb" << idx << "_out_t " << fname << "_bb" << idx
+      << "_out_prebuf;" << endl 
+      << "  vec<" << n_suc << ", " << fname << "_bb" << idx << "_out_t> "
+      << fname << "_bb" << idx << "_out;" << endl;
 
   int n_pred = b.pred.size();
   if (entry) n_pred++;
@@ -140,9 +161,18 @@ void gen_bb(ostream &out, string fname, int idx, if_bb &b, bool entry) {
   
   // Set up arbiter inputs
   for (unsigned i = 0; i < b.pred.size(); ++i) {
+    int pred_id(b.pred[i]->id), pred_sidx = -1;
+    for (unsigned j = 0; j < b.pred[i]->suc.size(); ++j) {
+      if (b.pred[i]->suc[j] == &b) {
+	pred_sidx = j;
+      }
+    }
+
+    if (pred_sidx == -1) abort();
+    
     out << "  " << input_signal(fname, idx, i, "valid")
-        << " = " << output_signal(fname, b.pred[i]->id, "valid") << ';' << endl
-        << "  " << output_signal(fname, b.pred[i]->id, "ready") << " = "
+        << " = " << output_signal(fname, b.pred[i]->id, pred_sidx, "valid") << ';' << endl
+        << "  " << output_signal(fname, b.pred[i]->id, pred_sidx, "ready") << " = "
         << input_signal(fname, idx, i, "ready") << ';' << endl;
   }
   if (entry) {
@@ -157,32 +187,49 @@ void gen_bb(ostream &out, string fname, int idx, if_bb &b, bool entry) {
       << ">, " << fname << "_bb" << idx << "_arb_in);" << endl;
 
   // Create block's run signal
-  out << "  node " << fname << "_bb" << idx << "_run(_(" << fname << "_bb" << idx << "_in, \"valid\") && _(" << fname << "_bb" << idx << "_out_prebuf 
+  out << "  node " << fname << "_bb" << idx << "_run(_(" << fname << "_bb"
+      << idx << "_in, \"valid\") && "
+      << output_signal(fname, idx, "ready") << ");" << endl;
   
   for (unsigned i = 0; i < b.vals.size(); ++i) {
     gen_val(out, fname, idx, i, b.vals[i]);
   }
 
-  // Connect preubuf outputs (TODO)
-  // Instantiate prebuf (TODO)
+  // Connect preubuf outputs
+  out << "  " << output_signal(fname, idx, "valid") << " = "
+      << input_signal(fname, idx, "valid") << ';' << endl
+      << input_signal(fname, idx, "ready") << " = "
+      << output_signal(fname, idx, "ready") << ';' << endl;
+
+  // Instantiate buffer/switch
+  if (b.suc.size() == 1) {
+    out << "  BBOutputBuf(" << fname << "_bb" << idx << "_out, " << fname << "_bb" << idx << "_out_prebuf);" << endl;
+  } else {
+    out << "  BBOutputBuf(" << fname << '_' << b.branch_pred->id << ", " << fname << "_bb" << idx << "_out, " << fname << "_bb" << idx << "_out_prebuf);" << endl;
+  }
 }
 
 void gen_func(ostream &out, string name, if_func &f) {
-  for (auto &s : f.static_vars) {
+  for (auto &s : f.static_vars)
     gen_static_var(out, s.second, name, false);
-  }
 
   // Typedef call/ret types
   out << "  typedef flit<";
   print_arg_type(out, f.args);
   out << " > " << name << "_call_t;" << endl;
-
+  
   out << "  typedef flit<" << type_chdl(f.rtype) << " > "
       << name << "_ret_t;" << endl;
+
+  out << "  " << name << "_call_t " << name << "_call;" << endl
+      << "  " << name << "_ret_t " << name << "_ret;" << endl;
   
   for (unsigned i = 0; i < f.bbs.size(); ++i) {
     gen_bb(out, name, i, f.bbs[i], i == 0);
   }
+
+  for (auto &s : f.static_vars)
+    gen_static_var_bottom(out, s.second, name, false);
 }
 
 void gen_prog(ostream &out, if_prog &p) {
