@@ -100,6 +100,10 @@ tasks/goals in order of planned completion:
       - Make out-of-block arguments use input structure.
       - Write output structure contents assignments.
       - Write the runtime support, a buffer and a post-buffer selector.
+    - Break the code generator code out into separate headers.
+    - Separate the headers into .h and .cpp files.
+    - Build a basic block level program that uses predicated instructions.
+    - Write code generator that will handle predicated instructions.
     - Build a basic block level program that uses structs and static arrays.
     - Write code generator that will build the struct-based program.
     - Build a basic block level program that uses SRAM arrays.
