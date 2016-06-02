@@ -145,7 +145,7 @@ string output_signal(string fname, int bbidx, string signal) {
   return oss.str();
 }
 
-void gen_bb(ostream &out, string fname, int idx, if_bb &b, bool entry) {
+void gen_bb_decls(ostream &out, string fname, int idx, if_bb &b, bool entry) {
   // Typedef input/output types
   out << "  typedef flit<";
   print_live_type(out, b.live_in);
@@ -169,6 +169,12 @@ void gen_bb(ostream &out, string fname, int idx, if_bb &b, bool entry) {
   if (entry) n_pred++;
   out << "  vec<" << n_pred << ", " << fname << "_bb" << idx << "_in_t> "
       << fname << "_bb" << idx << "_arb_in;" << endl;
+
+  out << endl;
+}
+
+void gen_bb(ostream &out, string fname, int idx, if_bb &b, bool entry) {
+  int n_suc = b.suc.size(), n_pred = b.pred.size();
   
   // Set up arbiter inputs
   for (unsigned i = 0; i < b.pred.size(); ++i) {
@@ -218,12 +224,16 @@ void gen_bb(ostream &out, string fname, int idx, if_bb &b, bool entry) {
   } else {
     out << "  BBOutputBuf(" << fname << '_' << b.branch_pred->id << ", " << fname << "_bb" << idx << "_out, " << fname << "_bb" << idx << "_out_prebuf);" << endl;
   }
+
+  out << endl;
 }
 
 void gen_func(ostream &out, string name, if_func &f) {
   for (auto &s : f.static_vars)
     gen_static_var(out, s.second, name, false);
 
+  out << endl;
+  
   // Typedef call/ret types
   out << "  typedef flit<";
   print_arg_type(out, f.args);
@@ -233,7 +243,11 @@ void gen_func(ostream &out, string name, if_func &f) {
       << name << "_ret_t;" << endl;
 
   out << "  " << name << "_call_t " << name << "_call;" << endl
-      << "  " << name << "_ret_t " << name << "_ret;" << endl;
+      << "  " << name << "_ret_t " << name << "_ret;" << endl << endl;
+
+  for (unsigned i = 0; i < f.bbs.size(); ++i) {
+    gen_bb_decls(out, name, i, f.bbs[i], i == 0);
+  }
   
   for (unsigned i = 0; i < f.bbs.size(); ++i) {
     gen_bb(out, name, i, f.bbs[i], i == 0);
@@ -304,6 +318,17 @@ void test_func(if_func &f) {
   f.bbs[3].branch_pred = NULL;
   f.bbs[4].branch_pred = NULL;
 
+  f.bbs[0].live_out.push_back(&f.bbs[0].vals[0]);
+  f.bbs[1].live_in.push_back(&f.bbs[0].vals[0]);
+  f.bbs[1].live_in.push_back(&f.bbs[4].vals[1]);
+  f.bbs[1].live_out.push_back(&f.bbs[1].vals[0]);
+  f.bbs[2].live_in.push_back(&f.bbs[1].vals[0]);
+  f.bbs[2].live_out.push_back(&f.bbs[1].vals[0]);
+  f.bbs[3].live_in.push_back(&f.bbs[1].vals[0]);
+  f.bbs[3].live_out.push_back(&f.bbs[1].vals[0]);
+  f.bbs[4].live_in.push_back(&f.bbs[1].vals[0]);
+  f.bbs[4].live_out.push_back(&f.bbs[4].vals[1]);
+  
   int id = 0;
   for (unsigned i = 0; i < f.bbs.size(); ++i) {
     f.bbs[i].id = i;
@@ -363,7 +388,7 @@ void test_func(if_func &f) {
   f.bbs[4].vals[0].op = VAL_CONST;
   to_vec_bool<32>(f.bbs[4].vals[0].const_val, 1);
 
-  f.bbs[4].vals[1].t = void_type();
+  f.bbs[4].vals[1].t = u32();
   f.bbs[4].vals[1].op = VAL_ADD;
   f.bbs[4].vals[1].args.push_back(&f.bbs[1].vals[0]);
   f.bbs[4].vals[1].args.push_back(&f.bbs[4].vals[0]);
@@ -382,7 +407,7 @@ int main() {
 
   print(cout, p);
 
-  // gen_prog(cout, p);
+  gen_prog(cout, p);
   
   return 0;
 }

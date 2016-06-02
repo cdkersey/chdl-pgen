@@ -89,13 +89,17 @@ tasks/goals in order of planned completion:
       - Try out the CHDL runtime with some sample code.
     - Build a basic block level program that has control flow and live values.
       . Get the code written in a cgen-1 example.
-      - How do we handle block-to-block communication/generation? SSA/phi?
+      . How do we handle block-to-block communication/generation? SSA/phi?
         - Use phis; the input of a block containing <1> = phi <0>, <11> will
 	  contain val_1, not val_0 and val_11. Phi just copies from input.
 	- All other external values are also copied from input.
       - Expand CHDL runtime to support block level control flow and live values.
     - Write code generator that will build the with-control-flow program.
-      - Write expected CHDL output.
+      - Make in/out flits use value id/phi id as name of signal.
+      - Write phi generator (just copy from input/output)
+      - Make out-of-block arguments use input structure.
+      - Write output structure contents assignments.
+      - Write the runtime support, a buffer and a post-buffer selector.
     - Build a basic block level program that uses structs and static arrays.
     - Write code generator that will build the struct-based program.
     - Build a basic block level program that uses SRAM arrays.
