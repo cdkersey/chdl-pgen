@@ -72,22 +72,25 @@ tasks/goals in order of planned completion:
     - Decide what to do about bit casts.
     - Do we really want a C-style preprocessor?
   - Sample programs
-    - h3.bpi
+    - h3.bpi <2016-06-06>
     - gpu_cache.bpi
-    - risc.bpi
+    - risc.bpi <2016-06-06>
     - cache.bpi
     - sort.bpi
+    - rsort.bpi
+    - binsearch.bpi
     - coalesce.bpi
   - Code gen/back end
     . Build a simple basic block level program for testing.
     . Test some simple structs and a type printing test program.
-    - Write code generator that will build simple program.
+    . Write code generator that will build simple program. <2016-06-02>
       . Write a "to CHDL" type string converter.
-      - Write a "to C" type string converter.
+      . Write a "to C++" type string converter.
       . Decide how to identify values (funcname_idx)
       . Write a CHDL runtime with support for static and global variables.
-      - Try out the CHDL runtime with some sample code.
+      . Try out the CHDL runtime with some sample code.
     - Build a basic block level program that has control flow and live values.
+      <2016-06-02>
       . Get the code written in a cgen-1 example.
       . How do we handle block-to-block communication/generation? SSA/phi?
         - Use phis; the input of a block containing <1> = phi <0>, <11> will
@@ -95,35 +98,44 @@ tasks/goals in order of planned completion:
 	- All other external values are also copied from input.
       - Expand CHDL runtime to support block level control flow and live values.
     - Write code generator that will build the with-control-flow program.
+      <2016-06-03>
       - Make in/out flits use value id/phi id as name of signal.
       - Write phi generator (just copy from input/output)
       - Make out-of-block arguments use input structure.
       - Write output structure contents assignments.
       - Write the runtime support, a buffer and a post-buffer selector.
-    - Break the code generator code out into separate headers.
-    - Separate the headers into .h and .cpp files.
+    - Break the code generator code out into separate headers. <2016-06-03>
+    - Separate the headers into .h and .cpp files. <2016-06-03>
     - Build a basic block level program that uses predicated instructions.
+      <2016-06-06>
     - Write code generator that will handle predicated instructions.
+      <2016-06-06>
     - Build a basic block level program that uses structs and static arrays.
+      <2016-06-07>
     - Write code generator that will build the struct-based program.
-    - Build a basic block level program that uses SRAM arrays.
-    - Add support for SRAM arrays to code generator.
-    - Build a basic block level program that uses stalls.
-    - Add support for stalls to code generator.
+      <2016-06-07>
+    - Build a basic block level program that uses SRAM arrays. <2016-06-08>
+    - Add support for SRAM arrays to code generator. <2016-06-08>
+    - Build a basic block level program that makes function calls. <2016-06-09>
+    - Add support for function calls to code generator. <2016-06-09>
+    - Build a basic block level program that uses stalls. <2016-06-10>
+    - Add support for stalls to code generator. <2016-06-10>
     - Build a basic block level program that uses bypassed SRAM arrays.
-    - Add support for bypass networks to code generator.
-    - Build a basic block level program that uses speculation.
-    - Add support for speculation to code generator.
+      <2016-06-13>
+    - Add support for bypass networks to code generator. <2016-06-14>
+    - Build a basic block level program that uses speculation. <2016-06-15>
+    - Add support for speculation to code generator. <2016-06-16>
+    - Add support for C++ output to code generator. <2016-06-20>
   - Parser/front end
-    - Build a skeleton flex/bison parser
-    - Get simple static function to parse to AST.
-    - Get counter to parse to AST.
-    - Get generic function to parse to AST.
-    - Get simple AST to convert to IF.
-    - Get generic function to parse to AST.
-    - Get generic AST to convert to IF.
-    - Get h3.bpi working.
-    - Get risc.bpi working.
-    - Get cache.bpi working.
+    - Build a skeleton flex/bison parser <2016-06-21>
+    - Get simple static function to parse to AST. <2016-06-22>
+    - Get counter to parse to AST. <2016-06-23>
+    - Get generic function to parse to AST. <2016-06-24>
+    - Get simple AST to convert to IF. <2016-06-25>
+    - Get generic function to parse to AST. <2016-06-26>
+    - Get generic AST to convert to IF. <2016-06-27>
+    - Get h3.bpi working. <2016-06-28>
+    - Get risc.bpi working. <2016-06-29>
+    - Get cache.bpi working. <2016-06-30>
   - Evaluation
     - 
