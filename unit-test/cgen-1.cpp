@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <algorithm>
 
 #include "../type.h"
 #include "../if.h"
@@ -228,6 +229,16 @@ void gen_bb(ostream &out, string fname, int idx, if_bb &b, bool entry) {
   out << endl;
 }
 
+void live_in_phi_adj(if_bb &b) {
+  for (auto &v : b.vals) {
+    if (v.op == VAL_PHI) {
+      for (auto &a : v.args)
+	b.live_in.erase(find(b.live_in.begin(), b.live_in.end(), a));
+      b.live_in.push_back(&v);
+    }
+  }
+}
+
 void gen_func(ostream &out, string name, if_func &f) {
   for (auto &s : f.static_vars)
     gen_static_var(out, s.second, name, false);
@@ -246,6 +257,7 @@ void gen_func(ostream &out, string name, if_func &f) {
       << "  " << name << "_ret_t " << name << "_ret;" << endl << endl;
 
   for (unsigned i = 0; i < f.bbs.size(); ++i) {
+    live_in_phi_adj(f.bbs[i]);
     gen_bb_decls(out, name, i, f.bbs[i], i == 0);
   }
   

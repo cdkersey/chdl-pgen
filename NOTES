@@ -102,7 +102,8 @@ tasks/goals in order of planned completion:
       - Make in/out flits use value id/phi id as name of signal.
       - Write phi generator (just copy from input/output)
       - Make out-of-block arguments use input structure.
-      - Write output structure contents assignments.
+      - Write output structure contents assignments/connections.
+        - Have to look for phis in destination to use the right name.
       - Write the runtime support, a buffer and a post-buffer selector.
     - Break the code generator code out into separate headers. <2016-06-03>
     - Separate the headers into .h and .cpp files. <2016-06-03>
