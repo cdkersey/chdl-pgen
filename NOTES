@@ -68,11 +68,12 @@ Expected C output:
 tasks/goals in order of planned completion:
 
   - Language definition
-    - Function replication?
+    - <2016-06-06>
+    - Function replication? <2016-06-06>
     - Decide what to do about bit casts.
     - Do we really want a C-style preprocessor?
   - Sample programs
-    - h3.bpi <2016-06-06>
+    - h2.1.bpi <2016-06-06>
     - gpu_cache.bpi
     - risc.bpi <2016-06-06>
     - cache.bpi
