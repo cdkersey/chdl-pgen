@@ -105,8 +105,8 @@ tasks/goals in order of planned completion:
       - Make out-of-block arguments use input structure.
       - Write output structure contents assignments/connections.
         - Have to look for phis in destination to use the right name.
-      - Write the runtime support, a buffer and a post-buffer selector.
-    - Break the code generator code out into separate headers. <2016-06-03>
+      . Write the runtime support, a buffer and a post-buffer selector.
+    . Break the code generator code out into separate headers. <2016-06-03>
     - Separate the headers into .h and .cpp files. <2016-06-03>
     - Build a basic block level program that uses predicated instructions.
       <2016-06-06>
