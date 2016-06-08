@@ -61,7 +61,28 @@ typedef bvec<0> chdl_void;
 template <unsigned S, typename T>
   void BBOutputBuf(bvec<CLOG2(S)> sel, vec<S, flit<T> > &out, flit<T> &in)
 {
-  // TODO: Switch
+  node full, fill, empty;
+  
+  bvec<S> r, v;
+  for (unsigned i = 0; i < S; ++i)
+    r[i] = _(out[i], "ready");
+
+  node wr_buf = _(in, "ready") && _(in, "valid");
+
+  bvec<CLOG2(S)> out_sel = Wreg(wr_buf, _(in, "sel"));
+  T out_contents = Wreg(wr_buf, _(in, "contents"));
+
+  Decoder(v, out_sel);
+  
+  for (unsigned i = 0; i < S; ++i) {
+    _(out[i], "contents") = out_contents;
+    _(out[i], "valid") = v[i] && full;
+  }
+
+  full = Reg((full && !empty) || fill);
+  fill = wr_buf;
+  empty = full && Mux(out_sel, r);
+  _(in, "ready") = !full || empty;
 }
 
 template <typename T>
@@ -71,74 +92,28 @@ template <typename T>
 }
 
 int main() {
-  #if 0
+  // // // // Begin generated code // // // //
   STATIC_VAR(main, x, ui<32>, 0x00000000);
 
-  // Function main() interfaces
-  typedef flit<chdl_void> main_call_t;
-  typedef flit<chdl_void> main_ret_t;
-  typedef flit<chdl_void> main_bb0_in_t;
-  typedef flit<chdl_void> main_bb0_out_t;
-
-  // main() function interfaces
-  main_call_t main_call;
-  main_ret_t main_ret;
-  TAP(main_call);
-  TAP(main_ret);
-
-  // main() basic block 0 interfaces
-  main_bb0_in_t main_bb0_in;
-  main_bb0_out_t main_bb0_out_prebuf;
-  vec<1, main_bb0_out_t> main_bb0_out;
-  TAP(main_bb0_in);
-  TAP(main_bb0_out);
-  TAP(main_bb0_out_prebuf);
-
-  // main() basic block 0
-  vec<2, main_bb0_in_t> main_bb0_arb_in;
-  _(main_bb0_arb_in[0], "valid") = _(main_call, "valid");
-  _(main_call, "ready") = _(main_bb0_arb_in[0], "ready");
-
-  _(main_bb0_arb_in[1], "valid") = _(main_bb0_out[0], "valid");
-  _(main_bb0_out[0], "ready") = _(main_bb0_arb_in[1], "ready");
-
-  Arbiter(main_bb0_in, ArbRR<2>, main_bb0_arb_in);
-
-  node main_bb0_run(_(main_bb0_in, "valid") &&
-    _(main_bb0_out_prebuf, "ready"));
-  TAP(main_bb0_run);
-  
-  ui<32> main_0 = Lit<32>(0x00000001);
-  ui<32> main_1 = LD_STATIC(main, x);
-  ui<32> main_2 = main_1 + main_0;
-  ST_STATIC(main, x, main_2, main_bb0_run);
-
-  TAP(main_0);
-  TAP(main_1);
-  TAP(main_2);
-
-  _(main_bb0_out_prebuf, "valid") = _(main_bb0_in, "valid");
-  _(main_bb0_in, "ready") = _(main_bb0_out_prebuf, "ready");
-
-  BBOutputBuf(main_bb0_out, main_bb0_out_prebuf);
-  
-  STATIC_VAR_GEN(main, x);
-  #endif
-
-  STATIC_VAR(main, x, ui<32>, 0x00000000);
   typedef flit<chdl_void > main_call_t;
   typedef flit<chdl_void > main_ret_t;
   main_call_t main_call;
   main_ret_t main_ret;
-  typedef flit<chdl_void> main_bb0_in_t;
-  typedef flit<chdl_void> main_bb0_out_t;
+
+  // main BB 0 declarations
+  typedef flit<chdl_void > main_bb0_in_t;
+  typedef flit<chdl_void > main_bb0_out_t;
   main_bb0_in_t main_bb0_in;
   main_bb0_out_t main_bb0_out_prebuf;
   vec<1, main_bb0_out_t> main_bb0_out;
   vec<2, main_bb0_in_t> main_bb0_arb_in;
+
+  // main BB 0 body
   _(main_bb0_arb_in[0], "valid") = _(main_bb0_out[0], "valid");
+  _(main_bb0_arb_in[0], "contents") = _(main_bb0_out[0], "contents");
   _(main_bb0_out[0], "ready") = _(main_bb0_arb_in[0], "ready");
   _(main_bb0_arb_in[1], "valid") = _(main_call, "valid");
+  _(main_bb0_arb_in[1], "contents") = _(main_call, "contents");
   _(main_call, "ready") = _(main_bb0_arb_in[1], "ready");
   Arbiter(main_bb0_in, ArbRR<2>, main_bb0_arb_in);
   node main_bb0_run(_(main_bb0_in, "valid") && _(main_bb0_out_prebuf, "ready"));
@@ -147,9 +122,11 @@ int main() {
   ui<32> main_2 = main_1 + main_0;
   ST_STATIC(main, x, main_2, main_bb0_run);
   _(main_bb0_out_prebuf, "valid") = _(main_bb0_in, "valid");
-_(main_bb0_in, "ready") = _(main_bb0_out_prebuf, "ready");
+  _(main_bb0_in, "ready") = _(main_bb0_out_prebuf, "ready");
   BBOutputBuf(main_bb0_out, main_bb0_out_prebuf);
+
   STATIC_VAR_GEN(main, x);
+  // // // // End generated code // // // //
   
   // TODO: better starter
   _(main_call, "valid") = Wreg(_(main_call, "ready"), Lit(0), 1);
