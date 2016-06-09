@@ -7,6 +7,7 @@
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <cstdlib>
 
 #include "type.h"
 #include "if.h"
@@ -140,8 +141,37 @@ void gen_bb_decls(std::ostream &out, std::string fname, int idx, if_bb &b, bool 
   out << endl;
 }
 
+void get_val_map(std::map<int, int> &m, if_bb &a, if_bb &b) {
+  // The only ones that are not 1-1 from the live_in/live_out sets are the
+  // ones corresponding to phis. Scan the destination BB for phis, and insert
+  // accordingly.
+  for (auto &v : b.vals) {
+    if (v.op == VAL_PHI) {
+      int src = -1;
+      for (auto &s : v.args) {
+	for (auto &lo : a.live_out) {
+	  if (lo->id == s->id) {
+	    if (src != -1) {
+              std::cerr << "2 phi inputs: " << src << " and " << lo->id
+                        << " from same pred block!" << std::endl;
+              std::abort();
+            }
+	    src = lo->id;
+          }
+	}
+      }
+      m[v.id] = src;
+    }
+  }
+
+  // The non-phis are all just 1-1 copies.
+  for (auto &x : b.live_in)
+    if (!m.count(x->id)) m[x->id] = x->id;
+}
+ 
 void gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bool entry) {
   using std::endl;
+  using std::map;
 
   out << "  // " << fname << " BB " << idx << " body" << endl;
   
@@ -149,6 +179,9 @@ void gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bool entry)
   
   // Set up arbiter inputs
   for (unsigned i = 0; i < b.pred.size(); ++i) {
+    map<int, int> vmap;
+    get_val_map(vmap, *b.pred[i], b);
+
     int pred_id(b.pred[i]->id), pred_sidx = -1;
     for (unsigned j = 0; j < b.pred[i]->suc.size(); ++j) {
       if (b.pred[i]->suc[j] == &b) {
@@ -164,6 +197,11 @@ void gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bool entry)
         << "  " << output_signal(fname, b.pred[i]->id, pred_sidx, "ready")
         << " = "
         << input_signal(fname, idx, i, "ready") << ';' << endl;
+
+    for (auto &x : vmap) {
+      out << "  // BB" << b.pred[i]->id << " val " << x.second << " -> BB "
+	  << b.id << " val " << x.first << endl;
+    }
   }
   if (entry) {
     n_pred++;
