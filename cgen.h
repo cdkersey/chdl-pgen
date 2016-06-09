@@ -31,12 +31,14 @@ void gen_static_var_bottom
   out << "  STATIC_VAR_GEN(" << fname << ", " << s.name << ");" << endl;
 }
 
-bool is_al(if_op o) {
-  return (o == VAL_ADD) || (o == VAL_SUB) ||
-         (o == VAL_MUL) || (o == VAL_DIV) ||
-         (o == VAL_AND) || (o == VAL_OR) ||
-         (o == VAL_XOR);
+bool is_binary(if_op o) {
+  return (o == VAL_ADD) || (o == VAL_SUB) || (o == VAL_MUL) || (o == VAL_DIV) ||
+         (o == VAL_AND) || (o == VAL_OR) || (o == VAL_XOR);
 }
+
+ bool is_unary(if_op o) {
+   return (o == VAL_NEG) || (o == VAL_NOT);
+ }
 
 bool type_is_bit(const type &t) {
   return t.type_vec.size() == 1 && t.type_vec[0] == TYPE_BIT;
@@ -57,6 +59,15 @@ std::string op_str(if_op o, const type &t, const type &u) {
   return " UNSUPPORTED OP ";
 }
 
+std::string op_str(if_op o, const type &t) {
+  bool bit(type_is_bit(t));
+
+  if (o == VAL_NOT) return bit ? "!" : "~";
+  else if (o == VAL_NEG) return bit ? "Lit(1) ||" : "-";
+
+  return " UNSUPPORTED OP ";
+ }
+
 std::string val_name(std::string fname, int bbidx, if_bb &b, if_val &v)
 {
   std::ostringstream oss;
@@ -72,10 +83,12 @@ std::string val_name(std::string fname, int bbidx, if_bb &b, if_val &v)
   return oss.str();
 }
  
-void gen_val(std::ostream &out, std::string fname, int bbidx, int idx, if_bb &b, if_val &v) {
+void gen_val(std::ostream &out, std::string fname, int bbidx, int idx, if_bb &b, if_val &v)
+{
   using std::endl;
   using std::string;
   using std::vector;
+  using std::ostringstream;
   out << "  ";
   
   if (!is_store(v.op) && v.op != VAL_PHI) {
@@ -91,12 +104,18 @@ void gen_val(std::ostream &out, std::string fname, int bbidx, int idx, if_bb &b,
     out << "Lit<" << v.t.size() << ">(0x" << to_hex(v.const_val) << ')';
   } else if (v.op == VAL_LD_STATIC) {
     out << "LD_STATIC(" << fname << ", " << v.static_arg->name << ')';
-  } else if (is_al(v.op)) {
+  } else if (is_binary(v.op)) {
     out << aname[0] << op_str(v.op, v.args[0]->t, v.args[1]->t) << aname[1];
+  } else if (is_unary(v.op)) {
+    out << op_str(v.op, v.args[0]->t) << aname[0];
   } else if (v.op == VAL_ST_STATIC) {
+    ostringstream preds;
+    if (v.pred) {
+      preds << " && " << val_name(fname, bbidx, b, *v.pred);
+    }
     out << "ST_STATIC(" << fname << ", " << v.static_arg->name << ", "
         << aname[0] << ", "
-        << fname << "_bb" << bbidx << "_run)";
+        << fname << "_bb" << bbidx << "_run" << preds.str() << ')';
   } else if (v.op == VAL_PHI) {
     // Do nothing; phis are handled entirely in the inputs to the block.
   } else if (v.op == VAL_LD_IDX_STATIC) {
@@ -303,6 +322,10 @@ void gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bool entry)
   
   for (unsigned i = 0; i < b.vals.size(); ++i) {
     gen_val(out, fname, idx, i, b, b.vals[i]);
+    if (b.vals[i].t.type_vec.size() > 0) {
+      out << "  tap(\"" << fname << '_' << b.vals[i].id << "\", "
+          << val_name(fname, idx, b, b.vals[i]) << ");" << endl;
+    }
   }
 
   // Connect preubuf outputs

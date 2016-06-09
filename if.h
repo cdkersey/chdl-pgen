@@ -47,8 +47,12 @@ namespace bscotch {
     std::vector<if_val *> args;
     if_staticvar *static_arg;
     
-    // If VAL_CONST, this contains the value
+    // For VAL_CONST, this contains the value
     std::vector<bool> const_val;
+
+    // If non-NULL, this instruction's execution is predicated on this value.
+    // Currently used only for static variable stores.
+    if_val *pred;
     
     if_op op;
     type t;
@@ -112,6 +116,7 @@ void print(std::ostream &out, bscotch::if_val &v) {
   using namespace bscotch;
 
   out << "    ";
+  if (v.pred) out << '<' << v.pred->id << "> ? ";
   out << '<' << v.id << "> = " << if_op_str[v.op];
 
   if (v.op == VAL_CONST) {

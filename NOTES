@@ -98,19 +98,20 @@ tasks/goals in order of planned completion:
 	  contain val_1, not val_0 and val_11. Phi just copies from input.
 	- All other external values are also copied from input.
       . Expand CHDL runtime to support block level control flow and live values.
-    - Write code generator that will build the with-control-flow program.
+    . Write code generator that will build the with-control-flow program.
       <2016-06-03>
-      - Make in/out flits use value id/phi id as name of signal.
-      - Write phi generator (just copy from input/output)
-      - Make out-of-block arguments use input structure.
-      - Write output structure contents assignments/connections.
-        - Have to look for phis in destination to use the right name.
+      . Make in/out flits use value id/phi id as name of signal.
+      . Write phi generator (just copy from input/output)
+      . Make out-of-block arguments use input structure.
+      . Write output structure contents assignments/connections.
+        x Have to look for phis in destination to use the right name.
+	  - Not true. This is done in the wiring up between blocks.
       . Write the runtime support, a buffer and a post-buffer selector.
     . Break the code generator code out into separate headers. <2016-06-03>
     - Separate the headers into .h and .cpp files. <2016-06-03>
-    - Build a basic block level program that uses predicated instructions.
+    . Build a basic block level program that uses predicated instructions.
       <2016-06-06>
-    - Write code generator that will handle predicated instructions.
+    . Write code generator that will handle predicated instructions.
       <2016-06-06>
     - Build a basic block level program that uses structs and static arrays.
       <2016-06-07>

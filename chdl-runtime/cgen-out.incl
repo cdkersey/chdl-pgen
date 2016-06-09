@@ -17,43 +17,13 @@ TAP(main_bb0_out_prebuf);
 
   // main BB 1 declarations
   typedef flit<ag<STP("val1"), ui<32> > > main_bb1_in_t;
-  typedef flit<ag<STP("val1"), ui<32> > > main_bb1_out_t;
+  typedef flit<ag<STP("val11"), ui<32> > > main_bb1_out_t;
   main_bb1_in_t main_bb1_in;
 TAP(main_bb1_in);
   main_bb1_out_t main_bb1_out_prebuf;
-  vec<2, main_bb1_out_t> main_bb1_out;
+  vec<1, main_bb1_out_t> main_bb1_out;
 TAP(main_bb1_out_prebuf);
   vec<2, main_bb1_in_t> main_bb1_arb_in;
-
-  // main BB 2 declarations
-  typedef flit<ag<STP("val1"), ui<32> > > main_bb2_in_t;
-  typedef flit<ag<STP("val1"), ui<32> > > main_bb2_out_t;
-  main_bb2_in_t main_bb2_in;
-TAP(main_bb2_in);
-  main_bb2_out_t main_bb2_out_prebuf;
-  vec<1, main_bb2_out_t> main_bb2_out;
-TAP(main_bb2_out_prebuf);
-  vec<1, main_bb2_in_t> main_bb2_arb_in;
-
-  // main BB 3 declarations
-  typedef flit<ag<STP("val1"), ui<32> > > main_bb3_in_t;
-  typedef flit<ag<STP("val1"), ui<32> > > main_bb3_out_t;
-  main_bb3_in_t main_bb3_in;
-TAP(main_bb3_in);
-  main_bb3_out_t main_bb3_out_prebuf;
-  vec<1, main_bb3_out_t> main_bb3_out;
-TAP(main_bb3_out_prebuf);
-  vec<1, main_bb3_in_t> main_bb3_arb_in;
-
-  // main BB 4 declarations
-  typedef flit<ag<STP("val1"), ui<32> > > main_bb4_in_t;
-  typedef flit<ag<STP("val11"), ui<32> > > main_bb4_out_t;
-  main_bb4_in_t main_bb4_in;
-TAP(main_bb4_in);
-  main_bb4_out_t main_bb4_out_prebuf;
-  vec<1, main_bb4_out_t> main_bb4_out;
-TAP(main_bb4_out_prebuf);
-  vec<2, main_bb4_in_t> main_bb4_arb_in;
 
   // main BB 0 body
   _(main_bb0_arb_in[0], "valid") = _(main_call, "valid");
@@ -61,6 +31,7 @@ TAP(main_bb4_out_prebuf);
   Arbiter(main_bb0_in, ArbRR<1>, main_bb0_arb_in);
   node main_bb0_run(_(main_bb0_in, "valid") && _(main_bb0_out_prebuf, "ready"));
   ui<32> main_0 = Lit<32>(0x00000000);
+  tap("main_0", main_0);
   _(main_bb0_out_prebuf, "valid") = _(main_bb0_in, "valid");
   _(main_bb0_in, "ready") = _(main_bb0_out_prebuf, "ready");
   _(_(main_bb0_out_prebuf, "contents"), "val0") = main_0;
@@ -71,65 +42,34 @@ TAP(main_bb4_out_prebuf);
   _(main_bb0_out[0], "ready") = _(main_bb1_arb_in[0], "ready");
   // BB0 val 0 -> BB 1 val 1
   _(_(main_bb1_arb_in[0], "contents"), "val1") = _(_(main_bb0_out[0], "contents"), "val0");
-  _(main_bb1_arb_in[1], "valid") = _(main_bb4_out[0], "valid");
-  _(main_bb4_out[0], "ready") = _(main_bb1_arb_in[1], "ready");
-  // BB4 val 11 -> BB 1 val 1
-  _(_(main_bb1_arb_in[1], "contents"), "val1") = _(_(main_bb4_out[0], "contents"), "val11");
+  _(main_bb1_arb_in[1], "valid") = _(main_bb1_out[0], "valid");
+  _(main_bb1_out[0], "ready") = _(main_bb1_arb_in[1], "ready");
+  // BB1 val 11 -> BB 1 val 1
+  _(_(main_bb1_arb_in[1], "contents"), "val1") = _(_(main_bb1_out[0], "contents"), "val11");
   Arbiter(main_bb1_in, ArbRR<2>, main_bb1_arb_in);
   node main_bb1_run(_(main_bb1_in, "valid") && _(main_bb1_out_prebuf, "ready"));
-    ui<5> main_2 = Lit<5>(0x00);
+    tap("main_1", _(_(main_bb1_in, "contents"), "val1"));
+  ui<5> main_2 = Lit<5>(0x00);
+  tap("main_2", main_2);
   node main_3 = Mux(main_2, _(_(main_bb1_in, "contents"), "val1"));
+  tap("main_3", main_3);
+  ui<32> main_4 = LD_STATIC(main, x);
+  tap("main_4", main_4);
+  ui<32> main_5 = main_4 + _(_(main_bb1_in, "contents"), "val1");
+  tap("main_5", main_5);
+  ui<32> main_6 = main_4 - _(_(main_bb1_in, "contents"), "val1");
+  tap("main_6", main_6);
+  ST_STATIC(main, x, main_5, main_bb1_run && main_3);
+  node main_8 = !main_3;
+  tap("main_8", main_8);
+  ST_STATIC(main, x, main_6, main_bb1_run && main_8);
+  ui<32> main_10 = Lit<32>(0x00000001);
+  tap("main_10", main_10);
+  ui<32> main_11 = _(_(main_bb1_in, "contents"), "val1") + main_10;
+  tap("main_11", main_11);
   _(main_bb1_out_prebuf, "valid") = _(main_bb1_in, "valid");
   _(main_bb1_in, "ready") = _(main_bb1_out_prebuf, "ready");
-  _(_(main_bb1_out_prebuf, "contents"), "val1") = _(_(main_bb1_in, "contents"), "val1");
-  BBOutputBuf(main_3, main_bb1_out, main_bb1_out_prebuf);
-
-  // main BB 2 body
-  _(main_bb2_arb_in[0], "valid") = _(main_bb1_out[0], "valid");
-  _(main_bb1_out[0], "ready") = _(main_bb2_arb_in[0], "ready");
-  // BB1 val 1 -> BB 2 val 1
-  _(_(main_bb2_arb_in[0], "contents"), "val1") = _(_(main_bb1_out[0], "contents"), "val1");
-  Arbiter(main_bb2_in, ArbRR<1>, main_bb2_arb_in);
-  node main_bb2_run(_(main_bb2_in, "valid") && _(main_bb2_out_prebuf, "ready"));
-  ui<32> main_4 = LD_STATIC(main, x);
-  ui<32> main_5 = main_4 + _(_(main_bb2_in, "contents"), "val1");
-  ST_STATIC(main, x, main_5, main_bb2_run);
-  _(main_bb2_out_prebuf, "valid") = _(main_bb2_in, "valid");
-  _(main_bb2_in, "ready") = _(main_bb2_out_prebuf, "ready");
-  _(_(main_bb2_out_prebuf, "contents"), "val1") = _(_(main_bb2_in, "contents"), "val1");
-  BBOutputBuf(main_bb2_out, main_bb2_out_prebuf);
-
-  // main BB 3 body
-  _(main_bb3_arb_in[0], "valid") = _(main_bb1_out[1], "valid");
-  _(main_bb1_out[1], "ready") = _(main_bb3_arb_in[0], "ready");
-  // BB1 val 1 -> BB 3 val 1
-  _(_(main_bb3_arb_in[0], "contents"), "val1") = _(_(main_bb1_out[1], "contents"), "val1");
-  Arbiter(main_bb3_in, ArbRR<1>, main_bb3_arb_in);
-  node main_bb3_run(_(main_bb3_in, "valid") && _(main_bb3_out_prebuf, "ready"));
-  ui<32> main_7 = LD_STATIC(main, x);
-  ui<32> main_8 = main_7 - _(_(main_bb3_in, "contents"), "val1");
-  ST_STATIC(main, x, main_8, main_bb3_run);
-  _(main_bb3_out_prebuf, "valid") = _(main_bb3_in, "valid");
-  _(main_bb3_in, "ready") = _(main_bb3_out_prebuf, "ready");
-  _(_(main_bb3_out_prebuf, "contents"), "val1") = _(_(main_bb3_in, "contents"), "val1");
-  BBOutputBuf(main_bb3_out, main_bb3_out_prebuf);
-
-  // main BB 4 body
-  _(main_bb4_arb_in[0], "valid") = _(main_bb2_out[0], "valid");
-  _(main_bb2_out[0], "ready") = _(main_bb4_arb_in[0], "ready");
-  // BB2 val 1 -> BB 4 val 1
-  _(_(main_bb4_arb_in[0], "contents"), "val1") = _(_(main_bb2_out[0], "contents"), "val1");
-  _(main_bb4_arb_in[1], "valid") = _(main_bb3_out[0], "valid");
-  _(main_bb3_out[0], "ready") = _(main_bb4_arb_in[1], "ready");
-  // BB3 val 1 -> BB 4 val 1
-  _(_(main_bb4_arb_in[1], "contents"), "val1") = _(_(main_bb3_out[0], "contents"), "val1");
-  Arbiter(main_bb4_in, ArbRR<2>, main_bb4_arb_in);
-  node main_bb4_run(_(main_bb4_in, "valid") && _(main_bb4_out_prebuf, "ready"));
-  ui<32> main_10 = Lit<32>(0x00000001);
-  ui<32> main_11 = _(_(main_bb4_in, "contents"), "val1") + main_10;
-  _(main_bb4_out_prebuf, "valid") = _(main_bb4_in, "valid");
-  _(main_bb4_in, "ready") = _(main_bb4_out_prebuf, "ready");
-  _(_(main_bb4_out_prebuf, "contents"), "val11") = main_11;
-  BBOutputBuf(main_bb4_out, main_bb4_out_prebuf);
+  _(_(main_bb1_out_prebuf, "contents"), "val11") = main_11;
+  BBOutputBuf(main_bb1_out, main_bb1_out_prebuf);
 
   STATIC_VAR_GEN(main, x);
