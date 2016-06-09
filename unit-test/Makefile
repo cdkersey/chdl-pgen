@@ -1,5 +1,6 @@
 CXXFLAGS ?= -std=c++11 -g
 TESTS = cgen-0 cgen-1 cgen-2 type-0
+LDLIBS = ../bscotch.a
 
 tests: $(TESTS)
 
