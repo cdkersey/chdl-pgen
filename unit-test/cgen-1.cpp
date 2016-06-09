@@ -103,7 +103,7 @@ void test_func(if_func &f) {
   f.bbs[1].pred.push_back(&f.bbs[4]);
 
   f.bbs[0].branch_pred = NULL;
-  f.bbs[1].branch_pred = &f.bbs[1].vals[1];
+  f.bbs[1].branch_pred = &f.bbs[1].vals[2];
   f.bbs[2].branch_pred = NULL;
   f.bbs[3].branch_pred = NULL;
   f.bbs[4].branch_pred = NULL;
