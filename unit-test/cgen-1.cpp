@@ -142,7 +142,7 @@ void test_func(if_func &f) {
   to_vec_bool<5>(f.bbs[1].vals[1].const_val, 0);
   
   f.bbs[1].vals[2].t = bit_type();
-  f.bbs[1].vals[2].op = VAL_LD_IDX_STATIC;
+  f.bbs[1].vals[2].op = VAL_LD_IDX;
   f.bbs[1].vals[2].args.push_back(&f.bbs[1].vals[0]);
   f.bbs[1].vals[2].args.push_back(&f.bbs[1].vals[1]);
 

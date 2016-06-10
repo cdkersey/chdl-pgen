@@ -80,6 +80,8 @@ namespace bscotch {
     std::map<std::string, if_func> functions;
   };
 
+  unsigned long const_val(const bscotch::if_val &v);
+  
   std::string to_hex(std::vector<bool> &v);
   void print(std::ostream &out, std::vector<bool> &v);
   void print(std::ostream &out, bscotch::if_val &v);

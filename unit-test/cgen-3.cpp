@@ -61,13 +61,13 @@ void test_func(if_func &f) {
   //  bb1:
   //    %1 = phi %0, %11 (u32)
   //    %2 = const #0 (u5)
-  //    %3 = %1[%2] (bit)
-  //    %4 = ld_static @x (u32)
-  //    %5 = add %4, %1 (u32)
-  //    %6 = sub %4, %1 (u32)
-  //    %3 ? %7 = st_static @x, %5 (void)
-  //    %8 = not %3 (bit)
-  //    %8 ? %9 = st_static @x, %6 (void)
+  //    %3 = const #5 (u5)
+  //    %4 = %1[%2,%3] (u5)
+  //    %5 = ld_static @x (u32)
+  //    %6 = %5[%4] (bit)
+  //    %7 = not %6 (bit)
+  //    %8 = st_idx %5, %4, %7
+  //    %9 = st_static @x, %8 (void)
   //    %10 = const #1 (u32)
   //    %11 = add %1, %10 (u32)
   //    br bb1
@@ -115,41 +115,40 @@ void test_func(if_func &f) {
   f.bbs[1].vals[1].t = uN(5);
   f.bbs[1].vals[1].op = VAL_CONST;
   to_vec_bool<5>(f.bbs[1].vals[1].const_val, 0);
-  
-  f.bbs[1].vals[2].t = bit_type();
-  f.bbs[1].vals[2].op = VAL_LD_IDX;
-  f.bbs[1].vals[2].args.push_back(&f.bbs[1].vals[0]);
-  f.bbs[1].vals[2].args.push_back(&f.bbs[1].vals[1]);
 
-  f.bbs[1].vals[3].t = u32();
-  f.bbs[1].vals[3].op = VAL_LD_STATIC;
-  f.bbs[1].vals[3].static_arg = &f.static_vars["x"];
+  f.bbs[1].vals[2].t = uN(5);
+  f.bbs[1].vals[2].op = VAL_CONST;
+  to_vec_bool<5>(f.bbs[1].vals[2].const_val, 5);
   
+  f.bbs[1].vals[3].t = uN(5);
+  f.bbs[1].vals[3].op = VAL_LD_IDX;
+  f.bbs[1].vals[3].args.push_back(&f.bbs[1].vals[0]);
+  f.bbs[1].vals[3].args.push_back(&f.bbs[1].vals[1]);
+  f.bbs[1].vals[3].args.push_back(&f.bbs[1].vals[2]);
+
   f.bbs[1].vals[4].t = u32();
-  f.bbs[1].vals[4].op = VAL_ADD;
-  f.bbs[1].vals[4].args.push_back(&f.bbs[1].vals[3]);
-  f.bbs[1].vals[4].args.push_back(&f.bbs[1].vals[0]);
+  f.bbs[1].vals[4].op = VAL_LD_STATIC;
+  f.bbs[1].vals[4].static_arg = &f.static_vars["x"];
 
-  f.bbs[1].vals[5].t = u32();
-  f.bbs[1].vals[5].op = VAL_SUB;
+  f.bbs[1].vals[5].t = bit_type();
+  f.bbs[1].vals[5].op = VAL_LD_IDX;
+  f.bbs[1].vals[5].args.push_back(&f.bbs[1].vals[4]);
   f.bbs[1].vals[5].args.push_back(&f.bbs[1].vals[3]);
-  f.bbs[1].vals[5].args.push_back(&f.bbs[1].vals[0]);
 
-  f.bbs[1].vals[6].pred = &f.bbs[1].vals[2];
-  f.bbs[1].vals[6].t = void_type();
-  f.bbs[1].vals[6].op = VAL_ST_STATIC;
-  f.bbs[1].vals[6].static_arg = &f.static_vars["x"];
-  f.bbs[1].vals[6].args.push_back(&f.bbs[1].vals[4]);
+  f.bbs[1].vals[6].t = bit_type();
+  f.bbs[1].vals[6].op = VAL_NOT;
+  f.bbs[1].vals[6].args.push_back(&f.bbs[1].vals[5]);
 
-  f.bbs[1].vals[7].t = bit_type();
-  f.bbs[1].vals[7].op = VAL_NOT;
-  f.bbs[1].vals[7].args.push_back(&f.bbs[1].vals[2]);
-
-  f.bbs[1].vals[8].pred = &f.bbs[1].vals[7];
+  f.bbs[1].vals[7].t = u32();
+  f.bbs[1].vals[7].op = VAL_ST_IDX;
+  f.bbs[1].vals[7].args.push_back(&f.bbs[1].vals[4]);
+  f.bbs[1].vals[7].args.push_back(&f.bbs[1].vals[3]);
+  f.bbs[1].vals[7].args.push_back(&f.bbs[1].vals[6]);
+  
   f.bbs[1].vals[8].t = void_type();
   f.bbs[1].vals[8].op = VAL_ST_STATIC;
   f.bbs[1].vals[8].static_arg = &f.static_vars["x"];
-  f.bbs[1].vals[8].args.push_back(&f.bbs[1].vals[5]);
+  f.bbs[1].vals[8].args.push_back(&f.bbs[1].vals[7]);
 
   f.bbs[1].vals[9].t = u32();
   f.bbs[1].vals[9].op = VAL_CONST;
@@ -172,7 +171,7 @@ int main() {
 
   test_prog(p);
 
-  print(cout, p);
+  // print(cout, p);
 
   gen_prog(cout, p);
   

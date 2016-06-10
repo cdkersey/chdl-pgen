@@ -119,3 +119,13 @@ void bscotch::print(std::ostream &out, bscotch::if_prog &p) {
     print(out, f.second);
   }
 }
+
+unsigned long bscotch::const_val(const bscotch::if_val &v) {
+  unsigned long r = 0;
+
+  for (unsigned i = 0; i < v.const_val.size(); ++i)
+    if (v.const_val[i])
+      r += (1<<i);
+  
+  return r;
+}

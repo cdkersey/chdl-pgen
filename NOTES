@@ -62,7 +62,7 @@ Expected CHDL output:
 
   STATIC_VAR_GEN(main, x);
 
-Expected C output:
+Expected C++ output:
 
 
 tasks/goals in order of planned completion:
@@ -113,21 +113,31 @@ tasks/goals in order of planned completion:
       <2016-06-06>
     . Write code generator that will handle predicated instructions.
       <2016-06-06>
-    - Build a basic block level program that uses structs and static arrays.
-      <2016-06-07>
+    - Build a basic block level program that replaces elements of static arrays.
+      (cgen-3) <2016-06-10>
+    . Write code generator that will build the element-replacing program.
+      <2016-06-10>
+      . We need a complete LD_IDX/ST_IDX generator:
+        . "index" for single element. "index/length" for multiple.
+        . Use constants to read/write to fields of structs. .LD .ST
+        . Use pairs of constants to index ranges of elements in arrays. .LD .ST
+	. Use single variable to index fixed range of elements in array. .LD .ST
+        . Use single const/var to index single elements of arrays. .LD .ST
+    - Build a basic block level program that uses struct elements. (cgen-4)
+      <2016-06-10>
     - Write code generator that will build the struct-based program.
-      <2016-06-07>
-    - Build a basic block level program that uses SRAM arrays. <2016-06-08>
-    - Add support for SRAM arrays to code generator. <2016-06-08>
-    - Build a basic block level program that makes function calls. <2016-06-09>
-    - Add support for function calls to code generator. <2016-06-09>
-    - Build a basic block level program that uses stalls. <2016-06-10>
-    - Add support for stalls to code generator. <2016-06-10>
+      <2016-06-10>
+    - Build a basic block level program that uses SRAM arrays. <2016-06-13>
+    - Add support for SRAM arrays to code generator. <2016-06-13>
+    - Build a basic block level program that makes function calls. <2016-06-14>
+    - Add support for function calls to code generator. <2016-06-14>
+    - Build a basic block level program that uses stalls. <2016-06-15>
+    - Add support for stalls to code generator. <2016-06-15>
     - Build a basic block level program that uses bypassed SRAM arrays.
-      <2016-06-13>
-    - Add support for bypass networks to code generator. <2016-06-14>
-    - Build a basic block level program that uses speculation. <2016-06-15>
-    - Add support for speculation to code generator. <2016-06-16>
+      <2016-06-16>
+    - Add support for bypass networks to code generator. <2016-06-16>
+    - Build a basic block level program that uses speculation. <2016-06-17>
+    - Add support for speculation to code generator. <2016-06-17>
     - Add support for C++ output to code generator. <2016-06-20>
   - Parser/front end
     - Build a skeleton flex/bison parser <2016-06-21>

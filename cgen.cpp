@@ -43,6 +43,10 @@ static bool type_is_bit(const type &t) {
   return t.type_vec.size() == 1 && t.type_vec[0] == TYPE_BIT;
 }
 
+static bool type_is_struct(const type &t) {
+  return t.type_vec.size() >= 1 && t.type_vec[0] == TYPE_STRUCT_BEGIN;
+}
+
 static std::string op_str(if_op o, const type &t, const type &u) {
   bool bit(type_is_bit(t) && type_is_bit(u));
   switch (o) {
@@ -117,8 +121,68 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
         << fname << "_bb" << bbidx << "_run" << preds.str() << ')';
   } else if (v.op == VAL_PHI) {
     // Do nothing; phis are handled entirely in the inputs to the block.
-  } else if (v.op == VAL_LD_IDX_STATIC) {
-    out << "Mux(" << aname[1] << ", " << aname[0] << ')';
+  } else if (v.op == VAL_LD_IDX) {
+    if (type_is_struct(v.args[0]->t)) {
+      if (v.args[1]->op != VAL_CONST) {
+	std::cout << "Attempt to index struct with non-const." << endl;
+	abort();
+      }
+
+      string fieldname = v.args[0]->t.field_name[const_val(*v.args[1])];
+
+      out << "_(" << aname[0] << ", \"" << fieldname << "\")";
+    } else if (v.args.size() == 3 &&
+               v.args[1]->op == VAL_CONST && v.args[2]->op == VAL_CONST)
+    {
+      unsigned idx0(const_val(*v.args[1])), len(const_val(*v.args[2]));
+      out << aname[0] << "[range<" << idx0 << ", " << idx0 + len - 1 << ">()]";
+    } else if (v.args.size() == 3 && v.args[2]->op == VAL_CONST) {
+      unsigned len(const_val(*v.args[2]));
+      out << "MultiMux<" << len << ">(" << aname[1] << ", " << aname[0] << ')';
+    } else if (v.args.size() == 2 && v.args[1]->op == VAL_CONST) {
+      out << aname[0] << '[' << const_val(*v.args[1]) << ']';
+    } else {
+      out << "Mux(" << aname[1] << ", " << aname[0] << ')';
+    }
+  } else if (v.op == VAL_ST_IDX) {
+    if (type_is_struct(v.args[0]->t)) {
+      if (v.args[1]->op != VAL_CONST) {
+	std::cout << "Attempt to index struct with non-const." << endl;
+	abort();
+      }
+      string fieldname = v.args[0]->t.field_name[const_val(*v.args[1])];
+
+      out << type_chdl(v.t) << ' ' << fname << '_' << v.id << ';' << endl
+	  << "  Flatten(" << fname << '_' << v.id << ") = ~~Flatten("
+          << aname[0] << ");" << endl
+          << "  _(" << fname << '_' << v.id << ", \"" << fieldname << "\") = "
+          << aname[2] << ';' << endl;
+    } else if (v.args.size() == 4 &&
+               v.args[1]->op == VAL_CONST && v.args[2]->op == VAL_CONST)
+    {
+      unsigned idx(const_val(*v.args[1])), len(const_val(*v.args[2]));
+      out << type_chdl(v.t) << ' ' << fname << '_' << v.id << ';' << endl
+          << "  Flatten(" << fname << '_' << v.id << ") = ~~Flatten("
+          << aname[0] << ");" << endl
+          << "  " << fname << '_' << v.id << "[range<" << idx << ", "
+          << idx + len << ">()]" << " = " << aname[3] << ';';
+    } else if (v.args.size() == 4 && v.args[2]->op == VAL_CONST) {
+      out << type_chdl(v.t) << ' ' << fname << '_' << v.id << ';' << endl
+          << "  Flatten(" << fname << '_' << v.id << ") = ~~Flatten("
+          << aname[0] << ");" << endl
+          << "  MultiRepl(" << fname << '_' << v.id << ", " << aname[1] << ", "
+          << aname[3] << ");" << endl;
+    } else if (v.args.size() == 3 && v.args[2]->op == VAL_CONST) {
+      out << type_chdl(v.t) << ' ' << fname << '_' << v.id << ';' << endl
+          << "  Flatten(" << fname << '_' << v.id << ") = ~~Flatten("
+          << aname[0] << ");" << endl
+          <<  "  " << fname << '_' << v.id << '[' << const_val(*v.args[1])
+          << "] = " << aname[2] << endl;
+    } else if (v.args.size() == 3) {
+      out << type_chdl(v.t) << ' ' << fname << '_' << v.id << " = "
+	  << "SingleRepl(" << aname[1] << ", " << aname[0] << ", " << aname[2]
+          << ");" << endl;
+    }
   } else {
     out << "UNSUPPORTED_OP " << if_op_str[v.op];
   }

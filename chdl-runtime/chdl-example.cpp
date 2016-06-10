@@ -53,6 +53,28 @@ template <typename T> struct staticvar {
 
 typedef bvec<0> chdl_void;
 
+template <unsigned M, unsigned N, typename T>
+  vec<M, T> MultiMux(bvec<CLOG2(N)> sel, const vec<N, T> &in)
+{
+  vec<M, T> r;
+
+  for (unsigned i = 0; i < M; ++i)
+    r[i] = Mux(sel + Lit<CLOG2(N)>(i), in);
+  
+  return r;
+}
+
+template <unsigned N, typename T>
+  vec<N, T> SingleRepl(bvec<CLOG2(N)> sel, const vec<N, T> &in, const T &rep)
+{
+  vec<N, T> r;
+
+  for (unsigned i = 0; i < N; ++i)
+    r[i] = Mux(sel == Lit<CLOG2(N)>(i), in[i], rep);
+  
+  return r;
+}
+
 // Output buffers
 template <unsigned S, typename T>
   void BBOutputBuf(bvec<CLOG2(S)> sel, vec<S, flit<T> > &out, flit<T> &in)
