@@ -1,4 +1,3 @@
-  STATIC_VAR(main, x, ui<32>, 0x00000000);
 
   typedef flit<chdl_void > main_call_t;
   typedef flit<chdl_void > main_ret_t;
@@ -7,7 +6,7 @@
 
   // main BB 0 declarations
   typedef flit<chdl_void > main_bb0_in_t;
-  typedef flit<ag<STP("val0"), ui<32> > > main_bb0_out_t;
+  typedef flit<ag<STP("val0"), ag<STP("a"), ui<32>, ag<STP("b"), ui<32> > > > > main_bb0_out_t;
   main_bb0_in_t main_bb0_in;
 TAP(main_bb0_in);
   main_bb0_out_t main_bb0_out_prebuf;
@@ -16,8 +15,8 @@ TAP(main_bb0_out_prebuf);
   vec<1, main_bb0_in_t> main_bb0_arb_in;
 
   // main BB 1 declarations
-  typedef flit<ag<STP("val1"), ui<32> > > main_bb1_in_t;
-  typedef flit<ag<STP("val11"), ui<32> > > main_bb1_out_t;
+  typedef flit<ag<STP("val1"), ag<STP("a"), ui<32>, ag<STP("b"), ui<32> > > > > main_bb1_in_t;
+  typedef flit<ag<STP("val10"), ag<STP("a"), ui<32>, ag<STP("b"), ui<32> > > > > main_bb1_out_t;
   main_bb1_in_t main_bb1_in;
 TAP(main_bb1_in);
   main_bb1_out_t main_bb1_out_prebuf;
@@ -30,7 +29,7 @@ TAP(main_bb1_out_prebuf);
   _(main_call, "ready") = _(main_bb0_arb_in[0], "ready");
   Arbiter(main_bb0_in, ArbRR<1>, main_bb0_arb_in);
   node main_bb0_run(_(main_bb0_in, "valid") && _(main_bb0_out_prebuf, "ready"));
-  ui<32> main_0 = Lit<32>(0x00000000);
+  ag<STP("a"), ui<32>, ag<STP("b"), ui<32> > > main_0 = ag<STP("a"), ui<32>, ag<STP("b"), ui<32> > >(Lit<64>(0x00000000));
   tap("main_0", main_0);
   _(main_bb0_out_prebuf, "valid") = _(main_bb0_in, "valid");
   _(main_bb0_in, "ready") = _(main_bb0_out_prebuf, "ready");
@@ -44,34 +43,37 @@ TAP(main_bb1_out_prebuf);
   _(_(main_bb1_arb_in[0], "contents"), "val1") = _(_(main_bb0_out[0], "contents"), "val0");
   _(main_bb1_arb_in[1], "valid") = _(main_bb1_out[0], "valid");
   _(main_bb1_out[0], "ready") = _(main_bb1_arb_in[1], "ready");
-  // BB1 val 11 -> BB 1 val 1
-  _(_(main_bb1_arb_in[1], "contents"), "val1") = _(_(main_bb1_out[0], "contents"), "val11");
+  // BB1 val 10 -> BB 1 val 1
+  _(_(main_bb1_arb_in[1], "contents"), "val1") = _(_(main_bb1_out[0], "contents"), "val10");
   Arbiter(main_bb1_in, ArbRR<2>, main_bb1_arb_in);
   node main_bb1_run(_(main_bb1_in, "valid") && _(main_bb1_out_prebuf, "ready"));
     tap("main_1", _(_(main_bb1_in, "contents"), "val1"));
-  ui<5> main_2 = Lit<5>(0x00);
+  ui<3> main_2 = Lit<3>(0x02);
   tap("main_2", main_2);
-  ui<5> main_3 = Lit<5>(0x05);
+  ui<3> main_3 = Lit<3>(0x05);
   tap("main_3", main_3);
-  ui<5> main_4 = _(_(main_bb1_in, "contents"), "val1")[range<0, 4>()];
+  ui<32> main_4 = _(_(_(main_bb1_in, "contents"), "val1"), "a");
   tap("main_4", main_4);
-  ui<32> main_5 = LD_STATIC(main, x);
+  ui<32> main_5 = _(_(_(main_bb1_in, "contents"), "val1"), "b");
   tap("main_5", main_5);
-  node main_6 = Mux(main_4, main_5);
+  ui<32> main_6 = Lit<32>(0x00000001);
   tap("main_6", main_6);
-  node main_7 = !main_6;
+  ui<32> main_7 = main_4 + main_6;
   tap("main_7", main_7);
-  ui<32> main_8 = SingleRepl(main_4, main_5, main_7);
-;
+  ui<32> main_8 = main_5 - main_6;
   tap("main_8", main_8);
-  ST_STATIC(main, x, main_8, main_bb1_run);
-  ui<32> main_10 = Lit<32>(0x00000001);
+  ag<STP("a"), ui<32>, ag<STP("b"), ui<32> > > main_9;
+  Flatten(main_9) = ~~Flatten(_(_(main_bb1_in, "contents"), "val1"));
+  _(main_9, "a") = main_7;
+;
+  tap("main_9", main_9);
+  ag<STP("a"), ui<32>, ag<STP("b"), ui<32> > > main_10;
+  Flatten(main_10) = ~~Flatten(main_9);
+  _(main_10, "b") = main_8;
+;
   tap("main_10", main_10);
-  ui<32> main_11 = _(_(main_bb1_in, "contents"), "val1") + main_10;
-  tap("main_11", main_11);
   _(main_bb1_out_prebuf, "valid") = _(main_bb1_in, "valid");
   _(main_bb1_in, "ready") = _(main_bb1_out_prebuf, "ready");
-  _(_(main_bb1_out_prebuf, "contents"), "val11") = main_11;
+  _(_(main_bb1_out_prebuf, "contents"), "val10") = main_10;
   BBOutputBuf(main_bb1_out, main_bb1_out_prebuf);
 
-  STATIC_VAR_GEN(main, x);

@@ -113,7 +113,7 @@ tasks/goals in order of planned completion:
       <2016-06-06>
     . Write code generator that will handle predicated instructions.
       <2016-06-06>
-    - Build a basic block level program that replaces elements of static arrays.
+    . Build a basic block level program that replaces elements of static arrays.
       (cgen-3) <2016-06-10>
     . Write code generator that will build the element-replacing program.
       <2016-06-10>
@@ -123,9 +123,9 @@ tasks/goals in order of planned completion:
         . Use pairs of constants to index ranges of elements in arrays. .LD .ST
 	. Use single variable to index fixed range of elements in array. .LD .ST
         . Use single const/var to index single elements of arrays. .LD .ST
-    - Build a basic block level program that uses struct elements. (cgen-4)
+    . Build a basic block level program that uses struct elements. (cgen-4)
       <2016-06-10>
-    - Write code generator that will build the struct-based program.
+    . Write code generator that will build the struct-based program.
       <2016-06-10>
     - Build a basic block level program that uses SRAM arrays. <2016-06-13>
     - Add support for SRAM arrays to code generator. <2016-06-13>
@@ -151,4 +151,4 @@ tasks/goals in order of planned completion:
     - Get risc.bpi working. <2016-06-29>
     - Get cache.bpi working. <2016-06-30>
   - Evaluation
-    - 
+    -

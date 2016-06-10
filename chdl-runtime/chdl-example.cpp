@@ -118,7 +118,7 @@ int main() {
   _(main_call, "valid") = Wreg(_(main_call, "ready"), Lit(0), 1);
 
   if (cycdet()) return 1;
-  
+
   optimize();
   
   ofstream vcd("chdl-example.vcd");

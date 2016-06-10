@@ -19,7 +19,7 @@ namespace bscotch {
     TYPE_STRUCT_BEGIN = -1002, // Followed by #elements.
     TYPE_FIELD_DELIM = -1003   // Next element of struct.
   };
-
+  
   struct type {
     std::vector<int> type_vec;
     std::map<int, std::string> field_name;
@@ -32,5 +32,7 @@ namespace bscotch {
   std::string type_chdl(type &t, int s = 0, int &end = *(int*)NULL);
   std::string type_cpp(type &t, std::string name,
                        int s = 0, int &end = *(int*)NULL);
+
+  std::string field_name_by_idx(type &t, int idx, int s = 0);
 }
 #endif

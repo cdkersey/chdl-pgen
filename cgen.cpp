@@ -104,7 +104,12 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
   }
   
   if (v.op == VAL_CONST) {
-    out << "Lit<" << v.t.size() << ">(0x" << to_hex(v.const_val) << ')';
+    if (type_is_struct(v.t)) {
+      out << type_chdl(v.t) << "(Lit<" << v.t.size() << ">(0x"
+          << to_hex(v.const_val) << "))";
+    } else {
+      out << "Lit<" << v.t.size() << ">(0x" << to_hex(v.const_val) << ')';
+    }
   } else if (v.op == VAL_LD_STATIC) {
     out << "LD_STATIC(" << fname << ", " << v.static_arg->name << ')';
   } else if (is_binary(v.op)) {
