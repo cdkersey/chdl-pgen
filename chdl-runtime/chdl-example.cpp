@@ -4,6 +4,7 @@
 #include <chdl/numeric.h>
 #include <chdl/net.h>
 
+#include "late.h"
 using namespace std;
 using namespace chdl;
 
@@ -38,15 +39,45 @@ template <typename T> struct staticvar {
   vector<T> inputs;
 };
 
+template <typename T, unsigned N> struct staticarray {
+  staticarray() { }
+
+  T ld(const bvec<N> &idx) { rd_a = idx; return q; }
+
+  void add_input(node wr_in, const bvec<N> &idx, const T &x) {
+    wr_a = idx;
+    d = x;
+    wr = wr_in;
+  }
+
+  void gen() {
+    q = Syncmem(rd_a, d, wr_a, wr);
+  }
+
+  bvec<N> wr_a, rd_a;
+  
+  node wr;
+  T d, q;
+};
+
 #define STATIC_VAR(func, var, type, initialval) \
   staticvar<type> func##_##var(initialval); \
   tap(#func "_" #var, func##_##var.value());
 
+#define STATIC_ARRAY(func, var, type, size) \
+  staticarray<type, CLOG2(size)> func##_##var;
+
 #define LD_STATIC(func, var) \
   (func##_##var.value())
 
-#define ST_STATIC(func, var, val, wr)		\
+#define ST_STATIC(func, var, val, wr) \
   do { func##_##var.add_input(wr, val); } while (0)
+
+#define LD_STATIC_ARRAY(func, var, idx) \
+  (func##_##var.ld(idx))
+
+#define ST_STATIC_ARRAY(func, var, idx, val, wr) \
+  do { func##_##var.add_input(wr, idx, val); } while (0)
 
 #define STATIC_VAR_GEN(func, var) \
   do { func##_##var.gen(); } while (0)
@@ -79,6 +110,7 @@ template <unsigned N, typename T>
 template <unsigned S, typename T>
   void BBOutputBuf(bvec<CLOG2(S)> sel, vec<S, flit<T> > &out, flit<T> &in)
 {
+  HIERARCHY_ENTER();
   node full, fill, empty;
   
   bvec<S> r, v;
@@ -101,12 +133,14 @@ template <unsigned S, typename T>
   fill = wr_buf;
   empty = full && Mux(out_sel, r);
   _(in, "ready") = !full || empty;
+
+  HIERARCHY_EXIT();
 }
 
 template <typename T>
   void BBOutputBuf(vec<1, flit<T> > &out, flit<T> &in)
 {
-  Buffer<1>(out[0], in);
+  BBOutputBuf(bvec<0>(), out, in);
 }
 
 int main() {

@@ -19,8 +19,15 @@ static bool is_store(if_op op) {
 
 static void gen_static_var(std::ostream &out, if_staticvar &s, std::string fname, bool global) {
   using std::endl;
-  out << "  STATIC_VAR(" << fname << ", " << s.name << ", " << type_chdl(s.t)
-      << ", 0x" << to_hex(s.initial_val) << ");" << endl;
+
+  if (is_sram_array(s.t)) {
+    out << "  STATIC_ARRAY(" << fname << ", " << s.name << ", "
+        << type_chdl(element_type(s.t)) << ", " << array_len(s.t) << ");"
+        << endl;
+  } else {
+    out << "  STATIC_VAR(" << fname << ", " << s.name << ", " << type_chdl(s.t)
+        << ", 0x" << to_hex(s.initial_val) << ");" << endl;
+  }
 }
 
 static void gen_static_var_bottom
@@ -43,10 +50,6 @@ static bool type_is_bit(const type &t) {
   return t.type_vec.size() == 1 && t.type_vec[0] == TYPE_BIT;
 }
 
-static bool type_is_struct(const type &t) {
-  return t.type_vec.size() >= 1 && t.type_vec[0] == TYPE_STRUCT_BEGIN;
-}
-
 static std::string op_str(if_op o, const type &t, const type &u) {
   bool bit(type_is_bit(t) && type_is_bit(u));
   switch (o) {
@@ -60,6 +63,10 @@ static std::string op_str(if_op o, const type &t, const type &u) {
   };
 
   return " UNSUPPORTED OP ";
+}
+
+static bool val_is_1cyc(const if_val &v) {
+  return v.op == VAL_LD_IDX_STATIC;
 }
 
 static std::string op_str(if_op o, const type &t) {
@@ -104,7 +111,7 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
   }
   
   if (v.op == VAL_CONST) {
-    if (type_is_struct(v.t)) {
+    if (is_struct(v.t)) {
       out << type_chdl(v.t) << "(Lit<" << v.t.size() << ">(0x"
           << to_hex(v.const_val) << "))";
     } else {
@@ -127,7 +134,7 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
   } else if (v.op == VAL_PHI) {
     // Do nothing; phis are handled entirely in the inputs to the block.
   } else if (v.op == VAL_LD_IDX) {
-    if (type_is_struct(v.args[0]->t)) {
+    if (is_struct(v.args[0]->t)) {
       if (v.args[1]->op != VAL_CONST) {
 	std::cout << "Attempt to index struct with non-const." << endl;
 	abort();
@@ -150,7 +157,7 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
       out << "Mux(" << aname[1] << ", " << aname[0] << ')';
     }
   } else if (v.op == VAL_ST_IDX) {
-    if (type_is_struct(v.args[0]->t)) {
+    if (is_struct(v.args[0]->t)) {
       if (v.args[1]->op != VAL_CONST) {
 	std::cout << "Attempt to index struct with non-const." << endl;
 	abort();
@@ -188,6 +195,15 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
 	  << "SingleRepl(" << aname[1] << ", " << aname[0] << ", " << aname[2]
           << ");" << endl;
     }
+  } else if (v.op == VAL_LD_IDX_STATIC) {
+    out << "LD_STATIC_ARRAY(" << fname << ", " << v.static_arg->name << ", "
+        << aname[0] << ')';
+  } else if (v.op == VAL_ST_IDX_STATIC) {
+    ostringstream preds;
+    if (v.pred) preds << " && " << val_name(fname, bbidx, b, *v.pred);
+    out << "ST_STATIC_ARRAY(" << fname << ", " << v.static_arg->name << ", "
+        << aname[0] << ", " << aname[1] << ", "
+        << fname << "_bb" << bbidx << "_run" << preds.str() << ')';
   } else {
     out << "UNSUPPORTED_OP " << if_op_str[v.op];
   }
@@ -213,7 +229,9 @@ static void print_live_type(std::ostream &out, std::vector<if_val*> &v) {
     out << "chdl_void";
   } else {
     for (unsigned i = 0; i < v.size(); ++i) {
-      out << "ag<STP(\"" << "val" << v[i]->id << "\"), " << type_chdl(v[i]->t);
+      out << "ag<STP(\"" << "val" << v[i]->id << "\"), ";
+      if (val_is_1cyc(*v[i])) out << "late<" << type_chdl(v[i]->t) << " >";
+      else out << type_chdl(v[i]->t);
       if (i != v.size() - 1) out << ", ";
     }
     for (unsigned i = 0; i < v.size(); ++i)
@@ -273,6 +291,7 @@ void bscotch::gen_bb_decls(std::ostream &out, std::string fname, int idx, if_bb 
   using std::endl;
 
   out << "  // " << fname << " BB " << idx << " declarations" << endl;
+  out << "  hierarchy_enter(\"" << fname << "_bb" << idx << "_decls\");" << endl;
   // Typedef input/output types
   out << "  typedef flit<";
   print_live_type(out, b.live_in);
@@ -285,21 +304,21 @@ void bscotch::gen_bb_decls(std::ostream &out, std::string fname, int idx, if_bb 
   // Declare input/output arrays
   out << "  " << fname << "_bb" << idx << "_in_t "
       << fname << "_bb" << idx << "_in;" << endl;
-  out << "TAP(" << fname << "_bb" << idx << "_in);" << endl;
+  out << "  TAP(" << fname << "_bb" << idx << "_in);" << endl;
 
   int n_suc = b.suc.size();
   out << "  " << fname << "_bb" << idx << "_out_t " << fname << "_bb" << idx
       << "_out_prebuf;" << endl 
       << "  vec<" << n_suc << ", " << fname << "_bb" << idx << "_out_t> "
       << fname << "_bb" << idx << "_out;" << endl;
-  out << "TAP(" << fname << "_bb" << idx << "_out_prebuf);" << endl;
+  out << "  TAP(" << fname << "_bb" << idx << "_out_prebuf);" << endl;
 
   int n_pred = b.pred.size();
   if (entry) n_pred++;
   out << "  vec<" << n_pred << ", " << fname << "_bb" << idx << "_in_t> "
       << fname << "_bb" << idx << "_arb_in;" << endl;
 
-  out << endl;
+  out << "  hierarchy_exit();" << endl << endl;
 }
 
 static void get_val_map(std::map<int, int> &m, if_bb &a, if_bb &b) {
@@ -336,7 +355,7 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
   using std::map;
 
   out << "  // " << fname << " BB " << idx << " body" << endl;
-  
+  out << "  hierarchy_enter(\"" << fname << "_bb" << idx << "\");" << endl;  
   int n_suc = b.suc.size(), n_pred = b.pred.size();
   
   // Set up arbiter inputs
@@ -416,7 +435,7 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
     out << "  BBOutputBuf(" << fname << '_' << b.branch_pred->id << ", " << fname << "_bb" << idx << "_out, " << fname << "_bb" << idx << "_out_prebuf);" << endl;
   }
 
-  out << endl;
+  out << "  hierarchy_exit();" << endl << endl;
 }
 
 static void live_in_phi_adj(if_bb &b) {

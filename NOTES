@@ -127,8 +127,12 @@ tasks/goals in order of planned completion:
       <2016-06-10>
     . Write code generator that will build the struct-based program.
       <2016-06-10>
-    - Build a basic block level program that uses SRAM arrays. <2016-06-13>
-    - Add support for SRAM arrays to code generator. <2016-06-13>
+    . Build a basic block level program that uses SRAM arrays. <2016-06-13>
+    . Add support for SRAM arrays to code generator. <2016-06-13>
+    - Figure out what we're going to do long-term about cycles and ready/stall
+      signals. <2016-06-14>
+    - Figure out what we're going to do long-term about multi-ported memories.
+      <2016-06-14>
     - Build a basic block level program that makes function calls. <2016-06-14>
     - Add support for function calls to code generator. <2016-06-14>
     - Build a basic block level program that uses stalls. <2016-06-15>

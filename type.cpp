@@ -38,6 +38,27 @@ unsigned bscotch::type::size(int s, int &end) {
   return sz;
 }
 
+bscotch::type bscotch::element_type(bscotch::type t) {
+  unsigned n = t.type_vec.size();
+  t.type_vec.resize(n - 2);
+
+  return t;
+}
+
+unsigned bscotch::array_len(const bscotch::type &t) {
+  unsigned n = t.type_vec.size();
+  return t.type_vec[n - 1];
+}
+
+bool bscotch::is_sram_array(const bscotch::type &t) {
+  unsigned n = t.type_vec.size();
+  return t.type_vec[n - 2] == TYPE_ARRAY;
+}
+
+bool bscotch::is_struct(const bscotch::type &t) {
+  return t.type_vec.size() >= 1 && t.type_vec[0] == TYPE_STRUCT_BEGIN;
+}
+
 std::string bscotch::type::str(int s, int &end) {
   using namespace bscotch;
   using namespace std;
@@ -78,7 +99,7 @@ std::string bscotch::type::str(int s, int &end) {
   return oss.str();
 }
 
-std::string bscotch::type_chdl(bscotch::type &t, int s, int &end)
+std::string bscotch::type_chdl(const bscotch::type &t, int s, int &end)
 {
   using namespace bscotch;
   using namespace std;
@@ -112,7 +133,7 @@ std::string bscotch::type_chdl(bscotch::type &t, int s, int &end)
           if (j != 0) oss << ", ag<";
           ++i;
           if (t.field_name.count(i))
-            oss << "STP(\"" << t.field_name[i] << "\"), ";
+            oss << "STP(\"" << t.field_name.find(i)->second << "\"), ";
           int pos;
           oss << type_chdl(t, i, pos);
           i = pos;
@@ -130,7 +151,7 @@ std::string bscotch::type_chdl(bscotch::type &t, int s, int &end)
 }
 
 std::string bscotch::type_cpp
-  (bscotch::type &t, std::string name, int s, int &end)
+  (const bscotch::type &t, std::string name, int s, int &end)
 {
   using namespace bscotch;
   using namespace std;
@@ -163,7 +184,7 @@ std::string bscotch::type_cpp
         for (unsigned j = 0; j < fields; ++j) {
           ++i;
           int pos;
-          oss << type_cpp(t, t.field_name[i], i, pos) << ';';
+          oss << type_cpp(t, t.field_name.find(i)->second, i, pos) << ';';
           i = pos;
         }
 	oss << "} " << name;

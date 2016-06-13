@@ -28,9 +28,14 @@ namespace bscotch {
     unsigned size(int start = 0, int &chars = *((int*)NULL));
   };
 
+  type element_type(type t);
+  bool is_sram_array(const type &t);
+  unsigned array_len(const type &t);
+  bool is_struct(const type &t);
+  
   void print(std::ostream &out, bscotch::type &t);
-  std::string type_chdl(type &t, int s = 0, int &end = *(int*)NULL);
-  std::string type_cpp(type &t, std::string name,
+  std::string type_chdl(const type &t, int s = 0, int &end = *(int*)NULL);
+  std::string type_cpp(const type &t, std::string name,
                        int s = 0, int &end = *(int*)NULL);
 
   std::string field_name_by_idx(type &t, int idx, int s = 0);
