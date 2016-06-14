@@ -129,19 +129,21 @@ tasks/goals in order of planned completion:
       <2016-06-10>
     . Build a basic block level program that uses SRAM arrays. <2016-06-13>
     . Add support for SRAM arrays to code generator. <2016-06-13>
+    - Write a speical pipeline register for back edges. <2016-06-14>
+    - Write a pass to automatically insert back edge annotations. <2016-06-14>
     - Figure out what we're going to do long-term about cycles and ready/stall
       signals. <2016-06-14>
     - Figure out what we're going to do long-term about multi-ported memories.
       <2016-06-14>
-    - Build a basic block level program that makes function calls. <2016-06-14>
-    - Add support for function calls to code generator. <2016-06-14>
-    - Build a basic block level program that uses stalls. <2016-06-15>
-    - Add support for stalls to code generator. <2016-06-15>
+    - Build a basic block level program that makes function calls. <2016-06-15>
+    - Add support for function calls to code generator. <2016-06-15>
+    - Build a basic block level program that uses stalls. <2016-06-16>
+    - Add support for stalls to code generator. <2016-06-16>
     - Build a basic block level program that uses bypassed SRAM arrays.
-      <2016-06-16>
-    - Add support for bypass networks to code generator. <2016-06-16>
-    - Build a basic block level program that uses speculation. <2016-06-17>
-    - Add support for speculation to code generator. <2016-06-17>
+      <2016-06-17>
+    - Add support for bypass networks to code generator. <2016-06-17>
+    - Build a basic block level program that uses speculation. <2016-06-18>
+    - Add support for speculation to code generator. <2016-06-18>
     - Add support for C++ output to code generator. <2016-06-20>
   - Parser/front end
     - Build a skeleton flex/bison parser <2016-06-21>
