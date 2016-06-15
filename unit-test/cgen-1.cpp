@@ -83,6 +83,8 @@ void test_func(if_func &f) {
 
   f.bbs.resize(5);
 
+  f.bbs[4].cycle_breaker = 1;
+  
   f.bbs[0].vals.resize(1);
   f.bbs[1].vals.resize(3);
   f.bbs[2].vals.resize(3);
@@ -195,7 +197,7 @@ int main() {
 
   test_prog(p);
 
-  print(cout, p);
+  // print(cout, p);
 
   gen_prog(cout, p);
   

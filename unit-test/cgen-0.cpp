@@ -57,6 +57,7 @@ void test_func(if_func &f) {
   f.bbs.resize(1);
   f.bbs[0].id = 0;
   f.bbs[0].vals.resize(4);
+  f.bbs[0].cycle_breaker = true;
 
   f.bbs[0].vals[0].t = u32();
   f.bbs[0].vals[0].op = VAL_CONST;
@@ -101,7 +102,7 @@ int main() {
 
   test_prog(p);
 
-  print(cout, p);
+  // print(cout, p);
 
   gen_prog(cout, p);
   

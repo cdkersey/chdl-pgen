@@ -96,7 +96,7 @@
   _(_(main_bb2_arb_in[0], "contents"), "val5") = _(_(main_bb1_out[0], "contents"), "val5");
   Arbiter(main_bb2_in, ArbRR<1>, main_bb2_arb_in);
   node main_bb2_run(_(main_bb2_in, "valid") && _(main_bb2_out_prebuf, "ready"));
-  ui<32> main_6 = Lit<32>(0x1);
+  ui<32> main_6 = Lit<32>(0x00000001);
   tap("main_6", main_6);
   ui<32> main_7 = _(_(main_bb2_in, "contents"), "val5") + main_6;
   tap("main_7", main_7);
@@ -106,7 +106,7 @@
   _(main_bb2_out_prebuf, "valid") = _(main_bb2_in, "valid");
   _(main_bb2_in, "ready") = _(main_bb2_out_prebuf, "ready");
   _(_(main_bb2_out_prebuf, "contents"), "val9") = main_9;
-  BBOutputBuf(main_bb2_out, main_bb2_out_prebuf);
+  BBOutputBuf2(main_bb2_out, main_bb2_out_prebuf);
   hierarchy_exit();
 
   STATIC_VAR_GEN(main, a);

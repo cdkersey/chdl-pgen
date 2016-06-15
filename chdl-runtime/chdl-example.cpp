@@ -143,6 +143,65 @@ template <typename T>
   BBOutputBuf(bvec<0>(), out, in);
 }
 
+template <typename T> void BBOutputBuf2(flit<T> &out, flit<T> &in) {
+  HIERARCHY_ENTER();
+
+  node fill_a, fill_b, empty_a, empty_b, a_full, b_full, b_sel;
+
+  T a = Wreg(fill_a, _(in, "contents")), b = Wreg(fill_b, _(in, "contents"));
+
+  empty_a = !b_sel && _(out, "ready") && a_full;
+  empty_b = b_sel && _(out, "ready") && b_full;
+
+  fill_a = !a_full && _(in, "valid") && _(in, "ready");
+  fill_b = a_full && _(in, "valid") && _(in, "ready");
+
+  a_full = Reg(fill_a || (a_full && !empty_a));
+  b_full = Reg(fill_b || (b_full && !empty_b));
+
+  b_sel = b_full;
+  
+  _(in, "ready") = !a_full || !b_full;
+
+  _(out, "contents") = Mux(b_sel, a, b);
+  _(out, "valid") = a_full || b_full;
+  
+  HIERARCHY_EXIT();
+}
+
+template <unsigned S, typename T>
+  void BBOutputBuf2(bvec<CLOG2(S)> sel, vec<S, flit<T> > &out, flit<T> &in)
+{
+  typedef ag<STP("sel"), bvec<CLOG2(S)>,
+          ag<STP("x"), T> > wrapped_in_t;
+
+  flit<wrapped_in_t> buf_in, buf_out;
+
+  _(in, "ready") = _(buf_in, "ready");
+  _(buf_in, "valid") = _(in, "valid");
+  _(_(buf_in, "contents"), "sel") = sel;
+  _(_(buf_in, "contents"), "x") = _(in, "contents");
+  
+  BBOutputBuf2(buf_out, buf_in);
+
+  bvec<S> r, v;
+  for (unsigned i = 0; i < S; ++i)
+    r[i] = _(out[i], "ready");
+  _(buf_out, "ready") = Mux(_(_(buf_out, "contents"), "sel"), r);
+  v = Decoder(_(_(buf_out, "contents"), "sel"));
+  for (unsigned i = 0; i < S; ++i)
+    _(out[i], "valid") = v[i] && _(buf_out, "valid");
+
+  for (unsigned i = 0; i < S; ++i)
+    _(out[i], "contents") = _(_(buf_out, "contents"), "x");
+}
+
+template <typename T>
+  void BBOutputBuf2(vec<1, flit<T> > &out, flit<T> &in)
+{
+  BBOutputBuf2(out[0], in);  
+}
+
 int main() {
   // // // // Begin generated code // // // //
 #include "cgen-out.incl"

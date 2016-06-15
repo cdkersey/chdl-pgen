@@ -61,7 +61,12 @@ namespace bscotch {
     // Set by liveness analysis.
     std::vector<if_val*> live_in, live_out;
 
-    // Branch predicate, one of this block's vals (if needed)
+    // If this is true, a more expensive 2-entry pipeline register is used.
+    // This allows a cycle of slack and places a break in the ready signal
+    // generation chain.
+    bool cycle_breaker;
+    
+    // Branch predicate; a currently live val (if needed)
     if_val *branch_pred;
     
     // Successor and predecessor blocks.

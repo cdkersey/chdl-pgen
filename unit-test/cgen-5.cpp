@@ -97,6 +97,8 @@ void test_func(if_func &f) {
 
   f.bbs.resize(3);
 
+  f.bbs[2].cycle_breaker = true;
+  
   f.bbs[0].vals.resize(1);
   f.bbs[1].vals.resize(5);
   f.bbs[2].vals.resize(4);
@@ -161,7 +163,7 @@ void test_func(if_func &f) {
 
   f.bbs[2].vals[0].t = u32();
   f.bbs[2].vals[0].op = VAL_CONST;
-  to_vec_bool<32>(f.bbs[1].vals[0].const_val, 1);
+  to_vec_bool<32>(f.bbs[2].vals[0].const_val, 1);
 
   f.bbs[2].vals[1].t = u32();
   f.bbs[2].vals[1].op = VAL_ADD;

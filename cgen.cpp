@@ -429,10 +429,15 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
   }
 
   // Instantiate buffer/switch
+  if (b.cycle_breaker) out << "  BBOutputBuf2";
+  else out << "  BBOutputBuf";
+
   if (b.suc.size() == 1) {
-    out << "  BBOutputBuf(" << fname << "_bb" << idx << "_out, " << fname << "_bb" << idx << "_out_prebuf);" << endl;
+    out << "(" << fname << "_bb" << idx << "_out, " << fname << "_bb" << idx << "_out_prebuf);" << endl;
   } else {
-    out << "  BBOutputBuf(" << fname << '_' << b.branch_pred->id << ", " << fname << "_bb" << idx << "_out, " << fname << "_bb" << idx << "_out_prebuf);" << endl;
+    out << '(' << val_name(fname, idx, b, *b.branch_pred) << ", "
+        << fname << "_bb" << idx << "_out, " << fname << "_bb" << idx
+        << "_out_prebuf);" << endl;
   }
 
   out << "  hierarchy_exit();" << endl << endl;
