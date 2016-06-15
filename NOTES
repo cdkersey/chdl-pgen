@@ -129,9 +129,9 @@ tasks/goals in order of planned completion:
       <2016-06-10>
     . Build a basic block level program that uses SRAM arrays. <2016-06-13>
     . Add support for SRAM arrays to code generator. <2016-06-13>
-    - Write a speical pipeline register for back edges. <2016-06-14>
-    - Write a pass to automatically insert back edge annotations. <2016-06-14>
-    - Figure out what we're going to do long-term about cycles and ready/stall
+    . Write a speical pipeline register for back edges. <2016-06-14>
+    . Write a pass to automatically insert back edge annotations. <2016-06-14>
+    . Figure out what we're going to do long-term about cycles and ready/stall
       signals. <2016-06-14>
     - Figure out what we're going to do long-term about multi-ported memories.
       <2016-06-14>

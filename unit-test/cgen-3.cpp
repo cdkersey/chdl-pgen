@@ -8,6 +8,7 @@
 #include "../type.h"
 #include "../if.h"
 #include "../cgen.h"
+#include "../break_cycles.h"  
 
 using namespace bscotch;
 using namespace std;
@@ -78,8 +79,6 @@ void test_func(if_func &f) {
 
   f.bbs.resize(2);
 
-  f.bbs[1].cycle_breaker = true;
-  
   f.bbs[0].vals.resize(1);
   f.bbs[1].vals.resize(11);
 
@@ -166,6 +165,7 @@ void test_prog(if_prog &p) {
   // Test program:
 
   test_func(p.functions["main"]);
+  break_cycles(p.functions["main"]);
 }
 
 int main() {
