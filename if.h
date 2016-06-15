@@ -38,6 +38,10 @@ namespace bscotch {
   struct if_val {
     std::vector<if_val *> args;
     if_staticvar *static_arg;
+
+    // Loads and stores to static_arg are counted by the code generator. When
+    // this occurs, each unique access is given an ID.
+    unsigned static_access_id;
     
     // For VAL_CONST, this contains the value
     std::vector<bool> const_val;

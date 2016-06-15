@@ -17,16 +17,24 @@ static bool is_store(if_op op) {
          op == VAL_ST_IDX || op == VAL_ST_IDX_STATIC;
 }
 
-static void gen_static_var(std::ostream &out, if_staticvar &s, std::string fname, bool global) {
+static bool is_load(if_op op) {
+  return op == VAL_LD_GLOBAL || op == VAL_LD_STATIC ||
+         op == VAL_LD_IDX || op == VAL_LD_IDX_STATIC;
+}
+
+static void gen_static_var(
+  std::ostream &out, if_staticvar &s, std::string fname,
+  unsigned loads, unsigned stores, bool global)
+{
   using std::endl;
 
   if (is_sram_array(s.t)) {
     out << "  STATIC_ARRAY(" << fname << ", " << s.name << ", "
-        << type_chdl(element_type(s.t)) << ", " << array_len(s.t) << ");"
-        << endl;
+        << type_chdl(element_type(s.t)) << ", " << array_len(s.t) << ", "
+        << loads << ");" << endl;
   } else {
     out << "  STATIC_VAR(" << fname << ", " << s.name << ", " << type_chdl(s.t)
-        << ", 0x" << to_hex(s.initial_val) << ");" << endl;
+        << ", 0x" << to_hex(s.initial_val) << ", " << stores << ");" << endl;
   }
 }
 
@@ -130,7 +138,8 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
     }
     out << "ST_STATIC(" << fname << ", " << v.static_arg->name << ", "
         << aname[0] << ", "
-        << fname << "_bb" << bbidx << "_run" << preds.str() << ')';
+        << fname << "_bb" << bbidx << "_run" << preds.str() << ", "
+        << v.static_access_id << ')';
   } else if (v.op == VAL_PHI) {
     // Do nothing; phis are handled entirely in the inputs to the block.
   } else if (v.op == VAL_LD_IDX) {
@@ -197,13 +206,13 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
     }
   } else if (v.op == VAL_LD_IDX_STATIC) {
     out << "LD_STATIC_ARRAY(" << fname << ", " << v.static_arg->name << ", "
-        << aname[0] << ')';
+        << aname[0] << ", " << v.static_access_id << ')';
   } else if (v.op == VAL_ST_IDX_STATIC) {
     ostringstream preds;
     if (v.pred) preds << " && " << val_name(fname, bbidx, b, *v.pred);
     out << "ST_STATIC_ARRAY(" << fname << ", " << v.static_arg->name << ", "
-        << aname[0] << ", " << aname[1] << ", "
-        << fname << "_bb" << bbidx << "_run" << preds.str() << ')';
+        << aname[0] << ", " << aname[1] << ", " << fname << "_bb" << bbidx
+        << "_run" << preds.str() << ')';
   } else {
     out << "UNSUPPORTED_OP " << if_op_str[v.op];
   }
@@ -453,10 +462,37 @@ static void live_in_phi_adj(if_bb &b) {
   }
 }
 
+unsigned count_loads(if_func &f, if_staticvar &s) {
+  unsigned count = 0;
+
+  for (auto &b : f.bbs)
+    for (auto &v : b.vals)
+      if (v.static_arg == &s)
+	if (is_load(v.op))
+	  v.static_access_id = count++;
+
+  return count;
+}
+
+unsigned count_stores(if_func &f, if_staticvar &s) {
+  unsigned count = 0;
+
+  for (auto &b : f.bbs)
+    for (auto &v : b.vals)
+      if (v.static_arg == &s)
+	if (is_store(v.op))
+	  v.static_access_id = count++;
+
+  return count;
+}
+
 void bscotch::gen_func(std::ostream &out, std::string name, if_func &f) {
   using std::endl;
-  for (auto &s : f.static_vars)
-    gen_static_var(out, s.second, name, false);
+  for (auto &s : f.static_vars) {
+    unsigned loads = count_loads(f, s.second),
+             stores = count_stores(f, s.second);
+    gen_static_var(out, s.second, name, loads, stores, false);
+  }
 
   out << endl;
   

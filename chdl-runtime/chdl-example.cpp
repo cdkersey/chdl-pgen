@@ -8,41 +8,32 @@
 using namespace std;
 using namespace chdl;
 
-template <typename T> struct staticvar {
-  staticvar() { q = Wreg(wr, d); }
-  staticvar(unsigned long v) { q = Wreg(wr, d, v); }
+template <typename T, unsigned W> struct staticvar {
+  staticvar() { q = Wreg(OrN(wr), Mux(Log2(wr), d)); } 
+  staticvar(unsigned long v) { q = Wreg(OrN(wr), Mux(Log2(wr), d), v); }
   
   T value() { return q; }
 
-  void add_input(node wr, const T &x) {
-    inputs.push_back(x);
-    input_wr.push_back(wr);
+  template <unsigned I> void add_input(node wr_in, const T &x) {
+    wr[I] = wr_in;
+    d[I] = x;
   }
 
-  void gen() {
-    vector<node> cumulative_wr;
-    cumulative_wr.push_back(Lit(0));
-    for (unsigned i = 0; i <= input_wr.size(); ++i)
-      cumulative_wr.push_back(input_wr[i] || cumulative_wr[i]);
-
-    bus<sz<T>::value> b;
-    for (unsigned i = 0; i < input_wr.size(); ++i)
-      b.connect(Flatten(inputs[i]), input_wr[i] && !cumulative_wr[i]);
-    Flatten(d) = b;
-    wr = cumulative_wr[input_wr.size()];
-  }
+  void gen() { }
   
-  node wr;
-  T d, q;
-
-  vector<node> input_wr;
-  vector<T> inputs;
+  bvec<W> wr;
+  vec<W, T> d;
+  T q;
 };
 
-template <typename T, unsigned N> struct staticarray {
+template <typename T, unsigned N, unsigned P> struct staticarray {
   staticarray() { }
 
-  T ld(const bvec<N> &idx) { rd_a = idx; return q; }
+  template <unsigned PORT>
+    T ld(const bvec<N> &idx) {
+      rd_a[PORT] = idx;
+      return q[PORT];
+    }
 
   void add_input(node wr_in, const bvec<N> &idx, const T &x) {
     wr_a = idx;
@@ -54,27 +45,30 @@ template <typename T, unsigned N> struct staticarray {
     q = Syncmem(rd_a, d, wr_a, wr);
   }
 
-  bvec<N> wr_a, rd_a;
+  vec<P, bvec<N> > rd_a;
+  bvec<N> wr_a;
+
+  vec<P, T> q;
   
   node wr;
-  T d, q;
+  T d;
 };
 
-#define STATIC_VAR(func, var, type, initialval) \
-  staticvar<type> func##_##var(initialval); \
+#define STATIC_VAR(func, var, type, initialval, writers) \
+  staticvar<type, writers> func##_##var(initialval); \
   tap(#func "_" #var, func##_##var.value());
 
-#define STATIC_ARRAY(func, var, type, size) \
-  staticarray<type, CLOG2(size)> func##_##var;
+#define STATIC_ARRAY(func, var, type, size, ports) \
+  staticarray<type, CLOG2(size), ports> func##_##var;
 
 #define LD_STATIC(func, var) \
   (func##_##var.value())
 
-#define ST_STATIC(func, var, val, wr) \
-  do { func##_##var.add_input(wr, val); } while (0)
+#define ST_STATIC(func, var, val, wr, port) \
+  do { func##_##var.add_input<(port)>(wr, val); } while (0)
 
-#define LD_STATIC_ARRAY(func, var, idx) \
-  (func##_##var.ld(idx))
+#define LD_STATIC_ARRAY(func, var, idx, port) \
+  (func##_##var.ld<(port)>(idx))
 
 #define ST_STATIC_ARRAY(func, var, idx, val, wr) \
   do { func##_##var.add_input(wr, idx, val); } while (0)

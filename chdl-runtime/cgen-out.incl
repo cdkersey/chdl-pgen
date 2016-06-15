@@ -1,4 +1,4 @@
-  STATIC_ARRAY(main, a, ui<32>, 32);
+  STATIC_ARRAY(main, a, ui<32>, 32, 1);
 
   typedef flit<chdl_void > main_call_t;
   typedef flit<chdl_void > main_ret_t;
@@ -74,7 +74,7 @@
   tap("main_3", main_3);
   ui<5> main_4 = _(_(main_bb1_in, "contents"), "val1")[range<0, 4>()];
   tap("main_4", main_4);
-  ui<32> main_5 = LD_STATIC_ARRAY(main, a, main_4);
+  ui<32> main_5 = LD_STATIC_ARRAY(main, a, main_4, 0);
   tap("main_5", main_5);
   _(main_bb1_out_prebuf, "valid") = _(main_bb1_in, "valid");
   _(main_bb1_in, "ready") = _(main_bb1_out_prebuf, "ready");
