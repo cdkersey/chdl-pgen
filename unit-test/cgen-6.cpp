@@ -75,32 +75,27 @@ if_staticvar u32arraystaticvar(string name, unsigned len) {
 
 void test_func(if_func &f) {
   // Test function:
-  // static var a : u32[32]
   //  bb0:
   //    %0 = const #0 (u32)
   //  bb1:
-  //    %1 = phi %0, %9 (u32)
+  //    %1 = phi %0, %8 (u32)
   //    %2 = const #0 (u5)
   //    %3 = const #5 (u5)
   //    %4 = %1[%2,%3] (u5)
-  //    %5 = ld_idx_static @x, %4 (u32)
+  //    %5 = call func, %4, %1
   //    br bb2
   //  bb2:
   //    %6 = const #1 (u32)
-  //    %7 = add %5, %6
-  //    %8 = st_idx_static @x, %4, %7 (void)
-  //    %9 = add %1, %6
+  //    %7 = add %1, %6
   //    br bb1
 
-  f.static_vars["a"] = u32arraystaticvar("a", 32);
-  
   f.rtype = void_type();
 
   f.bbs.resize(3);
 
   f.bbs[0].vals.resize(1);
   f.bbs[1].vals.resize(5);
-  f.bbs[2].vals.resize(4);
+  f.bbs[2].vals.resize(2);
 
   f.bbs[0].suc.push_back(&f.bbs[1]);
   f.bbs[1].suc.push_back(&f.bbs[2]);
@@ -114,14 +109,14 @@ void test_func(if_func &f) {
 
   f.bbs[0].live_out.push_back(&f.bbs[0].vals[0]);
   f.bbs[1].live_in.push_back(&f.bbs[0].vals[0]);
-  f.bbs[1].live_in.push_back(&f.bbs[2].vals[3]);
+  f.bbs[1].live_in.push_back(&f.bbs[2].vals[1]);
   f.bbs[1].live_out.push_back(&f.bbs[1].vals[0]);
   f.bbs[1].live_out.push_back(&f.bbs[1].vals[3]);
   f.bbs[1].live_out.push_back(&f.bbs[1].vals[4]);
   f.bbs[2].live_in.push_back(&f.bbs[1].vals[0]);
   f.bbs[2].live_in.push_back(&f.bbs[1].vals[3]);
   f.bbs[2].live_in.push_back(&f.bbs[1].vals[4]);
-  f.bbs[2].live_out.push_back(&f.bbs[2].vals[3]);
+  f.bbs[2].live_out.push_back(&f.bbs[2].vals[1]);
   
   int id = 0;
   for (unsigned i = 0; i < f.bbs.size(); ++i) {
@@ -139,7 +134,7 @@ void test_func(if_func &f) {
   f.bbs[1].vals[0].t = u32();
   f.bbs[1].vals[0].op = VAL_PHI;
   f.bbs[1].vals[0].args.push_back(&f.bbs[0].vals[0]);
-  f.bbs[1].vals[0].args.push_back(&f.bbs[2].vals[3]);
+  f.bbs[1].vals[0].args.push_back(&f.bbs[2].vals[1]);
   
   f.bbs[1].vals[1].t = uN(5);
   f.bbs[1].vals[1].op = VAL_CONST;
@@ -156,9 +151,10 @@ void test_func(if_func &f) {
   f.bbs[1].vals[3].args.push_back(&f.bbs[1].vals[2]);
 
   f.bbs[1].vals[4].t = u32();
-  f.bbs[1].vals[4].op = VAL_LD_IDX_STATIC;
-  f.bbs[1].vals[4].static_arg = &f.static_vars["a"];
+  f.bbs[1].vals[4].op = VAL_CALL;
+  f.bbs[1].vals[4].func_arg = "func";
   f.bbs[1].vals[4].args.push_back(&f.bbs[1].vals[3]);
+  f.bbs[1].vals[4].args.push_back(&f.bbs[1].vals[0]);
 
   f.bbs[2].vals[0].t = u32();
   f.bbs[2].vals[0].op = VAL_CONST;
@@ -168,22 +164,10 @@ void test_func(if_func &f) {
   f.bbs[2].vals[1].op = VAL_ADD;
   f.bbs[2].vals[1].args.push_back(&f.bbs[1].vals[4]);
   f.bbs[2].vals[1].args.push_back(&f.bbs[2].vals[0]);
- 						
-  f.bbs[2].vals[2].t = void_type();
-  f.bbs[2].vals[2].op = VAL_ST_IDX_STATIC;
-  f.bbs[2].vals[2].static_arg = &f.static_vars["a"];
-  f.bbs[2].vals[2].args.push_back(&f.bbs[1].vals[3]);
-  f.bbs[2].vals[2].args.push_back(&f.bbs[2].vals[1]);
-  
-  f.bbs[2].vals[3].t = u32();
-  f.bbs[2].vals[3].op = VAL_ADD;
-  f.bbs[2].vals[3].args.push_back(&f.bbs[1].vals[0]);
-  f.bbs[2].vals[3].args.push_back(&f.bbs[2].vals[0]);
 }
 
 void test_prog(if_prog &p) {
   // Test program:
-
   test_func(p.functions["main"]);
   break_cycles(p.functions["main"]);
 }
@@ -193,7 +177,7 @@ int main() {
 
   test_prog(p);
 
-  // print(cout, p);
+  print(cout, p);
 
   gen_prog(cout, p);
   

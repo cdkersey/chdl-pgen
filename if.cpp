@@ -14,8 +14,8 @@ const char *bscotch::if_op_str[] = {
   "ld_static", "st_static",
   "ld_idx", "st_idx", "ld_idx_static", "st_idx_static",
   "neg", "not",
-  "add", "sub", "mul", "div", "and", "or", "xor"
-  "call_static", "call",
+  "add", "sub", "mul", "div", "and", "or", "xor",
+  "cat", "call_static", "call"
 };
 
 // Print vector of bools as hex. TODO: move to separate utility library?
@@ -53,7 +53,8 @@ void bscotch::print(std::ostream &out, bscotch::if_val &v) {
     print(out, v.const_val);
   } else {
     if (v.static_arg) out << " @" << v.static_arg->name;
-    bool comma = (v.static_arg ? 1 : 0);
+    if (v.func_arg != "") out << ' ' << v.func_arg;
+    bool comma = (v.static_arg || v.func_arg != "" ? 1 : 0);
     for (auto &a : v.args) {
       if (comma) out << ',';
       else comma = true;

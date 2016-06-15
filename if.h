@@ -22,7 +22,7 @@ namespace bscotch {
     VAL_NEG, VAL_NOT,
     VAL_ADD, VAL_SUB, VAL_MUL, VAL_DIV, VAL_AND, VAL_OR, VAL_XOR,
     VAL_CONCATENATE,
-    VAL_CALL_STATIC, VAL_CALL,
+    VAL_CALL_STATIC, VAL_CALL
   };
 
   extern const char *if_op_str[];
@@ -39,6 +39,9 @@ namespace bscotch {
     std::vector<if_val *> args;
     if_staticvar *static_arg;
 
+    // Function argument for calls.
+    std::string func_arg;
+    
     // Loads and stores to static_arg are counted by the code generator. When
     // this occurs, each unique access is given an ID.
     unsigned static_access_id;
