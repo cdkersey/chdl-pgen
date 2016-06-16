@@ -1,4 +1,18 @@
-  STATIC_ARRAY(main, a, ui<32>, 32, 1);
+main: 
+  bb 0:
+    <0> = const 0x00000000 (u32)
+    br bb 1
+  bb 1:
+    <1> = phi <0>, <7> (u32)
+    <2> = const 0x00 (u5)
+    <3> = const 0x05 (u5)
+    <4> = ld_idx <1>, <2>, <3> (u5)
+    <5> = call func, <4>, <1> (u32)
+    br bb 2
+  bb 2:
+    <6> = const 0x00000001 (u32)
+    <7> = add <5>, <6> (u32)
+    br bb 1
 
   typedef flit<chdl_void > main_call_t;
   typedef flit<chdl_void > main_ret_t;
@@ -20,7 +34,7 @@
   // main BB 1 declarations
   hierarchy_enter("main_bb1_decls");
   typedef flit<ag<STP("val1"), ui<32> > > main_bb1_in_t;
-  typedef flit<ag<STP("val1"), ui<32>, ag<STP("val4"), ui<5>, ag<STP("val5"), late<ui<32> > > > > > main_bb1_out_t;
+  typedef flit<ag<STP("val1"), ui<32>, ag<STP("val4"), ui<5>, ag<STP("val5"), ui<32> > > > > main_bb1_out_t;
   main_bb1_in_t main_bb1_in;
   TAP(main_bb1_in);
   main_bb1_out_t main_bb1_out_prebuf;
@@ -31,8 +45,8 @@
 
   // main BB 2 declarations
   hierarchy_enter("main_bb2_decls");
-  typedef flit<ag<STP("val1"), ui<32>, ag<STP("val4"), ui<5>, ag<STP("val5"), late<ui<32> > > > > > main_bb2_in_t;
-  typedef flit<ag<STP("val9"), ui<32> > > main_bb2_out_t;
+  typedef flit<ag<STP("val1"), ui<32>, ag<STP("val4"), ui<5>, ag<STP("val5"), ui<32> > > > > main_bb2_in_t;
+  typedef flit<ag<STP("val7"), ui<32> > > main_bb2_out_t;
   main_bb2_in_t main_bb2_in;
   TAP(main_bb2_in);
   main_bb2_out_t main_bb2_out_prebuf;
@@ -63,8 +77,8 @@
   _(_(main_bb1_arb_in[0], "contents"), "val1") = _(_(main_bb0_out[0], "contents"), "val0");
   _(main_bb1_arb_in[1], "valid") = _(main_bb2_out[0], "valid");
   _(main_bb2_out[0], "ready") = _(main_bb1_arb_in[1], "ready");
-  // BB2 val 9 -> BB 1 val 1
-  _(_(main_bb1_arb_in[1], "contents"), "val1") = _(_(main_bb2_out[0], "contents"), "val9");
+  // BB2 val 7 -> BB 1 val 1
+  _(_(main_bb1_arb_in[1], "contents"), "val1") = _(_(main_bb2_out[0], "contents"), "val7");
   Arbiter(main_bb1_in, ArbRR<2>, main_bb1_arb_in);
   node main_bb1_run(_(main_bb1_in, "valid") && _(main_bb1_out_prebuf, "ready"));
     tap("main_1", _(_(main_bb1_in, "contents"), "val1"));
@@ -74,7 +88,7 @@
   tap("main_3", main_3);
   ui<5> main_4 = _(_(main_bb1_in, "contents"), "val1")[range<0, 4>()];
   tap("main_4", main_4);
-  ui<32> main_5 = LD_STATIC_ARRAY(main, a, main_4, 0);
+  ui<32> main_5 = UNSUPPORTED_OP call;
   tap("main_5", main_5);
   _(main_bb1_out_prebuf, "valid") = _(main_bb1_in, "valid");
   _(main_bb1_in, "ready") = _(main_bb1_out_prebuf, "ready");
@@ -100,13 +114,9 @@
   tap("main_6", main_6);
   ui<32> main_7 = _(_(main_bb2_in, "contents"), "val5") + main_6;
   tap("main_7", main_7);
-  ST_STATIC_ARRAY(main, a, _(_(main_bb2_in, "contents"), "val4"), main_7, main_bb2_run);
-  ui<32> main_9 = _(_(main_bb2_in, "contents"), "val1") + main_6;
-  tap("main_9", main_9);
   _(main_bb2_out_prebuf, "valid") = _(main_bb2_in, "valid");
   _(main_bb2_in, "ready") = _(main_bb2_out_prebuf, "ready");
-  _(_(main_bb2_out_prebuf, "contents"), "val9") = main_9;
+  _(_(main_bb2_out_prebuf, "contents"), "val7") = main_7;
   BBOutputBuf2(main_bb2_out, main_bb2_out_prebuf);
   hierarchy_exit();
 
-  STATIC_VAR_GEN(main, a);

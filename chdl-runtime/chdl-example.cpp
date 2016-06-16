@@ -101,33 +101,47 @@ template <unsigned N, typename T>
 }
 
 // Output buffers
+template <typename T> void BBOutputBuf(flit<T> &out, flit<T> &in) {
+  node full, fill, empty;
+  node wr_buf = _(in, "ready") && _(in, "valid");
+
+  _(out, "contents") = Wreg(wr_buf, _(in, "contents"));
+  _(out, "valid") = full;
+
+  full = Reg((full && !empty) || fill);
+  fill = wr_buf;
+  empty = full && _(out, "ready");
+  _(in, "ready") = !full || empty;
+}
+
 template <unsigned S, typename T>
   void BBOutputBuf(bvec<CLOG2(S)> sel, vec<S, flit<T> > &out, flit<T> &in)
 {
   HIERARCHY_ENTER();
-  node full, fill, empty;
+
+  typedef ag<STP("sel"), bvec<CLOG2(S)>,
+          ag<STP("x"), T> > wrapped_in_t;
+
+  flit<wrapped_in_t> buf_in, buf_out;
+
+  _(in, "ready") = _(buf_in, "ready");
+  _(buf_in, "valid") = _(in, "valid");
+  _(_(buf_in, "contents"), "sel") = sel;
+  _(_(buf_in, "contents"), "x") = _(in, "contents");
   
+  BBOutputBuf(buf_out, buf_in);
+
   bvec<S> r, v;
   for (unsigned i = 0; i < S; ++i)
     r[i] = _(out[i], "ready");
+  _(buf_out, "ready") = Mux(_(_(buf_out, "contents"), "sel"), r);
+  v = Decoder(_(_(buf_out, "contents"), "sel"));
+  for (unsigned i = 0; i < S; ++i)
+    _(out[i], "valid") = v[i] && _(buf_out, "valid");
 
-  node wr_buf = _(in, "ready") && _(in, "valid");
-
-  bvec<CLOG2(S)> out_sel = Wreg(wr_buf, sel);
-  T out_contents = Wreg(wr_buf, _(in, "contents"));
-
-  v = Decoder(out_sel);
+  for (unsigned i = 0; i < S; ++i)
+    _(out[i], "contents") = _(_(buf_out, "contents"), "x");
   
-  for (unsigned i = 0; i < S; ++i) {
-    _(out[i], "contents") = out_contents;
-    _(out[i], "valid") = v[i] && full;
-  }
-
-  full = Reg((full && !empty) || fill);
-  fill = wr_buf;
-  empty = full && Mux(out_sel, r);
-  _(in, "ready") = !full || empty;
-
   HIERARCHY_EXIT();
 }
 
