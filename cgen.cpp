@@ -315,6 +315,7 @@ void bscotch::gen_bb_decls(std::ostream &out, std::string fname, int idx, if_bb 
       << fname << "_bb" << idx << "_in_prebuf, "
       << fname << "_bb" << idx << "_in;" << endl;
   out << "  TAP(" << fname << "_bb" << idx << "_in);" << endl;
+  out << "  TAP(" << fname << "_bb" << idx << "_in_prebuf);" << endl;
 
   int n_suc = b.suc.size();
   out << "  " << fname << "_bb" << idx << "_out_t " << fname << "_bb" << idx
@@ -326,7 +327,8 @@ void bscotch::gen_bb_decls(std::ostream &out, std::string fname, int idx, if_bb 
   int n_pred = b.pred.size();
   if (entry) n_pred++;
   out << "  vec<" << n_pred << ", " << fname << "_bb" << idx << "_in_t> "
-      << fname << "_bb" << idx << "_arb_in;" << endl;
+      << fname << "_bb" << idx << "_arb_in;" << endl
+      << "  TAP(" << fname << "_bb" << idx << "_arb_in);" << endl;
 
   out << "  hierarchy_exit();" << endl << endl;
 }
@@ -409,15 +411,18 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
   }
   
   // Instantiate arbiter and input buffer.
-  out << "  Arbiter(" << fname << "_bb" << idx << "_in_prebuf, ArbRR<" << n_pred
-      << ">, " << fname << "_bb" << idx << "_arb_in);" << endl
-      << "  BBInputBuf(" << fname << "_bb" << idx << "_in, "
-      << fname << "_bb" << idx <<  "_in_prebuf);";
+  out << "  BBArbiter(" << fname << "_bb" << idx << "_in_prebuf, "
+      << fname << "_bb" << idx << "_arb_in);" << endl
+      << "  BBInputBuf";
+  if (b.cycle_breaker) out << '2';
+  out << "(" << fname << "_bb" << idx << "_in, "
+      << fname << "_bb" << idx <<  "_in_prebuf);" << endl;
 
   // Create block's run signal
   out << "  node " << fname << "_bb" << idx << "_run(_(" << fname << "_bb"
       << idx << "_in, \"valid\") && "
-      << output_signal(fname, idx, "ready") << ");" << endl;
+      << output_signal(fname, idx, "ready") << ");" << endl
+      << "  TAP(" << fname << "_bb" << idx << "_run);" << endl;
   
   for (unsigned i = 0; i < b.vals.size(); ++i) {
     gen_val(out, fname, idx, i, b, b.vals[i]);
@@ -441,13 +446,11 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
   }
 
   // Instantiate buffer/switch
-  if (b.cycle_breaker) out << "  BBOutputBuf2";
-  else out << "  BBOutputBuf";
-
   if (b.suc.size() == 1) {
-    out << "(" << fname << "_bb" << idx << "_out, " << fname << "_bb" << idx << "_out_prebuf);" << endl;
+    out << "  BBOutputBuf(" << fname << "_bb" << idx << "_out, " << fname
+        << "_bb" << idx << "_out_prebuf);" << endl;
   } else {
-    out << '(' << val_name(fname, idx, b, *b.branch_pred) << ", "
+    out << "  BBOutputBuf(" << val_name(fname, idx, b, *b.branch_pred) << ", "
         << fname << "_bb" << idx << "_out, " << fname << "_bb" << idx
         << "_out_prebuf);" << endl;
   }

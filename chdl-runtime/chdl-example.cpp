@@ -102,7 +102,9 @@ template <unsigned N, typename T>
 
 // Output buffers offer no storage/delay.
 template <typename T> void BBOutputBuf(flit<T> &out, flit<T> &in) {
-  out = in;
+  _(in, "ready") = _(out, "ready");
+  _(out, "valid") = _(in, "valid");
+  _(out, "contents") = _(in, "contents");
 }
 
 template <unsigned S, typename T>
@@ -145,6 +147,8 @@ template <typename T>
 template <typename T>
   void BBInputBuf(flit<T> &out, flit<T> &in)
 {
+  HIERARCHY_ENTER();
+
   node full, fill, empty;
   node wr_buf = _(in, "ready") && _(in, "valid");
 
@@ -155,9 +159,34 @@ template <typename T>
   fill = wr_buf;
   empty = full && _(out, "ready");
   _(in, "ready") = !full || empty;
+
+  HIERARCHY_EXIT();
 }
 
-template <typename T> void BBOutputBuf2(flit<T> &out, flit<T> &in) {
+template <typename T, unsigned N>
+  void BBArbiter(flit<T> &out, vec<N, flit<T> > &in)
+{
+  bvec<N> v, cv, uv(v & ~cv);
+  for (unsigned i = 0; i < N; ++i) v[i] = _(in[i], "valid");
+  
+  cv[0] = Lit(0);
+  for (unsigned i = 1; i < N; ++i)
+    cv[i] = v[i - 1] || cv[i - 1];
+
+  for (unsigned i = 0; i < N; ++i)
+    _(in[i], "ready") = !cv[i] && _(out, "ready");
+  bvec<CLOG2(N)> sel(Log2(uv));
+
+  vec<N, T> contents_in;
+  for (unsigned i = 0; i < N; ++i) contents_in[i] = _(in[i], "contents");
+  
+  _(out, "valid") = OrN(v);
+  _(out, "contents") = Mux(sel, contents_in);
+}
+
+template <typename T>
+  void BBInputBuf2(flit<T> &out, flit<T> &in)
+{
   HIERARCHY_ENTER();
 
   node fill_a, fill_b, empty_a, empty_b, a_full, b_full, b_sel;
@@ -174,46 +203,20 @@ template <typename T> void BBOutputBuf2(flit<T> &out, flit<T> &in) {
   b_full = Reg(fill_b || (b_full && !empty_b));
 
   b_sel = b_full;
+
+  TAP(fill_a);
+  TAP(fill_b);
+  TAP(empty_a);
+  TAP(empty_b);
+  TAP(a_full);
+  TAP(b_full);
   
   _(in, "ready") = !a_full || !b_full;
 
   _(out, "contents") = Mux(b_sel, a, b);
-  _(out, "valid") = a_full || b_full;
-  
+  _(out, "valid") = a_full || b_full;  
+
   HIERARCHY_EXIT();
-}
-
-template <unsigned S, typename T>
-  void BBOutputBuf2(bvec<CLOG2(S)> sel, vec<S, flit<T> > &out, flit<T> &in)
-{
-  typedef ag<STP("sel"), bvec<CLOG2(S)>,
-          ag<STP("x"), T> > wrapped_in_t;
-
-  flit<wrapped_in_t> buf_in, buf_out;
-
-  _(in, "ready") = _(buf_in, "ready");
-  _(buf_in, "valid") = _(in, "valid");
-  _(_(buf_in, "contents"), "sel") = sel;
-  _(_(buf_in, "contents"), "x") = _(in, "contents");
-  
-  BBOutputBuf2(buf_out, buf_in);
-
-  bvec<S> r, v;
-  for (unsigned i = 0; i < S; ++i)
-    r[i] = _(out[i], "ready");
-  _(buf_out, "ready") = Mux(_(_(buf_out, "contents"), "sel"), r);
-  v = Decoder(_(_(buf_out, "contents"), "sel"));
-  for (unsigned i = 0; i < S; ++i)
-    _(out[i], "valid") = v[i] && _(buf_out, "valid");
-
-  for (unsigned i = 0; i < S; ++i)
-    _(out[i], "contents") = _(_(buf_out, "contents"), "x");
-}
-
-template <typename T>
-  void BBOutputBuf2(vec<1, flit<T> > &out, flit<T> &in)
-{
-  BBOutputBuf2(out[0], in);  
 }
 
 int main() {

@@ -9,5 +9,5 @@ void bscotch::break_cycles(if_func &f) {
   find_back_edges(back_edges, f);
 
   for (auto &x : back_edges)
-    x.first->cycle_breaker = true;
+    x.second->cycle_breaker = true;
 }
