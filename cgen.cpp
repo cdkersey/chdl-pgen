@@ -100,7 +100,52 @@ static std::string val_name(std::string fname, int bbidx, if_bb &b, if_val &v)
         << v.id << "\")";
   return oss.str();
 }
- 
+
+static std::string call_type(bool has_id, std::vector<if_val *> args) {
+  using namespace std;
+
+  if (!has_id && args.size() == 0) {
+    return "chdl_void";
+  }
+
+  ostringstream oss;
+  
+  int arg_id = 0;
+  for (auto &p : args) {
+    oss << "ag<";
+
+    if (has_id) {
+      has_id = false;
+      oss << "STP(\"id\"), ";
+    } else {
+      oss << "STP(\"arg" << arg_id++ << "\"), ";
+    }
+
+    oss << type_chdl(p->t);
+
+    if (p != *args.rbegin()) oss << ", ";
+  }
+
+  for (auto &p : args)
+    oss << " >";
+
+  return oss.str();
+}
+
+static std::string ret_type(bool has_id, if_val *ret, type *id_t = NULL) {
+  std::string r;
+
+  if (has_id) {
+    r = "ag<STP(\"id\"), " + type_chdl(*id_t) + ", ";
+  }
+
+  r += "ag<STP(\"rval\"), " + type_chdl(ret->t) + " >";
+
+  if (has_id) r += " >";
+
+  return r;
+}
+
 void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, if_bb &b, if_val &v)
 {
   using std::endl;
@@ -108,8 +153,12 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
   using std::vector;
   using std::ostringstream;
   out << "  ";
+
+  // Calls require a few lines beforehand to prep their arguments.
+  if (v.op == VAL_CALL) {
+  }
   
-  if (!is_store(v.op) && v.op != VAL_PHI) {
+  if (!is_store(v.op) && v.op != VAL_PHI && v.op != VAL_CALL) {
     out << type_chdl(v.t) << ' ' << fname << '_' << v.id << " = ";
   }
 
@@ -213,11 +262,47 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
     out << "ST_STATIC_ARRAY(" << fname << ", " << v.static_arg->name << ", "
         << aname[0] << ", " << aname[1] << ", " << fname << "_bb" << bbidx
         << "_run" << preds.str() << ')';
+  } else if (v.op == VAL_CALL) {
+    bool has_id = true;
+    string rtype = ret_type(has_id, &v, has_id?&v.args[0]->t:NULL),
+           ctype = call_type(has_id, v.args);
+
+    out << "flit<" << rtype << " > "
+        << fname << "_call_" << v.id << "_ret;" << endl
+        << "  flit<" << ctype << " > "
+        << fname << "_call_" << v.id << "_args;" << endl
+        << "  TAP(" << fname << "_call_" << v.id << "_ret);" << endl
+        << "  TAP(" << fname << "_call_" << v.id << "_args);" << endl;
+
+    out << "  _(" << fname << "_call_" << v.id << "_args, \"valid\") = _("
+        << fname << "_bb" << bbidx << "_in, \"valid\");" << endl;
+    out << "  _(" << fname << "_call_" << v.id << "_ret, \"ready\") = _("
+        << fname << "_bb" << bbidx << "_out_prebuf, \"ready\");" << endl;
+      
+    int anum = 0;
+    for (int aidx = 0; aidx < v.args.size(); ++aidx) {
+      if (has_id && aidx == 0) {
+        out << "  _(_(" << fname << "_call_" << v.id
+            << "_args, \"contents\"), \"id\") = " << aname[aidx] << ';' << endl;
+      } else {
+        out << "  _(_(" << fname << "_call_" << v.id
+            << "_args, \"contents\"), \"arg" << anum++ << "\") = "
+            << aname[aidx] << ';' << endl;
+      }
+    }
+    
+    out << "  " << v.func_arg << '(' << fname << "_call_" << v.id << "_ret, "
+        << fname << "_call_" << v.id << "_args);" << endl;
+
+    out << "  " << type_chdl(v.t) << ' ' << fname << '_' << v.id << " = "
+        << "_(_(" << fname << "_call_" << v.id
+        << "_ret, \"contents\"), \"rval\");" << endl;
+    
   } else {
     out << "UNSUPPORTED_OP " << if_op_str[v.op];
   }
 
-  if (v.op != VAL_PHI) out << ';' << endl;
+  if (v.op != VAL_PHI && v.op != VAL_CALL) out << ';' << endl;
 }
 
 static void print_arg_type(std::ostream &out, std::vector<type> &v) {
