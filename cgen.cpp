@@ -312,6 +312,7 @@ void bscotch::gen_bb_decls(std::ostream &out, std::string fname, int idx, if_bb 
   
   // Declare input/output arrays
   out << "  " << fname << "_bb" << idx << "_in_t "
+      << fname << "_bb" << idx << "_in_prebuf, "
       << fname << "_bb" << idx << "_in;" << endl;
   out << "  TAP(" << fname << "_bb" << idx << "_in);" << endl;
 
@@ -407,9 +408,11 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
         << input_signal(fname, idx, b.pred.size(), "ready") << ';' << endl;
   }
   
-  // Instantiate arbiter
-  out << "  Arbiter(" << fname << "_bb" << idx << "_in, ArbRR<" << n_pred
-      << ">, " << fname << "_bb" << idx << "_arb_in);" << endl;
+  // Instantiate arbiter and input buffer.
+  out << "  Arbiter(" << fname << "_bb" << idx << "_in_prebuf, ArbRR<" << n_pred
+      << ">, " << fname << "_bb" << idx << "_arb_in);" << endl
+      << "  BBInputBuf(" << fname << "_bb" << idx << "_in, "
+      << fname << "_bb" << idx <<  "_in_prebuf);";
 
   // Create block's run signal
   out << "  node " << fname << "_bb" << idx << "_run(_(" << fname << "_bb"

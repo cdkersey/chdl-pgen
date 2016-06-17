@@ -100,18 +100,9 @@ template <unsigned N, typename T>
   return r;
 }
 
-// Output buffers
+// Output buffers offer no storage/delay.
 template <typename T> void BBOutputBuf(flit<T> &out, flit<T> &in) {
-  node full, fill, empty;
-  node wr_buf = _(in, "ready") && _(in, "valid");
-
-  _(out, "contents") = Wreg(wr_buf, _(in, "contents"));
-  _(out, "valid") = full;
-
-  full = Reg((full && !empty) || fill);
-  fill = wr_buf;
-  empty = full && _(out, "ready");
-  _(in, "ready") = !full || empty;
+  out = in;
 }
 
 template <unsigned S, typename T>
@@ -149,6 +140,21 @@ template <typename T>
   void BBOutputBuf(vec<1, flit<T> > &out, flit<T> &in)
 {
   BBOutputBuf(bvec<0>(), out, in);
+}
+
+template <typename T>
+  void BBInputBuf(flit<T> &out, flit<T> &in)
+{
+  node full, fill, empty;
+  node wr_buf = _(in, "ready") && _(in, "valid");
+
+  _(out, "contents") = Wreg(wr_buf, _(in, "contents"));
+  _(out, "valid") = full;
+
+  full = Reg((full && !empty) || fill);
+  fill = wr_buf;
+  empty = full && _(out, "ready");
+  _(in, "ready") = !full || empty;
 }
 
 template <typename T> void BBOutputBuf2(flit<T> &out, flit<T> &in) {
