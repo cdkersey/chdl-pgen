@@ -154,10 +154,6 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
   using std::ostringstream;
   out << "  ";
 
-  // Calls require a few lines beforehand to prep their arguments.
-  if (v.op == VAL_CALL) {
-  }
-  
   if (!is_store(v.op) && v.op != VAL_PHI && v.op != VAL_CALL) {
     out << type_chdl(v.t) << ' ' << fname << '_' << v.id << " = ";
   }
@@ -278,7 +274,7 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
         << fname << "_bb" << bbidx << "_in, \"valid\");" << endl;
     out << "  _(" << fname << "_call_" << v.id << "_ret, \"ready\") = _("
         << fname << "_bb" << bbidx << "_out_prebuf, \"ready\");" << endl;
-      
+
     int anum = 0;
     for (int aidx = 0; aidx < v.args.size(); ++aidx) {
       if (has_id && aidx == 0) {
@@ -290,6 +286,27 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
             << aname[aidx] << ';' << endl;
       }
     }
+
+    if (has_id) {
+      ostringstream lsname;
+      lsname << fname << "_call_" << v.id << "_live";
+      
+      out << "  " << fname << "_bb" << bbidx << "_out_t " << lsname.str()
+          << ';' << endl
+          << "  _(" << lsname.str() << ", \"contents\") = Syncmem(_(_(" << fname
+          << "_call_" << v.id << "_ret, \"contents\"), \"id\"), Flatten(_("
+          << fname << "_bb" << bbidx << "_out_prebuf, \"contents\")), _(_("
+          << fname << "_call_" << v.id << "_args, \"contents\"), \"id\"), ("
+          << fname << "_call_" << v.id << "_args, \"ready\") && _(" << fname
+          << "_call_" << v.id << "_args, \"valid\"));" << endl
+          << "  _(_(" << lsname.str() << ", \"contents\"), \"val" << v.id
+          << "\") = _(_(" << fname << "_call_" << v.id
+          << "_ret, \"contents\"), \"rval\");" << endl
+          << "  _(" << lsname.str() << ", \"ready\") = _(" << fname << "_call_" << v.id << "_args, \"ready\");" << endl
+          << "  _(" << lsname.str() << ", \"valid\") = _(" << fname << "_call_" << v.id << "_ret, \"valid\");" << endl
+          << "  TAP(" << lsname.str() << ");\n";
+    }
+
     
     out << "  " << v.func_arg << '(' << fname << "_call_" << v.id << "_ret, "
         << fname << "_call_" << v.id << "_args);" << endl;
@@ -523,17 +540,29 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
       << "  " << input_signal(fname, idx, "ready") << " = "
       << output_signal(fname, idx, "ready") << ';' << endl;
 
-  for (auto &x : b.live_out) {
-    std::ostringstream oss;
-    oss << "val" << x->id;
-    out << "  " << output_csignal(fname, idx, oss.str()) << " = "
-        << val_name(fname, idx, b, *x) << ';' << endl;
+  // Connections of live values to output: handled by live value store in blocks
+  // ending  with function calls.
+  if (b.vals.rbegin()->op != VAL_CALL) {
+    for (auto &x : b.live_out) {
+      std::ostringstream oss;
+      oss << "val" << x->id;
+      out << "  " << output_csignal(fname, idx, oss.str()) << " = "
+          << val_name(fname, idx, b, *x) << ';' << endl;
+    }
   }
 
   // Instantiate buffer/switch
+  std::ostringstream buf_input_name;
+
+  if (b.vals.rbegin()->op == VAL_CALL) {
+    buf_input_name << fname << "_call_" << b.vals.rbegin()->id << "_live";
+  } else {
+    buf_input_name << fname << "_bb" << idx << "_out_prebuf";
+  }
+  
   if (b.suc.size() == 1) {
-    out << "  BBOutputBuf(" << fname << "_bb" << idx << "_out, " << fname
-        << "_bb" << idx << "_out_prebuf);" << endl;
+    out << "  BBOutputBuf(" << fname << "_bb" << idx << "_out, "
+        << buf_input_name.str() << ");" << endl;
   } else {
     out << "  BBOutputBuf(" << val_name(fname, idx, b, *b.branch_pred) << ", "
         << fname << "_bb" << idx << "_out, " << fname << "_bb" << idx

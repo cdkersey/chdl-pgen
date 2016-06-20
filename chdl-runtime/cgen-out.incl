@@ -20,7 +20,7 @@
   // main BB 1 declarations
   hierarchy_enter("main_bb1_decls");
   typedef flit<ag<STP("val1"), ui<32> > > main_bb1_in_t;
-  typedef flit<ag<STP("val1"), ui<32>, ag<STP("val4"), ui<5>, ag<STP("val5"), ui<32> > > > > main_bb1_out_t;
+  typedef flit<ag<STP("val1"), late<ui<32> >, ag<STP("val4"), late<ui<5> >, ag<STP("val5"), late<ui<32> > > > > > main_bb1_out_t;
   main_bb1_in_t main_bb1_in_prebuf, main_bb1_in;
   TAP(main_bb1_in);
   TAP(main_bb1_in_prebuf);
@@ -90,17 +90,18 @@
   _(main_call_5_ret, "ready") = _(main_bb1_out_prebuf, "ready");
   _(_(main_call_5_args, "contents"), "id") = main_4;
   _(_(main_call_5_args, "contents"), "arg0") = _(_(main_bb1_in, "contents"), "val1");
+  main_bb1_out_t main_call_5_live;
+  _(main_call_5_live, "contents") = Syncmem(_(_(main_call_5_ret, "contents"), "id"), Flatten(_(main_bb1_out_prebuf, "contents")), _(_(main_call_5_args, "contents"), "id"), (main_call_5_args, "ready") && _(main_call_5_args, "valid"));
+  _(_(main_call_5_live, "contents"), "val5") = _(_(main_call_5_ret, "contents"), "rval");
+  _(main_call_5_live, "ready") = _(main_call_5_args, "ready");
+  _(main_call_5_live, "valid") = _(main_call_5_ret, "valid");
+  TAP(main_call_5_live);
   func(main_call_5_ret, main_call_5_args);
-  main_bb1_out_t main_call_5_buf = SyncMem();
-
   ui<32> main_5 = _(_(main_call_5_ret, "contents"), "rval");
   tap("main_5", main_5);
   _(main_bb1_out_prebuf, "valid") = _(main_bb1_in, "valid");
   _(main_bb1_in, "ready") = _(main_bb1_out_prebuf, "ready");
-  _(_(main_bb1_out_prebuf, "contents"), "val1") = _(_(main_bb1_in, "contents"), "val1");
-  _(_(main_bb1_out_prebuf, "contents"), "val4") = main_4;
-  _(_(main_bb1_out_prebuf, "contents"), "val5") = main_5;
-  BBOutputBuf(main_bb1_out, main_bb1_out_prebuf);
+  BBOutputBuf(main_bb1_out, main_call_5_live);
   hierarchy_exit();
 
   // main BB 2 body
@@ -119,7 +120,7 @@
   TAP(main_bb2_run);
   ui<32> main_6 = Lit<32>(0x00000001);
   tap("main_6", main_6);
-  ui<32> main_7 = _(_(main_bb2_in, "contents"), "val5") + main_6;
+  ui<32> main_7 = _(_(main_bb2_in, "contents"), "val1") + main_6;
   tap("main_7", main_7);
   _(main_bb2_out_prebuf, "valid") = _(main_bb2_in, "valid");
   _(main_bb2_in, "ready") = _(main_bb2_out_prebuf, "ready");

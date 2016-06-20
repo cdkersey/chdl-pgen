@@ -162,7 +162,7 @@ void test_func(if_func &f) {
 
   f.bbs[2].vals[1].t = u32();
   f.bbs[2].vals[1].op = VAL_ADD;
-  f.bbs[2].vals[1].args.push_back(&f.bbs[1].vals[4]);
+  f.bbs[2].vals[1].args.push_back(&f.bbs[1].vals[0]);
   f.bbs[2].vals[1].args.push_back(&f.bbs[2].vals[0]);
 }
 

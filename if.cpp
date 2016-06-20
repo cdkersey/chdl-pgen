@@ -15,7 +15,7 @@ const char *bscotch::if_op_str[] = {
   "ld_idx", "st_idx", "ld_idx_static", "st_idx_static",
   "neg", "not",
   "add", "sub", "mul", "div", "and", "or", "xor",
-  "cat", "call_static", "call"
+  "cat", "call_static", "call", "ret"
 };
 
 // Print vector of bools as hex. TODO: move to separate utility library?

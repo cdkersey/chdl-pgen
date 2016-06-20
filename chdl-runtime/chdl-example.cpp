@@ -18,6 +18,7 @@ void func(func_ret_t &r, func_call_t &c) {
   node v = _(c, "valid");
 
   ui<32> x = _(_(c, "contents"), "arg0");
+  _(_(r, "contents"), "id") = Wreg(rdy, Wreg(rdy, Wreg(rdy, _(_(c, "contents"), "id"))));
   _(_(r, "contents"), "rval") = Wreg(rdy, Wreg(rdy, Wreg(rdy, ~x)));
   _(r, "valid") = Wreg(rdy, Wreg(rdy, Wreg(rdy, v)));
 }
