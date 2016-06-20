@@ -22,7 +22,7 @@ namespace bscotch {
     VAL_NEG, VAL_NOT,
     VAL_ADD, VAL_SUB, VAL_MUL, VAL_DIV, VAL_AND, VAL_OR, VAL_XOR,
     VAL_CONCATENATE,
-    VAL_CALL_STATIC, VAL_CALL, VAL_RET
+    VAL_CALL_STATIC, VAL_CALL, VAL_CALL_BLOCKING, VAL_RET
   };
 
   extern const char *if_op_str[];

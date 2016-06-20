@@ -259,14 +259,17 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
         << aname[0] << ", " << aname[1] << ", " << fname << "_bb" << bbidx
         << "_run" << preds.str() << ')';
   } else if (v.op == VAL_CALL) {
-    bool has_id = true;
-    string rtype = ret_type(has_id, &v, has_id?&v.args[0]->t:NULL),
-           ctype = call_type(has_id, v.args);
+    ostringstream ctype_oss, rtype_oss;
+    ctype_oss << v.func_arg << "_call_t<" << fname << "_bb" << bbidx
+              << "_out_contents_t" << '>';
+    rtype_oss << v.func_arg << "_ret_t<" << fname << "_bb" << bbidx
+              << "_out_contents_t" << '>';
+    
+    string rtype = rtype_oss.str(),
+           ctype = ctype_oss.str();
 
-    out << "flit<" << rtype << " > "
-        << fname << "_call_" << v.id << "_ret;" << endl
-        << "  flit<" << ctype << " > "
-        << fname << "_call_" << v.id << "_args;" << endl
+    out << rtype << ' ' << fname << "_call_" << v.id << "_ret;" << endl
+        << "  " << ctype << ' ' << fname << "_call_" << v.id << "_args;" << endl
         << "  TAP(" << fname << "_call_" << v.id << "_ret);" << endl
         << "  TAP(" << fname << "_call_" << v.id << "_args);" << endl;
 
@@ -275,46 +278,48 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
     out << "  _(" << fname << "_call_" << v.id << "_ret, \"ready\") = _("
         << fname << "_bb" << bbidx << "_out_prebuf, \"ready\");" << endl;
 
-    int anum = 0;
-    for (int aidx = 0; aidx < v.args.size(); ++aidx) {
-      if (has_id && aidx == 0) {
-        out << "  _(_(" << fname << "_call_" << v.id
-            << "_args, \"contents\"), \"id\") = " << aname[aidx] << ';' << endl;
-      } else {
-        out << "  _(_(" << fname << "_call_" << v.id
-            << "_args, \"contents\"), \"arg" << anum++ << "\") = "
-            << aname[aidx] << ';' << endl;
-      }
+    for (unsigned i = 0; i < v.args.size(); ++i) {
+      out << "  _(_(" << fname << "_call_" << v.id
+          << "_args, \"contents\"), \"arg" << i << "\") = "
+          << aname[i] << ';' << endl;
     }
 
-    if (has_id) {
-      ostringstream lsname;
-      lsname << fname << "_call_" << v.id << "_live";
+    out << "_(_(" << fname << "_call_" << v.id << "_args, \"contents\"), \"live\") = " << fname << "_bb" << bbidx << "_live;" << endl;
+
+    #if 0
+    ostringstream lsname;
+    lsname << fname << "_call_" << v.id << "_live";
       
-      out << "  " << fname << "_bb" << bbidx << "_out_t " << lsname.str()
-          << ';' << endl
-          << "  _(" << lsname.str() << ", \"contents\") = Syncmem(_(_(" << fname
-          << "_call_" << v.id << "_ret, \"contents\"), \"id\"), Flatten(_("
-          << fname << "_bb" << bbidx << "_out_prebuf, \"contents\")), _(_("
-          << fname << "_call_" << v.id << "_args, \"contents\"), \"id\"), ("
-          << fname << "_call_" << v.id << "_args, \"ready\") && _(" << fname
-          << "_call_" << v.id << "_args, \"valid\"));" << endl
-          << "  _(_(" << lsname.str() << ", \"contents\"), \"val" << v.id
-          << "\") = _(_(" << fname << "_call_" << v.id
-          << "_ret, \"contents\"), \"rval\");" << endl
-          << "  _(" << lsname.str() << ", \"ready\") = _(" << fname << "_call_" << v.id << "_args, \"ready\");" << endl
-          << "  _(" << lsname.str() << ", \"valid\") = _(" << fname << "_call_" << v.id << "_ret, \"valid\");" << endl
-          << "  TAP(" << lsname.str() << ");\n";
-    }
-
+    out << "  " << fname << "_bb" << bbidx << "_out_t " << lsname.str()
+        << ';' << endl
+        << "  _(" << lsname.str() << ", \"contents\") = LLRam(_(_(" << fname
+        << "_call_" << v.id << "_ret, \"contents\"), \"id\"), Flatten(_("
+        << fname << "_bb" << bbidx << "_out_prebuf, \"contents\")), _(_("
+        << fname << "_call_" << v.id << "_args, \"contents\"), \"id\"), _("
+        << fname << "_call_" << v.id << "_args, \"ready\") && _(" << fname
+        << "_call_" << v.id << "_args, \"valid\"));" << endl
+        << "  _(" << lsname.str() << ", \"ready\") = _(" << fname
+        << "_call_" << v.id << "_args, \"ready\");" << endl
+        << "  _(" << lsname.str() << ", \"valid\") = _(" << fname << "_call_"
+        << v.id << "_ret, \"valid\");" << endl
+        << "  TAP(" << lsname.str() << ");\n";
+    #endif
     
+    bool rval_live = false;
+    for (auto &p : b.live_out)
+      if (p == &v) rval_live = true;
+      
+    if (rval_live)
+      out << "  _(_(_(" << fname << "_call_" << v.id
+          << "_ret, \"contents\"), \"live\"), \"val" << v.id
+          << "\") = _(_(" << fname << "_call_" << v.id
+          << "_ret, \"contents\"), \"rval\");" << endl;    
     out << "  " << v.func_arg << '(' << fname << "_call_" << v.id << "_ret, "
         << fname << "_call_" << v.id << "_args);" << endl;
 
     out << "  " << type_chdl(v.t) << ' ' << fname << '_' << v.id << " = "
         << "_(_(" << fname << "_call_" << v.id
         << "_ret, \"contents\"), \"rval\");" << endl;
-    
   } else {
     out << "UNSUPPORTED_OP " << if_op_str[v.op];
   }
@@ -386,8 +391,7 @@ static std::string output_csignal(std::string fname, int bbidx, int vidx, std::s
 
 static std::string output_csignal(std::string fname, int bbidx, std::string signal) {
   std::ostringstream oss;
-  oss << "_(_(" << fname << "_bb" << bbidx << "_out_prebuf, \"contents\"), \""
-      << signal << "\")";
+  oss << "_(" << fname << "_bb" << bbidx << "_live, \"" << signal << "\")";
   return oss.str();
 }
 
@@ -404,13 +408,17 @@ void bscotch::gen_bb_decls(std::ostream &out, std::string fname, int idx, if_bb 
   out << "  // " << fname << " BB " << idx << " declarations" << endl;
   out << "  hierarchy_enter(\"" << fname << "_bb" << idx << "_decls\");" << endl;
   // Typedef input/output types
-  out << "  typedef flit<";
+  out << "  typedef ";
   print_live_type(out, b.live_in);
-  out << " > " << fname << "_bb" << idx << "_in_t;" << endl;
-  
-  out << "  typedef flit<";
+  out << ' ' << fname << "_bb" << idx << "_in_contents_t;" << endl
+      << "  typedef flit<" << fname << "_bb" << idx << "_in_contents_t> "
+      << fname << "_bb" << idx << "_in_t;" << endl;
+
+  out << "  typedef ";
   print_live_type(out, b.live_out);
-  out << " > " << fname << "_bb" << idx << "_out_t;" << endl;
+  out << ' ' << fname << "_bb" << idx << "_out_contents_t;" << endl
+      << "  typedef flit<" << fname << "_bb" << idx << "_out_contents_t> "
+      << fname << "_bb" << idx << "_out_t;" << endl;
   
   // Declare input/output arrays
   out << "  " << fname << "_bb" << idx << "_in_t "
@@ -421,7 +429,9 @@ void bscotch::gen_bb_decls(std::ostream &out, std::string fname, int idx, if_bb 
 
   int n_suc = b.suc.size();
   out << "  " << fname << "_bb" << idx << "_out_t " << fname << "_bb" << idx
-      << "_out_prebuf;" << endl 
+      << "_out_prebuf;" << endl
+      << "  " << fname << "_bb" << idx << "_out_contents_t " << fname << "_bb"
+      << idx << "_live;" << endl
       << "  vec<" << n_suc << ", " << fname << "_bb" << idx << "_out_t> "
       << fname << "_bb" << idx << "_out;" << endl;
   out << "  TAP(" << fname << "_bb" << idx << "_out_prebuf);" << endl;
@@ -540,29 +550,23 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
       << "  " << input_signal(fname, idx, "ready") << " = "
       << output_signal(fname, idx, "ready") << ';' << endl;
 
-  // Connections of live values to output: handled by live value store in blocks
-  // ending  with function calls.
-  if (b.vals.rbegin()->op != VAL_CALL) {
-    for (auto &x : b.live_out) {
-      std::ostringstream oss;
-      oss << "val" << x->id;
-      out << "  " << output_csignal(fname, idx, oss.str()) << " = "
-          << val_name(fname, idx, b, *x) << ';' << endl;
-    }
+  // Connections of live values to output.
+  for (auto &x : b.live_out) {
+    std::ostringstream oss;
+    oss << "val" << x->id;
+    out << "  " << output_csignal(fname, idx, oss.str()) << " = "
+        << val_name(fname, idx, b, *x) << ';' << endl;
   }
 
   // Instantiate buffer/switch
-  std::ostringstream buf_input_name;
-
-  if (b.vals.rbegin()->op == VAL_CALL) {
-    buf_input_name << fname << "_call_" << b.vals.rbegin()->id << "_live";
-  } else {
-    buf_input_name << fname << "_bb" << idx << "_out_prebuf";
+  if (b.vals.rbegin()->op != VAL_CALL) {
+    out << "  _(" << fname << "_bb" << idx << "_out_prebuf, \"contents\") = "
+        << fname << "_bb" << idx << "_live;" << endl;
   }
   
   if (b.suc.size() == 1) {
-    out << "  BBOutputBuf(" << fname << "_bb" << idx << "_out, "
-        << buf_input_name.str() << ");" << endl;
+    out << "  BBOutputBuf(" << fname << "_bb" << idx << "_out, " << fname
+        << "_bb" << idx << "_out_prebuf);" << endl;
   } else {
     out << "  BBOutputBuf(" << val_name(fname, idx, b, *b.branch_pred) << ", "
         << fname << "_bb" << idx << "_out, " << fname << "_bb" << idx

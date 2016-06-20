@@ -137,7 +137,17 @@ tasks/goals in order of planned completion:
       <2016-06-14>
     .  Build a basic block level program that makes function calls. <2016-06-15>
     - Add support for function calls to code generator. <2016-06-15>
+      - Figure out this ID/live value store SRAM problem.
+        - If I store live values in a synchronous SRAM I need the id of the
+          function call a cycle before its return value.
+      - Add support for blocking call (OP_CALL_BLOCKING)
       - Add return instruction if it doesn't already exist!
+      - Add implementation for return instruction.
+    - Prune out obviously obsolte or misguided instructions.
+    - Write a basic block level program containing multiple functions.
+    - Upgrade code generator to support multiple functions.
+    - Write a basic block level program containing spawns.
+    - Add support for spawns to code generator.
     - Build a basic block level program that uses stalls. <2016-06-16>
     - Add support for stalls to code generator. <2016-06-16>
     - Build a basic block level program using concatenate operator. <2016-06-16>
@@ -149,8 +159,6 @@ tasks/goals in order of planned completion:
       - Structural constraints:
         - Calls must be the final instruction in a basic block. (limit 1/block)
       - Timing constraints:
-        - No live value at the time of a function call can be an SRAM array read
-          within the same block.
     - Build a basic block level program that uses bypassed SRAM arrays.
       <2016-06-17>
     - Add support for bypass networks to code generator. <2016-06-17>

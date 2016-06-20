@@ -10,15 +10,20 @@ using namespace chdl;
 
 // Test function calls:
 // \/ \/ \/
-typedef flit<ag<STP("id"), ui<5>, ag<STP("rval"), ui<32> > > > func_ret_t;
-typedef flit<ag<STP("id"), ui<5>, ag<STP("arg0"), ui<32> > > > func_call_t;
+template <typename L>
+  using func_ret_t =
+    flit<ag<STP("live"), L, ag<STP("rval"), ui<32> > > >;
 
-void func(func_ret_t &r, func_call_t &c) {
+template <typename L>
+  using func_call_t =
+    flit<ag<STP("live"), L, ag<STP("arg0"), ui<32> > > >;
+
+template <typename L> void func(func_ret_t<L> &r, func_call_t<L> &c) {
   node rdy = _(c, "ready") = _(r, "ready");
   node v = _(c, "valid");
 
   ui<32> x = _(_(c, "contents"), "arg0");
-  _(_(r, "contents"), "id") = Wreg(rdy, Wreg(rdy, Wreg(rdy, _(_(c, "contents"), "id"))));
+  _(_(r, "contents"), "live") = Wreg(rdy, Wreg(rdy, Wreg(rdy, _(_(c, "contents"), "live"))));
   _(_(r, "contents"), "rval") = Wreg(rdy, Wreg(rdy, Wreg(rdy, ~x)));
   _(r, "valid") = Wreg(rdy, Wreg(rdy, Wreg(rdy, v)));
 }
