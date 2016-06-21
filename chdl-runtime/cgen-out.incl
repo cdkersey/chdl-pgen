@@ -25,7 +25,7 @@
   hierarchy_enter("main_bb1_decls");
   typedef ag<STP("val1"), ui<32> > main_bb1_in_contents_t;
   typedef flit<main_bb1_in_contents_t> main_bb1_in_t;
-  typedef ag<STP("val1"), ui<32> > main_bb1_out_contents_t;
+  typedef ag<STP("val1"), ui<32>, ag<STP("val4"), ui<5>, ag<STP("val5"), ui<32> > > > main_bb1_out_contents_t;
   typedef flit<main_bb1_out_contents_t> main_bb1_out_t;
   main_bb1_in_t main_bb1_in_prebuf, main_bb1_in;
   TAP(main_bb1_in);
@@ -40,7 +40,7 @@
 
   // main BB 2 declarations
   hierarchy_enter("main_bb2_decls");
-  typedef ag<STP("val1"), ui<32> > main_bb2_in_contents_t;
+  typedef ag<STP("val1"), ui<32>, ag<STP("val4"), ui<5>, ag<STP("val5"), ui<32> > > > main_bb2_in_contents_t;
   typedef flit<main_bb2_in_contents_t> main_bb2_in_t;
   typedef ag<STP("val7"), ui<32> > main_bb2_out_contents_t;
   typedef flit<main_bb2_out_contents_t> main_bb2_out_t;
@@ -101,12 +101,17 @@
   _(main_call_5_ret, "ready") = _(main_bb1_out_prebuf, "ready");
   _(_(main_call_5_args, "contents"), "arg0") = _(_(main_bb1_in, "contents"), "val1");
 _(_(main_call_5_args, "contents"), "live") = main_bb1_live;
+  _(_(_(main_call_5_ret, "contents"), "live"), "val5") = _(_(main_call_5_ret, "contents"), "rval");
   func(main_call_5_ret, main_call_5_args);
   ui<32> main_5 = _(_(main_call_5_ret, "contents"), "rval");
   tap("main_5", main_5);
-  _(main_bb1_out_prebuf, "valid") = _(main_bb1_in, "valid");
-  _(main_bb1_in, "ready") = _(main_bb1_out_prebuf, "ready");
+  _(main_bb1_out_prebuf, "valid") = _(main_call_5_ret, "valid");
+  _(main_call_5_ret, "ready") = _(main_bb1_out_prebuf, "ready");
+  _(main_bb1_in, "ready") = _(main_call_5_args, "ready");
+_(main_bb1_out_prebuf, "contents") = _(_(main_call_5_ret, "contents"), "live");
   _(main_bb1_live, "val1") = _(_(main_bb1_in, "contents"), "val1");
+  _(main_bb1_live, "val4") = main_4;
+  _(main_bb1_live, "val5") = main_5;
   BBOutputBuf(main_bb1_out, main_bb1_out_prebuf);
   hierarchy_exit();
 
@@ -116,6 +121,10 @@ _(_(main_call_5_args, "contents"), "live") = main_bb1_live;
   _(main_bb1_out[0], "ready") = _(main_bb2_arb_in[0], "ready");
   // BB1 val 1 -> BB 2 val 1
   _(_(main_bb2_arb_in[0], "contents"), "val1") = _(_(main_bb1_out[0], "contents"), "val1");
+  // BB1 val 4 -> BB 2 val 4
+  _(_(main_bb2_arb_in[0], "contents"), "val4") = _(_(main_bb1_out[0], "contents"), "val4");
+  // BB1 val 5 -> BB 2 val 5
+  _(_(main_bb2_arb_in[0], "contents"), "val5") = _(_(main_bb1_out[0], "contents"), "val5");
   BBArbiter(main_bb2_in_prebuf, main_bb2_arb_in);
   BBInputBuf(main_bb2_in, main_bb2_in_prebuf);
   node main_bb2_run(_(main_bb2_in, "valid") && _(main_bb2_out_prebuf, "ready"));

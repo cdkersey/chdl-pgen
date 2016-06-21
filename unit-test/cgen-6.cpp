@@ -111,11 +111,11 @@ void test_func(if_func &f) {
   f.bbs[1].live_in.push_back(&f.bbs[0].vals[0]);
   f.bbs[1].live_in.push_back(&f.bbs[2].vals[1]);
   f.bbs[1].live_out.push_back(&f.bbs[1].vals[0]);
-  //f.bbs[1].live_out.push_back(&f.bbs[1].vals[3]);
-  //f.bbs[1].live_out.push_back(&f.bbs[1].vals[4]);
+  f.bbs[1].live_out.push_back(&f.bbs[1].vals[3]);
+  f.bbs[1].live_out.push_back(&f.bbs[1].vals[4]);
   f.bbs[2].live_in.push_back(&f.bbs[1].vals[0]);
-  //f.bbs[2].live_in.push_back(&f.bbs[1].vals[3]);
-  //f.bbs[2].live_in.push_back(&f.bbs[1].vals[4]);
+  f.bbs[2].live_in.push_back(&f.bbs[1].vals[3]);
+  f.bbs[2].live_in.push_back(&f.bbs[1].vals[4]);
   f.bbs[2].live_out.push_back(&f.bbs[2].vals[1]);
   
   int id = 0;
