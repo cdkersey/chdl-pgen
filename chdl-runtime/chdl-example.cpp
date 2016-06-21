@@ -242,12 +242,18 @@ template <typename T>
 
 int main() {
   // // // // Begin generated code // // // //
-#include "cgen-out.incl"
+  #include "cgen-out.incl"
   // // // // End generated code // // // //
-  
-  // TODO: better starter
+
+  // Start by calling main.
   _(main_call, "valid") = Wreg(_(main_call, "ready"), Lit(0), 1);
 
+  // Always ready for return.
+  _(main_ret, "ready") = Lit(1);
+
+  TAP(main_call);
+  TAP(main_ret);
+  
   if (cycdet()) return 1;
 
   optimize();

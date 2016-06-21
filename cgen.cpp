@@ -51,8 +51,12 @@ static bool is_binary(if_op o) {
 }
 
 static bool is_unary(if_op o) {
-   return (o == VAL_NEG) || (o == VAL_NOT);
+  return (o == VAL_NEG) || (o == VAL_NOT);
  }
+
+static bool is_reduce(if_op o) {
+  return (o == VAL_AND_REDUCE) || (o == VAL_OR_REDUCE);
+}
 
 static bool type_is_bit(const type &t) {
   return t.type_vec.size() == 1 && t.type_vec[0] == TYPE_BIT;
@@ -82,6 +86,8 @@ static std::string op_str(if_op o, const type &t) {
 
   if (o == VAL_NOT) return bit ? "!" : "~";
   else if (o == VAL_NEG) return bit ? "Lit(1) ||" : "-";
+  else if (o == VAL_AND_REDUCE) return "AndN";
+  else if (o == VAL_OR_REDUCE) return "OrN";
 
   return " UNSUPPORTED OP ";
  }
@@ -101,51 +107,6 @@ static std::string val_name(std::string fname, int bbidx, if_bb &b, if_val &v)
   return oss.str();
 }
 
-static std::string call_type(bool has_id, std::vector<if_val *> args) {
-  using namespace std;
-
-  if (!has_id && args.size() == 0) {
-    return "chdl_void";
-  }
-
-  ostringstream oss;
-  
-  int arg_id = 0;
-  for (auto &p : args) {
-    oss << "ag<";
-
-    if (has_id) {
-      has_id = false;
-      oss << "STP(\"id\"), ";
-    } else {
-      oss << "STP(\"arg" << arg_id++ << "\"), ";
-    }
-
-    oss << type_chdl(p->t);
-
-    if (p != *args.rbegin()) oss << ", ";
-  }
-
-  for (auto &p : args)
-    oss << " >";
-
-  return oss.str();
-}
-
-static std::string ret_type(bool has_id, if_val *ret, type *id_t = NULL) {
-  std::string r;
-
-  if (has_id) {
-    r = "ag<STP(\"id\"), " + type_chdl(*id_t) + ", ";
-  }
-
-  r += "ag<STP(\"rval\"), " + type_chdl(ret->t) + " >";
-
-  if (has_id) r += " >";
-
-  return r;
-}
-
 void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, if_bb &b, if_val &v)
 {
   using std::endl;
@@ -154,7 +115,8 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
   using std::ostringstream;
   out << "  ";
 
-  if (!is_store(v.op) && v.op != VAL_PHI && v.op != VAL_CALL) {
+  if (!is_store(v.op) && v.op != VAL_PHI && v.op != VAL_CALL && v.op != VAL_RET)
+  {
     out << type_chdl(v.t) << ' ' << fname << '_' << v.id << " = ";
   }
 
@@ -176,6 +138,8 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
     out << aname[0] << op_str(v.op, v.args[0]->t, v.args[1]->t) << aname[1];
   } else if (is_unary(v.op)) {
     out << op_str(v.op, v.args[0]->t) << aname[0];
+  } else if (is_reduce(v.op)) {
+    out << op_str(v.op, v.args[0]->t) << '(' << aname[0] << ");" << endl;
   } else if (v.op == VAL_ST_STATIC) {
     ostringstream preds;
     if (v.pred) {
@@ -284,27 +248,10 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
           << aname[i] << ';' << endl;
     }
 
-    out << "_(_(" << fname << "_call_" << v.id << "_args, \"contents\"), \"live\") = " << fname << "_bb" << bbidx << "_live;" << endl;
+    out << "_(_(" << fname << "_call_" << v.id
+        << "_args, \"contents\"), \"live\") = "
+        << fname << "_bb" << bbidx << "_live;" << endl;
 
-    #if 0
-    ostringstream lsname;
-    lsname << fname << "_call_" << v.id << "_live";
-      
-    out << "  " << fname << "_bb" << bbidx << "_out_t " << lsname.str()
-        << ';' << endl
-        << "  _(" << lsname.str() << ", \"contents\") = LLRam(_(_(" << fname
-        << "_call_" << v.id << "_ret, \"contents\"), \"id\"), Flatten(_("
-        << fname << "_bb" << bbidx << "_out_prebuf, \"contents\")), _(_("
-        << fname << "_call_" << v.id << "_args, \"contents\"), \"id\"), _("
-        << fname << "_call_" << v.id << "_args, \"ready\") && _(" << fname
-        << "_call_" << v.id << "_args, \"valid\"));" << endl
-        << "  _(" << lsname.str() << ", \"ready\") = _(" << fname
-        << "_call_" << v.id << "_args, \"ready\");" << endl
-        << "  _(" << lsname.str() << ", \"valid\") = _(" << fname << "_call_"
-        << v.id << "_ret, \"valid\");" << endl
-        << "  TAP(" << lsname.str() << ");\n";
-    #endif
-    
     bool rval_live = false;
     for (auto &p : b.live_out)
       if (p == &v) rval_live = true;
@@ -313,18 +260,26 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
       out << "  _(_(_(" << fname << "_call_" << v.id
           << "_ret, \"contents\"), \"live\"), \"val" << v.id
           << "\") = _(_(" << fname << "_call_" << v.id
-          << "_ret, \"contents\"), \"rval\");" << endl;    
+          << "_ret, \"contents\"), \"rval\");" << endl;
     out << "  " << v.func_arg << '(' << fname << "_call_" << v.id << "_ret, "
         << fname << "_call_" << v.id << "_args);" << endl;
 
     out << "  " << type_chdl(v.t) << ' ' << fname << '_' << v.id << " = "
         << "_(_(" << fname << "_call_" << v.id
         << "_ret, \"contents\"), \"rval\");" << endl;
+  } else if (VAL_RET) {
+    out << "  _(" << fname << "_ret, \"valid\") = _("
+        << fname << "_bb" << bbidx << "_out_prebuf, \"valid\");" << endl
+        << "  _(" << fname << "_bb" << bbidx << "_out_prebuf, \"ready\") = _("
+        << fname << "_ret, \"ready\");" << endl
+        << "  _(_(" << fname << "_ret, \"contents\"), \"rval\") = " << aname[0]
+        << ';' << endl;
   } else {
     out << "UNSUPPORTED_OP " << if_op_str[v.op];
   }
 
-  if (v.op != VAL_PHI && v.op != VAL_CALL) out << ';' << endl;
+  if (v.op != VAL_PHI && v.op != VAL_CALL && v.op != VAL_RET)
+    out << ';' << endl;
 }
 
 static void print_arg_type(std::ostream &out, std::vector<type> &v) {
@@ -545,7 +500,7 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
   }
 
   // Connect preubuf outputs
-  if (b.vals.rbegin()->op == VAL_CALL) {
+  if (b.vals.size() >= 1 && b.vals.rbegin()->op == VAL_CALL) {
     out << "  " << output_signal(fname, idx, "valid") << " = _("
         << fname << "_call_" << b.vals.rbegin()->id << "_ret, \"valid\");"
         << endl
@@ -574,7 +529,7 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
   }
 
   // Instantiate buffer/switch
-  if (b.vals.rbegin()->op != VAL_CALL) {
+  if (b.vals.size() == 0 || b.vals.rbegin()->op != VAL_CALL) {
     out << "  _(" << fname << "_bb" << idx << "_out_prebuf, \"contents\") = "
         << fname << "_bb" << idx << "_live;" << endl;
   }
@@ -582,7 +537,7 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
   if (b.suc.size() == 1) {
     out << "  BBOutputBuf(" << fname << "_bb" << idx << "_out, " << fname
         << "_bb" << idx << "_out_prebuf);" << endl;
-  } else {
+  } else if (b.suc.size() >= 2) {
     out << "  BBOutputBuf(" << val_name(fname, idx, b, *b.branch_pred) << ", "
         << fname << "_bb" << idx << "_out, " << fname << "_bb" << idx
         << "_out_prebuf);" << endl;
@@ -640,7 +595,7 @@ void bscotch::gen_func(std::ostream &out, std::string name, if_func &f) {
   print_arg_type(out, f.args);
   out << " > " << name << "_call_t;" << endl;
   
-  out << "  typedef flit<" << type_chdl(f.rtype) << " > "
+  out << "  typedef flit<ag<STP(\"rval\"), " << type_chdl(f.rtype) << " > > "
       << name << "_ret_t;" << endl;
 
   out << "  " << name << "_call_t " << name << "_call;" << endl

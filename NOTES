@@ -136,13 +136,19 @@ tasks/goals in order of planned completion:
     . Figure out what we're going to do long-term about multi-ported memories.
       <2016-06-14>
     .  Build a basic block level program that makes function calls. <2016-06-15>
-    - Add support for function calls to code generator. <2016-06-15>
-      - Figure out this ID/live value store SRAM problem.
+    . Add support for function calls to code generator. <2016-06-15>
+      . Figure out this ID/live value store SRAM problem.
         - If I store live values in a synchronous SRAM I need the id of the
           function call a cycle before its return value.
-      - Add support for blocking call (OP_CALL_BLOCKING)
-      - Add return instruction if it doesn't already exist!
+      x Add support for blocking call (OP_CALL_BLOCKING)
+        - No need.
+    - Write an example program that does a loop 10 times then returns.
+      . Add and-reduce and or-reduce instructions.
+    - Add support for returns to code generator.
+      . Add return instruction if it doesn't already exist!
       - Add implementation for return instruction.
+        - Should we support multiple returns? No. At least, not yet.
+      - Make gen_func() actually generate a C++/CHDL function.
     - Prune out obviously obsolte or misguided instructions.
     - Write a basic block level program containing multiple functions.
     - Upgrade code generator to support multiple functions.
