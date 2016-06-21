@@ -225,13 +225,6 @@ template <typename T>
 
   b_sel = b_full;
 
-  TAP(fill_a);
-  TAP(fill_b);
-  TAP(empty_a);
-  TAP(empty_b);
-  TAP(a_full);
-  TAP(b_full);
-  
   _(in, "ready") = !a_full || !b_full;
 
   _(out, "contents") = Mux(b_sel, a, b);
@@ -240,19 +233,22 @@ template <typename T>
   HIERARCHY_EXIT();
 }
 
+#include "cgen-out.incl"
+
 int main() {
-  // // // // Begin generated code // // // //
-  #include "cgen-out.incl"
-  // // // // End generated code // // // //
-
-  // Start by calling main.
-  _(main_call, "valid") = Wreg(_(main_call, "ready"), Lit(0), 1);
-
+  bmain_call_t<chdl_void> bmain_call;
+  bmain_ret_t<chdl_void> bmain_ret;
+  
+  // Start by calling bmain.
+  _(bmain_call, "valid") = Wreg(_(bmain_call, "ready"), Lit(0), 1);
+ 
   // Always ready for return.
-  _(main_ret, "ready") = Lit(1);
+  _(bmain_ret, "ready") = Lit(1);
+  
+  TAP(bmain_call);
+  TAP(bmain_ret);
 
-  TAP(main_call);
-  TAP(main_ret);
+  bmain(bmain_ret, bmain_call);
   
   if (cycdet()) return 1;
 

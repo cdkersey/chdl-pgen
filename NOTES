@@ -142,16 +142,18 @@ tasks/goals in order of planned completion:
           function call a cycle before its return value.
       x Add support for blocking call (OP_CALL_BLOCKING)
         - No need.
-    - Write an example program that does a loop 10 times then returns.
+    . Write an example program that does a loop 10 times then returns.
       . Add and-reduce and or-reduce instructions.
-    - Add support for returns to code generator.
+    . Add support for returns to code generator.
       . Add return instruction if it doesn't already exist!
-      - Add implementation for return instruction.
+      . Add implementation for return instruction.
         - Should we support multiple returns? No. At least, not yet.
-      - Make gen_func() actually generate a C++/CHDL function.
+    . Make gen_func() generate a C++/CHDL template function with appropriate
+      call/return types.
+    - Make passing around of OPAQUE payload part of the live value management
+      process (including in the calls to other functions!) <2016-06-21>
+    - Make "func" function a part of the cgen-6 test and make sure it works.
     - Prune out obviously obsolte or misguided instructions.
-    - Write a basic block level program containing multiple functions.
-    - Upgrade code generator to support multiple functions.
     - Write a basic block level program containing spawns.
     - Add support for spawns to code generator.
     - Build a basic block level program that uses stalls. <2016-06-16>

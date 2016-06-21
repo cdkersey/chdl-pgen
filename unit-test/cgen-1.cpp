@@ -188,8 +188,8 @@ void test_func(if_func &f) {
 void test_prog(if_prog &p) {
   // Test program:
 
-  test_func(p.functions["main"]);
-  break_cycles(p.functions["main"]);
+  test_func(p.functions["bmain"]);
+  break_cycles(p.functions["bmain"]);
 }
 
 int main() {

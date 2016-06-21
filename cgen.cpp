@@ -283,16 +283,12 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
 }
 
 static void print_arg_type(std::ostream &out, std::vector<type> &v) {
-  if (v.size() == 0) {
-    out << "chdl_void";
-  } else {
-    for (unsigned i = 0; i < v.size(); ++i) {
-      out << "ag<STP(\"" << "arg" << i << "\"), " << type_chdl(v[i]);
-      if (i != v.size() - 1) out << ", ";
-    }
-    for (unsigned i = 0; i < v.size(); ++i)
-      out << " >";
+  for (unsigned i = 0; i < v.size(); ++i) {
+    out << "ag<STP(\"" << "arg" << i << "\"), " << type_chdl(v[i]);
+    if (i != v.size() - 1) out << ", ";
   }
+  for (unsigned i = 0; i < v.size(); ++i)
+    out << " >";
 }
 
 static void print_live_type(std::ostream &out, std::vector<if_val*> &v) {
@@ -582,25 +578,29 @@ unsigned count_stores(if_func &f, if_staticvar &s) {
 
 void bscotch::gen_func(std::ostream &out, std::string name, if_func &f) {
   using std::endl;
+  
+  // Typedef call/ret types
+  out << "template <typename T> using " << name << "_ret_t = "
+      << "flit<ag<STP(\"live\"), T, ag<STP(\"rval\"), "
+      << type_chdl(f.rtype) << " > > >;" << endl;
+
+  out << "template <typename T> using " << name << "_call_t = "
+      << "flit<ag<STP(\"live\"), T";
+  if (f.args.size() > 0) out << ',';
+  print_arg_type(out, f.args);
+  out << " > >;" << endl;
+
+  out << "template <typename OPAQUE> void " << name
+      << '(' << name << "_ret_t<OPAQUE> &" << name << "_ret, "
+      << name << "_call_t<OPAQUE> &" << name << "_call) {" << endl;
+  
   for (auto &s : f.static_vars) {
     unsigned loads = count_loads(f, s.second),
              stores = count_stores(f, s.second);
     gen_static_var(out, s.second, name, loads, stores, false);
   }
-
   out << endl;
   
-  // Typedef call/ret types
-  out << "  typedef flit<";
-  print_arg_type(out, f.args);
-  out << " > " << name << "_call_t;" << endl;
-  
-  out << "  typedef flit<ag<STP(\"rval\"), " << type_chdl(f.rtype) << " > > "
-      << name << "_ret_t;" << endl;
-
-  out << "  " << name << "_call_t " << name << "_call;" << endl
-      << "  " << name << "_ret_t " << name << "_ret;" << endl << endl;
-
   for (unsigned i = 0; i < f.bbs.size(); ++i) {
     live_in_phi_adj(f.bbs[i]);
     gen_bb_decls(out, name, i, f.bbs[i], i == 0);
@@ -612,6 +612,8 @@ void bscotch::gen_func(std::ostream &out, std::string name, if_func &f) {
 
   for (auto &s : f.static_vars)
     gen_static_var_bottom(out, s.second, name, false);
+
+  out << '}' << endl;
 }
 
 void bscotch::gen_prog(std::ostream &out, if_prog &p) {
