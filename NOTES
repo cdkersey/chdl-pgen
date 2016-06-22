@@ -154,15 +154,16 @@ tasks/goals in order of planned completion:
       process (including in the calls to other functions!) <2016-06-21>
     . Make "func" function a part of the cgen-6 test and make sure it works.
       . Oops! We're losing the return value! (fixed)
-    - Prune out obviously obsolte or misguided instructions.
-    - Do we have to prioririze back edges to avoid deadlocks? Can deadlocks
-      happen in looping pipelines?
-    - Write a basic block level program containing spawns.
-    - Add support for spawns to code generator.
+    . Prune out obviously obsolte or misguided instructions.
+      - CALL_BLOCKING is probably unnecessary.
+    . Write a basic block level program containing spawns.
+    . Add support for spawns to code generator.
     - Build a basic block level program that uses stalls.
     - Add support for stalls to code generator.
     - Build a basic block level program using concatenate operator.
     - Add support for concatenate operator to code generator. <2016-06-22>
+    - Do we have to prioririze back edges to avoid deadlocks? Can deadlocks
+      happen in looping pipelines? Is just having the double buffer sufficient?
     - Build a basic block level program using (arr/1val) global variables.
     - Add support for global variables to code generator. <2016-06-23>
     - Understand, enumerate, and automatically check (or remove) constraints.
@@ -175,6 +176,7 @@ tasks/goals in order of planned completion:
     - Add support for speculation to code generator. <2016-06-24>
     - Add support for C++ output to code generator (add separate cgen-cpp)
       <2016-06-28>
+    - Make all of the tests self-report success or failure. <2016-06-29>
   - Parser/front end <2016-07-01>
     - Build a skeleton flex/bison parser <2016-06-21>
     - Get simple static function to parse to AST. <2016-06-22>

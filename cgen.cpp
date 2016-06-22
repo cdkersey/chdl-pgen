@@ -115,7 +115,8 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
   using std::ostringstream;
   out << "  ";
 
-  if (!is_store(v.op) && v.op != VAL_PHI && v.op != VAL_CALL && v.op != VAL_RET)
+  if (!is_store(v.op) && v.op != VAL_PHI && v.op != VAL_CALL
+      && v.op != VAL_RET && v.op != VAL_SPAWN)
   {
     out << type_chdl(v.t) << ' ' << fname << '_' << v.id << " = ";
   }
@@ -225,12 +226,17 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
     out << "ST_STATIC_ARRAY(" << fname << ", " << v.static_arg->name << ", "
         << aname[0] << ", " << aname[1] << ", " << fname << "_bb" << bbidx
         << "_run" << preds.str() << ')';
-  } else if (v.op == VAL_CALL) {
-    ostringstream ctype_oss, rtype_oss;
-    ctype_oss << v.func_arg << "_call_t<" << fname << "_bb" << bbidx
-              << "_out_contents_t" << '>';
-    rtype_oss << v.func_arg << "_ret_t<" << fname << "_bb" << bbidx
-              << "_out_contents_t" << '>';
+  } else if (v.op == VAL_CALL || v.op == VAL_SPAWN) {
+    ostringstream ctype_oss, rtype_oss, live_oss;
+
+    if (v.op == VAL_CALL) {
+      live_oss << fname << "_bb" << bbidx << "_out_contents_t";
+    } else {
+      live_oss << "chdl_void";
+    }
+    
+    ctype_oss << v.func_arg << "_call_t<" << live_oss.str() << " >";
+    rtype_oss << v.func_arg << "_ret_t<" << live_oss.str() << " >";
     
     string rtype = rtype_oss.str(),
            ctype = ctype_oss.str();
@@ -242,8 +248,13 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
 
     out << "  _(" << fname << "_call_" << v.id << "_args, \"valid\") = _("
         << fname << "_bb" << bbidx << "_in, \"valid\");" << endl;
-    out << "  _(" << fname << "_call_" << v.id << "_ret, \"ready\") = _("
-        << fname << "_bb" << bbidx << "_out_prebuf, \"ready\");" << endl;
+    if (v.op == VAL_CALL) {
+      out << "  _(" << fname << "_call_" << v.id << "_ret, \"ready\") = _("
+          << fname << "_bb" << bbidx << "_out_prebuf, \"ready\");" << endl;
+    } else {
+      out << "  _(" << fname << "_call_" << v.id << "_ret, \"ready\") = Lit(1);"
+          << endl;
+    }
 
     for (unsigned i = 0; i < v.args.size(); ++i) {
       out << "  _(_(" << fname << "_call_" << v.id
@@ -251,9 +262,10 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
           << aname[i] << ';' << endl;
     }
 
-    out << "_(_(" << fname << "_call_" << v.id
-        << "_args, \"contents\"), \"live\") = "
-        << fname << "_bb" << bbidx << "_live;" << endl;
+    if (v.op == VAL_CALL)
+      out << "_(_(" << fname << "_call_" << v.id
+          << "_args, \"contents\"), \"live\") = "
+          << fname << "_bb" << bbidx << "_live;" << endl;
 
     bool rval_live = false;
     for (auto &p : b.live_out)
@@ -262,10 +274,11 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
     out << "  " << v.func_arg << '(' << fname << "_call_" << v.id << "_ret, "
         << fname << "_call_" << v.id << "_args);" << endl;
 
-    out << "  " << type_chdl(v.t) << ' ' << fname << '_' << v.id << " = "
-        << "_(_(" << fname << "_call_" << v.id
-        << "_ret, \"contents\"), \"rval\");" << endl;
-  } else if (VAL_RET) {
+    if (v.op == VAL_CALL)
+      out << "  " << type_chdl(v.t) << ' ' << fname << '_' << v.id << " = "
+          << "_(_(" << fname << "_call_" << v.id
+          << "_ret, \"contents\"), \"rval\");" << endl;
+  } else if (v.op == VAL_RET) {
     out << "  _(" << fname << "_ret, \"valid\") = _("
         << fname << "_bb" << bbidx << "_out_prebuf, \"valid\");" << endl
         << "  _(" << fname << "_bb" << bbidx << "_out_prebuf, \"ready\") = _("
@@ -280,8 +293,11 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
     out << "UNSUPPORTED_OP " << if_op_str[v.op];
   }
 
-  if (v.op != VAL_PHI && v.op != VAL_CALL && v.op != VAL_RET)
+  if (v.op != VAL_PHI && v.op != VAL_CALL
+      && v.op != VAL_RET && v.op != VAL_SPAWN)
+  {
     out << ';' << endl;
+  }
 }
 
 static void print_arg_type(std::ostream &out, std::vector<type> &v) {
