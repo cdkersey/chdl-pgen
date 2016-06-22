@@ -8,27 +8,6 @@
 using namespace std;
 using namespace chdl;
 
-// Test function calls:
-// \/ \/ \/
-template <typename L>
-  using func_ret_t =
-    flit<ag<STP("live"), L, ag<STP("rval"), ui<32> > > >;
-
-template <typename L>
-  using func_call_t =
-    flit<ag<STP("live"), L, ag<STP("arg0"), ui<32> > > >;
-
-template <typename L> void func(func_ret_t<L> &r, func_call_t<L> &c) {
-  node rdy = _(c, "ready") = _(r, "ready");
-  node v = _(c, "valid");
-
-  ui<32> x = _(_(c, "contents"), "arg0");
-  _(_(r, "contents"), "live") = Wreg(rdy, Wreg(rdy, Wreg(rdy, _(_(c, "contents"), "live"))));
-  _(_(r, "contents"), "rval") = Wreg(rdy, Wreg(rdy, Wreg(rdy, ~x)));
-  _(r, "valid") = Wreg(rdy, Wreg(rdy, Wreg(rdy, v)));
-}
-// /\ /\ /\
-
 template <typename T, unsigned W> struct staticvar {
   staticvar() { q = Wreg(OrN(wr), Mux(Log2(wr), d)); } 
   staticvar(unsigned long v) { q = Wreg(OrN(wr), Mux(Log2(wr), d), v); }

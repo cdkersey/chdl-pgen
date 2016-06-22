@@ -140,6 +140,9 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
     out << op_str(v.op, v.args[0]->t) << aname[0];
   } else if (is_reduce(v.op)) {
     out << op_str(v.op, v.args[0]->t) << '(' << aname[0] << ");" << endl;
+  } else if (v.op == VAL_ARG) {
+    out << "_(_(" << fname << "_call, \"contents\"), \"arg"
+        << v.static_access_id << "\")";
   } else if (v.op == VAL_ST_STATIC) {
     ostringstream preds;
     if (v.pred) {
@@ -597,7 +600,7 @@ unsigned count_stores(if_func &f, if_staticvar &s) {
   return count;
 }
 
-void bscotch::gen_func(std::ostream &out, std::string name, if_func &f) {
+void bscotch::gen_func_decls(std::ostream &out, std::string name, if_func &f) {
   using std::endl;
   
   // Typedef call/ret types
@@ -611,6 +614,15 @@ void bscotch::gen_func(std::ostream &out, std::string name, if_func &f) {
   print_arg_type(out, f.args);
   out << " > >;" << endl;
 
+  // Prototype the function.
+  out << "template <typename OPAQUE> void " << name
+      << '(' << name << "_ret_t<OPAQUE> &" << name << "_ret, "
+      << name << "_call_t<OPAQUE> &" << name << "_call);" << endl;
+}
+
+void bscotch::gen_func(std::ostream &out, std::string name, if_func &f) {
+  using std::endl;
+  
   out << "template <typename OPAQUE> void " << name
       << '(' << name << "_ret_t<OPAQUE> &" << name << "_ret, "
       << name << "_call_t<OPAQUE> &" << name << "_call) {" << endl;
@@ -638,6 +650,10 @@ void bscotch::gen_func(std::ostream &out, std::string name, if_func &f) {
 }
 
 void bscotch::gen_prog(std::ostream &out, if_prog &p) {
+  for (auto &f : p.functions) {
+    gen_func_decls(out, f.first, f.second);
+  }
+  
   for (auto &f : p.functions) {
     gen_func(out, f.first, f.second);
   }

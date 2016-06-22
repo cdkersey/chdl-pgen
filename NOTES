@@ -150,7 +150,7 @@ tasks/goals in order of planned completion:
         - Should we support multiple returns? No. At least, not yet.
     . Make gen_func() generate a C++/CHDL template function with appropriate
       call/return types.
-    - Make passing around of OPAQUE payload part of the live value management
+    . Make passing around of OPAQUE payload part of the live value management
       process (including in the calls to other functions!) <2016-06-21>
     - Make "func" function a part of the cgen-6 test and make sure it works.
     - Prune out obviously obsolte or misguided instructions.

@@ -1,5 +1,9 @@
 template <typename T> using bmain_ret_t = flit<ag<STP("live"), T, ag<STP("rval"), chdl_void > > >;
 template <typename T> using bmain_call_t = flit<ag<STP("live"), T > >;
+template <typename OPAQUE> void bmain(bmain_ret_t<OPAQUE> &bmain_ret, bmain_call_t<OPAQUE> &bmain_call);
+template <typename T> using func_ret_t = flit<ag<STP("live"), T, ag<STP("rval"), ui<32> > > >;
+template <typename T> using func_call_t = flit<ag<STP("live"), T,ag<STP("arg0"), ui<32> > > >;
+template <typename OPAQUE> void func(func_ret_t<OPAQUE> &func_ret, func_call_t<OPAQUE> &func_call);
 template <typename OPAQUE> void bmain(bmain_ret_t<OPAQUE> &bmain_ret, bmain_call_t<OPAQUE> &bmain_call) {
 
   // bmain BB 0 declarations
@@ -143,6 +147,49 @@ _(bmain_bb1_out_prebuf, "contents") = _(_(bmain_call_5_ret, "contents"), "live")
   _(bmain_bb2_live, "live") = _(_(bmain_bb2_in, "contents"), "live");
   _(bmain_bb2_out_prebuf, "contents") = bmain_bb2_live;
   BBOutputBuf(bmain_bb2_out, bmain_bb2_out_prebuf);
+  hierarchy_exit();
+
+}
+template <typename OPAQUE> void func(func_ret_t<OPAQUE> &func_ret, func_call_t<OPAQUE> &func_call) {
+
+  // func BB 0 declarations
+  hierarchy_enter("func_bb0_decls");
+  typedef ag<STP("live"), OPAQUE > func_bb0_in_contents_t;
+  typedef flit<func_bb0_in_contents_t> func_bb0_in_t;
+  typedef ag<STP("live"), OPAQUE > func_bb0_out_contents_t;
+  typedef flit<func_bb0_out_contents_t> func_bb0_out_t;
+  func_bb0_in_t func_bb0_in_prebuf, func_bb0_in;
+  TAP(func_bb0_in);
+  TAP(func_bb0_in_prebuf);
+  func_bb0_out_t func_bb0_out_prebuf;
+  func_bb0_out_contents_t func_bb0_live;
+  vec<0, func_bb0_out_t> func_bb0_out;
+  TAP(func_bb0_out_prebuf);
+  vec<1, func_bb0_in_t> func_bb0_arb_in;
+  TAP(func_bb0_arb_in);
+  hierarchy_exit();
+
+  // func BB 0 body
+  hierarchy_enter("func_bb0");
+  _(func_bb0_arb_in[0], "valid") = _(func_call, "valid");
+  _(func_call, "ready") = _(func_bb0_arb_in[0], "ready");
+  _(_(func_bb0_arb_in[0], "contents"), "live") = _(_(func_call, "contents"), "live");
+  BBArbiter(func_bb0_in_prebuf, func_bb0_arb_in);
+  BBInputBuf(func_bb0_in, func_bb0_in_prebuf);
+  node func_bb0_run(_(func_bb0_in, "valid") && _(func_bb0_out_prebuf, "ready"));
+  TAP(func_bb0_run);
+  ui<32> func_0 = _(_(func_call, "contents"), "arg0");
+  tap("func_0", func_0);
+  ui<32> func_1 = ~func_0;
+  tap("func_1", func_1);
+    _(func_ret, "valid") = _(func_bb0_out_prebuf, "valid");
+  _(func_bb0_out_prebuf, "ready") = _(func_ret, "ready");
+  _(_(func_ret, "contents"), "rval") = func_1;
+  _(_(func_ret, "contents"), "live") = _(_(func_bb0_out_prebuf, "contents"), "live");
+  _(func_bb0_out_prebuf, "valid") = _(func_bb0_in, "valid");
+  _(func_bb0_in, "ready") = _(func_bb0_out_prebuf, "ready");
+  _(func_bb0_live, "live") = _(_(func_bb0_in, "contents"), "live");
+  _(func_bb0_out_prebuf, "contents") = func_bb0_live;
   hierarchy_exit();
 
 }

@@ -45,6 +45,7 @@ namespace bscotch {
     
     // Loads and stores to static_arg are counted by the code generator. When
     // this occurs, each unique access is given an ID.
+    // For VAL_ARG, this contains the argument index.
     unsigned static_access_id;
     
     // For VAL_CONST, this contains the value

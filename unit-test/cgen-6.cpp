@@ -74,6 +74,37 @@ if_staticvar u32arraystaticvar(string name, unsigned len) {
 }
 
 void test_func(if_func &f) {
+  // Test called function:
+  // bb0:
+  //  %0 = arg (u32)
+  //  %1 = not %0 (u32)
+  //  %2 = ret %1 (void)
+  f.rtype = u32();
+  f.args.push_back(u32());
+  
+  f.bbs.resize(1);
+  f.bbs[0].vals.resize(3);
+  f.bbs[0].branch_pred = NULL;
+  f.bbs[0].id = 0;
+  
+  f.bbs[0].vals[0].id = 0;
+  f.bbs[0].vals[1].id = 1;
+  f.bbs[0].vals[2].id = 2;
+
+  f.bbs[0].vals[0].t = u32();
+  f.bbs[0].vals[0].op = VAL_ARG;
+  f.bbs[0].vals[0].static_access_id = 0;
+
+  f.bbs[0].vals[1].t = u32();
+  f.bbs[0].vals[1].op = VAL_NOT;
+  f.bbs[0].vals[1].args.push_back(&f.bbs[0].vals[0]);
+
+  f.bbs[0].vals[2].t = void_type();
+  f.bbs[0].vals[2].op = VAL_RET;
+  f.bbs[0].vals[2].args.push_back(&f.bbs[0].vals[1]);
+}
+
+void test_bmain(if_func &f) {
   // Test function:
   //  bb0:
   //    %0 = const #0 (u32)
@@ -167,8 +198,11 @@ void test_func(if_func &f) {
 
 void test_prog(if_prog &p) {
   // Test program:
-  test_func(p.functions["bmain"]);
+  test_bmain(p.functions["bmain"]);
   break_cycles(p.functions["bmain"]);
+
+  test_func(p.functions["func"]);
+  break_cycles(p.functions["func"]);
 }
 
 int main() {
