@@ -153,7 +153,10 @@ tasks/goals in order of planned completion:
     . Make passing around of OPAQUE payload part of the live value management
       process (including in the calls to other functions!) <2016-06-21>
     . Make "func" function a part of the cgen-6 test and make sure it works.
+      . Oops! We're losing the return value! (fixed)
     - Prune out obviously obsolte or misguided instructions.
+    - Do we have to prioririze back edges to avoid deadlocks? Can deadlocks
+      happen in looping pipelines?
     - Write a basic block level program containing spawns.
     - Add support for spawns to code generator.
     - Build a basic block level program that uses stalls.

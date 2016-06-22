@@ -137,9 +137,9 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
   } else if (is_binary(v.op)) {
     out << aname[0] << op_str(v.op, v.args[0]->t, v.args[1]->t) << aname[1];
   } else if (is_unary(v.op)) {
-    out << op_str(v.op, v.args[0]->t) << aname[0];
+    out << op_str(v.op, v.args[0]->t) << '(' << aname[0] << ')';
   } else if (is_reduce(v.op)) {
-    out << op_str(v.op, v.args[0]->t) << '(' << aname[0] << ");" << endl;
+    out << op_str(v.op, v.args[0]->t) << '(' << aname[0] << ')';
   } else if (v.op == VAL_ARG) {
     out << "_(_(" << fname << "_call, \"contents\"), \"arg"
         << v.static_access_id << "\")";
@@ -258,12 +258,7 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
     bool rval_live = false;
     for (auto &p : b.live_out)
       if (p == &v) rval_live = true;
-      
-    if (rval_live)
-      out << "  _(_(_(" << fname << "_call_" << v.id
-          << "_ret, \"contents\"), \"live\"), \"val" << v.id
-          << "\") = _(_(" << fname << "_call_" << v.id
-          << "_ret, \"contents\"), \"rval\");" << endl;
+
     out << "  " << v.func_arg << '(' << fname << "_call_" << v.id << "_ret, "
         << fname << "_call_" << v.id << "_args);" << endl;
 
@@ -274,10 +269,11 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
     out << "  _(" << fname << "_ret, \"valid\") = _("
         << fname << "_bb" << bbidx << "_out_prebuf, \"valid\");" << endl
         << "  _(" << fname << "_bb" << bbidx << "_out_prebuf, \"ready\") = _("
-        << fname << "_ret, \"ready\");" << endl
-        << "  _(_(" << fname << "_ret, \"contents\"), \"rval\") = " << aname[0]
-        << ';' << endl
-        << "  _(_(" << fname << "_ret, \"contents\"), \"live\") = _(_("
+        << fname << "_ret, \"ready\");" << endl;
+    if (aname.size() > 0)
+       out << "  _(_(" << fname << "_ret, \"contents\"), \"rval\") = "
+           << aname[0] << ';' << endl;
+    out << "  _(_(" << fname << "_ret, \"contents\"), \"live\") = _(_("
         << fname << "_bb" << bbidx << "_out_prebuf, \"contents\"), \"live\");"
         << endl;
   } else {
@@ -588,6 +584,16 @@ unsigned count_loads(if_func &f, if_staticvar &s) {
   return count;
 }
 
+unsigned count_args(if_func &f) {
+  unsigned count = 0;
+  for (auto &b : f.bbs)
+    for (auto &v : b.vals)
+      if (v.op == VAL_ARG)
+        v.static_access_id = count++;
+
+  return count;
+}
+
 unsigned count_stores(if_func &f, if_staticvar &s) {
   unsigned count = 0;
 
@@ -626,6 +632,8 @@ void bscotch::gen_func(std::ostream &out, std::string name, if_func &f) {
   out << "template <typename OPAQUE> void " << name
       << '(' << name << "_ret_t<OPAQUE> &" << name << "_ret, "
       << name << "_call_t<OPAQUE> &" << name << "_call) {" << endl;
+
+  count_args(f);
   
   for (auto &s : f.static_vars) {
     unsigned loads = count_loads(f, s.second),

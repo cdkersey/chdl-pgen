@@ -77,31 +77,47 @@ void test_func(if_func &f) {
   // Test called function:
   // bb0:
   //  %0 = arg (u32)
-  //  %1 = not %0 (u32)
-  //  %2 = ret %1 (void)
-  f.rtype = u32();
+  //  %1 = const #15 (u32)
+  //  %2 = xor %0, %1 (u32)
+  //  %3 = or_reduce %2 (bit)
+  //  %4 = not %3 (bit)
+  //  %5 = ret %4 (void)
+  f.rtype = bit_type();
   f.args.push_back(u32());
   
   f.bbs.resize(1);
-  f.bbs[0].vals.resize(3);
+  f.bbs[0].vals.resize(6);
   f.bbs[0].branch_pred = NULL;
   f.bbs[0].id = 0;
-  
-  f.bbs[0].vals[0].id = 0;
-  f.bbs[0].vals[1].id = 1;
-  f.bbs[0].vals[2].id = 2;
+
+  for (unsigned i = 0; i < f.bbs[0].vals.size(); ++i) {
+    f.bbs[0].vals[i].id = i;
+    f.bbs[0].vals[i].bb = &f.bbs[0];
+  }
 
   f.bbs[0].vals[0].t = u32();
   f.bbs[0].vals[0].op = VAL_ARG;
-  f.bbs[0].vals[0].static_access_id = 0;
 
   f.bbs[0].vals[1].t = u32();
-  f.bbs[0].vals[1].op = VAL_NOT;
-  f.bbs[0].vals[1].args.push_back(&f.bbs[0].vals[0]);
+  f.bbs[0].vals[1].op = VAL_CONST;
+  to_vec_bool<32>(f.bbs[0].vals[1].const_val, 15);
 
-  f.bbs[0].vals[2].t = void_type();
-  f.bbs[0].vals[2].op = VAL_RET;
+  f.bbs[0].vals[2].t = u32();
+  f.bbs[0].vals[2].op = VAL_XOR;
+  f.bbs[0].vals[2].args.push_back(&f.bbs[0].vals[0]);
   f.bbs[0].vals[2].args.push_back(&f.bbs[0].vals[1]);
+
+  f.bbs[0].vals[3].t = bit_type();
+  f.bbs[0].vals[3].op = VAL_OR_REDUCE;
+  f.bbs[0].vals[3].args.push_back(&f.bbs[0].vals[2]);
+
+  f.bbs[0].vals[4].t = bit_type();
+  f.bbs[0].vals[4].op = VAL_NOT;
+  f.bbs[0].vals[4].args.push_back(&f.bbs[0].vals[3]);
+
+  f.bbs[0].vals[5].t = void_type();
+  f.bbs[0].vals[5].op = VAL_RET;
+  f.bbs[0].vals[5].args.push_back(&f.bbs[0].vals[4]);
 }
 
 void test_bmain(if_func &f) {
@@ -113,30 +129,37 @@ void test_bmain(if_func &f) {
   //    %2 = const #0 (u5)
   //    %3 = const #5 (u5)
   //    %4 = %1[%2,%3] (u5)
-  //    %5 = call func, %1
-  //    br bb2
+  //    %5 = call func, %1 (bit)
+  //    br %5, bb2, bb3
   //  bb2:
   //    %6 = const #1 (u32)
   //    %7 = add %1, %6
   //    br bb1
+  //  bb3:
+  //    %8 = ret (void)
 
   f.rtype = void_type();
 
-  f.bbs.resize(3);
+  f.bbs.resize(4);
 
   f.bbs[0].vals.resize(1);
   f.bbs[1].vals.resize(5);
   f.bbs[2].vals.resize(2);
+  f.bbs[3].vals.resize(1);
 
   f.bbs[0].suc.push_back(&f.bbs[1]);
   f.bbs[1].suc.push_back(&f.bbs[2]);
+  f.bbs[1].suc.push_back(&f.bbs[3]);
   f.bbs[2].suc.push_back(&f.bbs[1]);
   f.bbs[1].pred.push_back(&f.bbs[0]);
   f.bbs[1].pred.push_back(&f.bbs[2]);
   f.bbs[2].pred.push_back(&f.bbs[1]);
+  f.bbs[3].pred.push_back(&f.bbs[1]);
 
   f.bbs[0].branch_pred = NULL;
-  f.bbs[1].branch_pred = NULL;
+  f.bbs[1].branch_pred = &f.bbs[1].vals[4];
+  f.bbs[2].branch_pred = NULL;
+  f.bbs[3].branch_pred = NULL;
 
   f.bbs[0].live_out.push_back(&f.bbs[0].vals[0]);
   f.bbs[1].live_in.push_back(&f.bbs[0].vals[0]);
@@ -181,7 +204,7 @@ void test_bmain(if_func &f) {
   f.bbs[1].vals[3].args.push_back(&f.bbs[1].vals[1]);
   f.bbs[1].vals[3].args.push_back(&f.bbs[1].vals[2]);
 
-  f.bbs[1].vals[4].t = u32();
+  f.bbs[1].vals[4].t = bit_type();
   f.bbs[1].vals[4].op = VAL_CALL;
   f.bbs[1].vals[4].func_arg = "func";
   f.bbs[1].vals[4].args.push_back(&f.bbs[1].vals[0]);
@@ -194,6 +217,9 @@ void test_bmain(if_func &f) {
   f.bbs[2].vals[1].op = VAL_ADD;
   f.bbs[2].vals[1].args.push_back(&f.bbs[1].vals[0]);
   f.bbs[2].vals[1].args.push_back(&f.bbs[2].vals[0]);
+
+  f.bbs[3].vals[0].t = void_type();
+  f.bbs[3].vals[0].op = VAL_RET;
 }
 
 void test_prog(if_prog &p) {
