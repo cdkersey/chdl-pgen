@@ -236,8 +236,11 @@ template <typename T>
 #include "cgen-out.incl"
 
 int main() {
-  bmain_call_t<chdl_void> bmain_call;
-  bmain_ret_t<chdl_void> bmain_ret;
+  // Use a simple payload to verify that live values work.
+  bmain_call_t<bvec<32> > bmain_call;
+  bmain_ret_t<bvec<32> > bmain_ret;
+
+  _(_(bmain_call, "contents"), "live") = Lit<32>(0x5701ca55);
   
   // Start by calling bmain.
   _(bmain_call, "valid") = Wreg(_(bmain_call, "ready"), Lit(0), 1);

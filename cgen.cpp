@@ -273,7 +273,10 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
         << "  _(" << fname << "_bb" << bbidx << "_out_prebuf, \"ready\") = _("
         << fname << "_ret, \"ready\");" << endl
         << "  _(_(" << fname << "_ret, \"contents\"), \"rval\") = " << aname[0]
-        << ';' << endl;
+        << ';' << endl
+        << "  _(_(" << fname << "_ret, \"contents\"), \"live\") = _(_("
+        << fname << "_bb" << bbidx << "_out_prebuf, \"contents\"), \"live\");"
+        << endl;
   } else {
     out << "UNSUPPORTED_OP " << if_op_str[v.op];
   }
@@ -359,15 +362,21 @@ void bscotch::gen_bb_decls(std::ostream &out, std::string fname, int idx, if_bb 
   out << "  // " << fname << " BB " << idx << " declarations" << endl;
   out << "  hierarchy_enter(\"" << fname << "_bb" << idx << "_decls\");" << endl;
   // Typedef input/output types
-  out << "  typedef ";
-  print_live_type(out, b.live_in);
-  out << ' ' << fname << "_bb" << idx << "_in_contents_t;" << endl
+  out << "  typedef ag<STP(\"live\"), OPAQUE";
+  if (b.live_in.size() > 0) {
+    out << ", ";
+    print_live_type(out, b.live_in);
+  }
+  out << " > " << fname << "_bb" << idx << "_in_contents_t;" << endl
       << "  typedef flit<" << fname << "_bb" << idx << "_in_contents_t> "
       << fname << "_bb" << idx << "_in_t;" << endl;
 
-  out << "  typedef ";
-  print_live_type(out, b.live_out);
-  out << ' ' << fname << "_bb" << idx << "_out_contents_t;" << endl
+  out << "  typedef ag<STP(\"live\"), OPAQUE";
+  if (b.live_out.size() > 0) {
+    out << ", ";
+    print_live_type(out, b.live_out);
+  }
+  out << " > " << fname << "_bb" << idx << "_out_contents_t;" << endl
       << "  typedef flit<" << fname << "_bb" << idx << "_out_contents_t> "
       << fname << "_bb" << idx << "_out_t;" << endl;
   
@@ -464,13 +473,20 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
           << output_csignal(fname, b.pred[i]->id, pred_sidx, namep.str())
           << ';' << endl;
     }
+
+    // Also pass through the function live values.
+    out << "  " << input_csignal(fname, idx, i, "live") << " = "
+        << output_csignal(fname, b.pred[i]->id, pred_sidx, "live") << ';'
+        << endl;
   }
   if (entry) {
     n_pred++;
     out << "  " << input_signal(fname, idx, b.pred.size(), "valid")
         << " = _(" << fname << "_call, \"valid\");" << endl
         << "  _(" << fname << "_call, \"ready\") = "
-        << input_signal(fname, idx, b.pred.size(), "ready") << ';' << endl;
+        << input_signal(fname, idx, b.pred.size(), "ready") << ';' << endl
+        << "  " << input_csignal(fname, idx, b.pred.size(), "live")
+        << " = _(_(" << fname << "_call, \"contents\"), \"live\");" << endl;
   }
   
   // Instantiate arbiter and input buffer.
@@ -523,6 +539,11 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
     out << "  " << output_csignal(fname, idx, oss.str()) << " = "
         << val_name(fname, idx, b, *x) << ';' << endl;
   }
+
+  // Connection of function live value to output.
+  out << "  " << output_csignal(fname, idx, "live") << " = "
+      << "_(_(" << fname << "_bb" << idx << "_in, \"contents\"), \"live\");"
+      << endl;
 
   // Instantiate buffer/switch
   if (b.vals.size() == 0 || b.vals.rbegin()->op != VAL_CALL) {
