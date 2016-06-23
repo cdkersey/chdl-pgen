@@ -74,6 +74,10 @@ namespace bscotch {
     // This allows a cycle of slack and places a break in the ready signal
     // generation chain.
     bool cycle_breaker;
+
+
+    // Stall predicate; a currently live val
+    if_val *stall;
     
     // Branch predicate; a currently live val (if needed)
     if_val *branch_pred;

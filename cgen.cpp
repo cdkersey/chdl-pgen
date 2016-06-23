@@ -535,16 +535,19 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
         << "_ret, \"ready\") = " << output_signal(fname, idx, "ready")
         << ';' << endl
         << "  " << input_signal(fname, idx, "ready") << " = _("
-        << fname << "_call_" << b.vals.rbegin()->id << "_args, \"ready\");"
-        << endl
-        << output_signal(fname, idx, "contents") << " = _(_("
+        << fname << "_call_" << b.vals.rbegin()->id << "_args, \"ready\")";
+    if (b.stall) out << " && " << val_name(fname, bbidx, b, *b.stall);
+    out << ';' << endl;
+    out << output_signal(fname, idx, "contents") << " = _(_("
         << fname << "_call_" << b.vals.rbegin()->id
         << "_ret, \"contents\"), \"live\");" << endl;
   } else {
     out << "  " << output_signal(fname, idx, "valid") << " = "
         << input_signal(fname, idx, "valid") << ';' << endl
         << "  " << input_signal(fname, idx, "ready") << " = "
-        << output_signal(fname, idx, "ready") << ';' << endl;
+        << output_signal(fname, idx, "ready");
+    if (b.stall) out << " && " << val_name(fname, bbidx, b, *b.stall);
+    out << ';' << endl;
   }
 
   // Connections of live values to output.

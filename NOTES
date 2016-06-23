@@ -159,6 +159,8 @@ tasks/goals in order of planned completion:
     . Write a basic block level program containing spawns.
     . Add support for spawns to code generator.
     - Build a basic block level program that uses stalls.
+      - Add support for instant broadcast variables to code generator?
+        - Helps stalls, kind-of.
     - Add support for stalls to code generator.
     - Build a basic block level program using concatenate operator.
     - Add support for concatenate operator to code generator. <2016-06-22>
