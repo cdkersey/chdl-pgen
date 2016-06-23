@@ -13,6 +13,7 @@ const char *bscotch::if_op_str[] = {
   "ld_global", "st_global",
   "ld_static", "st_static",
   "ld_idx", "st_idx", "ld_idx_static", "st_idx_static",
+  "ld_bcast_valid",
   "neg", "not",
   "add", "sub", "mul", "div", "and", "or", "xor",
   "and_reduce", "or_reduce",

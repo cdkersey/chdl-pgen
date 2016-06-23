@@ -19,6 +19,7 @@ namespace bscotch {
     VAL_LD_STATIC, VAL_ST_STATIC,
     VAL_LD_IDX, VAL_ST_IDX,
     VAL_LD_IDX_STATIC, VAL_ST_IDX_STATIC,
+    VAL_LD_BCAST_VALID,
     VAL_NEG, VAL_NOT,
     VAL_ADD, VAL_SUB, VAL_MUL, VAL_DIV, VAL_AND, VAL_OR, VAL_XOR,
     VAL_AND_REDUCE, VAL_OR_REDUCE,
@@ -32,6 +33,10 @@ namespace bscotch {
     std::string name;
     type t;
     std::vector<bool> initial_val;
+
+    // Broadcast variables are non-persistent intra-cycle communication between
+    // pipeline stages.
+    bool broadcast;
   };
 
   struct if_bb;

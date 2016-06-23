@@ -28,7 +28,10 @@ static void gen_static_var(
 {
   using std::endl;
 
-  if (is_sram_array(s.t)) {
+  if (s.broadcast) {
+    out << "  BCAST_VAR(" << fname << ", " << s.name << ", " << type_chdl(s.t)
+        << ");" << endl;
+  } else if (is_sram_array(s.t)) {
     out << "  STATIC_ARRAY(" << fname << ", " << s.name << ", "
         << type_chdl(element_type(s.t)) << ", " << array_len(s.t) << ", "
         << loads << ");" << endl;
@@ -141,6 +144,11 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
     out << op_str(v.op, v.args[0]->t) << '(' << aname[0] << ')';
   } else if (is_reduce(v.op)) {
     out << op_str(v.op, v.args[0]->t) << '(' << aname[0] << ')';
+  } else if (v.op == VAL_CONCATENATE) {
+    for (unsigned i = 0; i < v.args.size(); ++i) {
+      out << "Cat(" << aname[i] << ')';
+      if (i != v.args.size() - 1) out << '.';
+    }
   } else if (v.op == VAL_ARG) {
     out << "_(_(" << fname << "_call, \"contents\"), \"arg"
         << v.static_access_id << "\")";
@@ -226,6 +234,8 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
     out << "ST_STATIC_ARRAY(" << fname << ", " << v.static_arg->name << ", "
         << aname[0] << ", " << aname[1] << ", " << fname << "_bb" << bbidx
         << "_run" << preds.str() << ')';
+  } else if (v.op == VAL_LD_BCAST_VALID) {
+    out << "LD_BCAST_VALID(" << fname << ", " << v.static_arg->name << ')';
   } else if (v.op == VAL_CALL || v.op == VAL_SPAWN) {
     ostringstream ctype_oss, rtype_oss, live_oss;
 
@@ -447,7 +457,26 @@ static void get_val_map(std::map<int, int> &m, if_bb &a, if_bb &b) {
   for (auto &x : b.live_in)
     if (!m.count(x->id)) m[x->id] = x->id;
 }
- 
+
+void print_spawn_stalls(std::ostream &out, std::string fname, if_bb &b) {
+  using namespace std;
+  vector<if_val*> spawns;
+  for (auto &v : b.vals)
+    if (v.op == VAL_SPAWN)
+      spawns.push_back(&v);
+
+  if (spawns.size()) {
+    out << " && (";
+    for (unsigned i = 0; i < spawns.size(); ++i) {
+      if_val *p = spawns[i];
+      out << "_(" << fname << "_call_" << p->id << "_args, \"ready\")";
+      if (i != spawns.size() - 1)
+        out << " || ";
+    }
+    out << ')';
+  }
+}
+
 void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bool entry)
 {
   using std::endl;
@@ -515,7 +544,7 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
   // Create block's run signal
   out << "  node " << fname << "_bb" << idx << "_run(_(" << fname << "_bb"
       << idx << "_in, \"valid\") && "
-      << output_signal(fname, idx, "ready") << ");" << endl
+      << " _(" << fname << "_bb" << idx << "_in, \"ready\"));" << endl
       << "  TAP(" << fname << "_bb" << idx << "_run);" << endl;
   
   for (unsigned i = 0; i < b.vals.size(); ++i) {
@@ -529,24 +558,29 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
   // Connect preubuf outputs
   if (b.vals.size() >= 1 && b.vals.rbegin()->op == VAL_CALL) {
     out << "  " << output_signal(fname, idx, "valid") << " = _("
-        << fname << "_call_" << b.vals.rbegin()->id << "_ret, \"valid\");"
-        << endl
+        << fname << "_call_" << b.vals.rbegin()->id << "_ret, \"valid\")";
+    if (b.stall) out << " && !" << val_name(fname, idx, b, *b.stall);
+    out << ';' << endl
         << "  _(" << fname << "_call_" << b.vals.rbegin()->id
         << "_ret, \"ready\") = " << output_signal(fname, idx, "ready")
         << ';' << endl
         << "  " << input_signal(fname, idx, "ready") << " = _("
         << fname << "_call_" << b.vals.rbegin()->id << "_args, \"ready\")";
-    if (b.stall) out << " && " << val_name(fname, idx, b, *b.stall);
+    if (b.stall) out << " && !" << val_name(fname, idx, b, *b.stall);
+    print_spawn_stalls(out, fname, b);
     out << ';' << endl;
     out << output_signal(fname, idx, "contents") << " = _(_("
         << fname << "_call_" << b.vals.rbegin()->id
         << "_ret, \"contents\"), \"live\");" << endl;
   } else {
     out << "  " << output_signal(fname, idx, "valid") << " = "
-        << input_signal(fname, idx, "valid") << ';' << endl
+        << input_signal(fname, idx, "valid");
+    if (b.stall) out << " && !" << val_name(fname, idx, b, *b.stall);
+    out << ';' << endl
         << "  " << input_signal(fname, idx, "ready") << " = "
         << output_signal(fname, idx, "ready");
-    if (b.stall) out << " && " << val_name(fname, idx, b, *b.stall);
+    if (b.stall) out << " && !" << val_name(fname, idx, b, *b.stall);
+    print_spawn_stalls(out, fname, b);
     out << ';' << endl;
   }
 

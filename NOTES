@@ -164,8 +164,9 @@ tasks/goals in order of planned completion:
         - Helps stalls, kind-of. Definitely helps forwarding networks.
         - Need both VAL_VALID_BCAST (bit) and VAL_BCAST (original type)
     - Add support for stalls to code generator.
-    - Build a basic block level program using concatenate operator.
-    - Add support for concatenate operator to code generator. <2016-06-22>
+    . Build a basic block level program using concatenate operator.
+      - Turns out we need this in cgen-9.
+    . Add support for concatenate operator to code generator. <2016-06-22>
     - Do we have to prioririze back edges to avoid deadlocks? Can deadlocks
       happen in looping pipelines? Is just having the double buffer sufficient?
     - Build a basic block level program using (arr/1val) global variables.

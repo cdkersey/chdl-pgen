@@ -8,6 +8,19 @@
 using namespace std;
 using namespace chdl;
 
+// Non-register global variable used for forwarding networks and similar.
+template <typename T> struct bcastvar {
+  void gen() {}
+
+  node valid() { return v; }
+  T value() { return val; }
+  template <unsigned I>
+    void add_input(node v_in, const T &x) { val = x; v = v_in; }
+  
+  T val;
+  node v;
+};
+
 template <typename T, unsigned W> struct staticvar {
   staticvar() { q = Wreg(OrN(wr), Mux(Log2(wr), d)); } 
   staticvar(unsigned long v) { q = Wreg(OrN(wr), Mux(Log2(wr), d), v); }
@@ -54,6 +67,11 @@ template <typename T, unsigned N, unsigned P> struct staticarray {
   T d;
 };
 
+#define BCAST_VAR(func, var, type) \
+  bcastvar<type> func##_##var; \
+  tap(#func "_" #var, func##_##var.value()); \
+  tap(#func "_" #var "_valid", func##_##var.valid());
+
 #define STATIC_VAR(func, var, type, initialval, writers) \
   staticvar<type, writers> func##_##var(initialval); \
   tap(#func "_" #var, func##_##var.value());
@@ -63,6 +81,9 @@ template <typename T, unsigned N, unsigned P> struct staticarray {
 
 #define LD_STATIC(func, var) \
   (func##_##var.value())
+
+#define LD_BCAST_VALID(func, var) \
+  (func##_##var.valid())
 
 #define ST_STATIC(func, var, val, wr, port) \
   do { func##_##var.add_input<(port)>(wr, val); } while (0)
