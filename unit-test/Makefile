@@ -1,5 +1,6 @@
 CXXFLAGS ?= -std=c++11 -g
-TESTS = cgen-0 cgen-1 cgen-2 cgen-3 cgen-4 cgen-5 cgen-6 cgen-7 cgen-8 type-0
+TESTS = cgen-0 cgen-1 cgen-2 cgen-3 cgen-4 cgen-5 cgen-6 cgen-7 cgen-8 \
+        cgen-9 type-0
 LDLIBS = ../bscotch.a
 
 tests: $(TESTS)
@@ -14,6 +15,7 @@ cgen-5: cgen-5.cpp
 cgen-6: cgen-6.cpp
 cgen-7: cgen-7.cpp
 cgen-8: cgen-8.cpp
+cgen-9: cgen-9.cpp
 
 clean:
 	$(RM) $(TESTS) *~

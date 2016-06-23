@@ -536,7 +536,7 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
         << ';' << endl
         << "  " << input_signal(fname, idx, "ready") << " = _("
         << fname << "_call_" << b.vals.rbegin()->id << "_args, \"ready\")";
-    if (b.stall) out << " && " << val_name(fname, bbidx, b, *b.stall);
+    if (b.stall) out << " && " << val_name(fname, idx, b, *b.stall);
     out << ';' << endl;
     out << output_signal(fname, idx, "contents") << " = _(_("
         << fname << "_call_" << b.vals.rbegin()->id
@@ -546,7 +546,7 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
         << input_signal(fname, idx, "valid") << ';' << endl
         << "  " << input_signal(fname, idx, "ready") << " = "
         << output_signal(fname, idx, "ready");
-    if (b.stall) out << " && " << val_name(fname, bbidx, b, *b.stall);
+    if (b.stall) out << " && " << val_name(fname, idx, b, *b.stall);
     out << ';' << endl;
   }
 
@@ -584,8 +584,11 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
 static void live_in_phi_adj(if_bb &b) {
   for (auto &v : b.vals) {
     if (v.op == VAL_PHI) {
-      for (auto &a : v.args)
-	b.live_in.erase(find(b.live_in.begin(), b.live_in.end(), a));
+      for (auto &a : v.args) {
+        auto it = find(b.live_in.begin(), b.live_in.end(), a);
+        if (it != b.live_in.end())
+          b.live_in.erase(it);
+      }
       b.live_in.push_back(&v);
     }
   }
@@ -685,4 +688,3 @@ void bscotch::gen_prog(std::ostream &out, if_prog &p) {
     gen_func(out, f.first, f.second);
   }
 }
-

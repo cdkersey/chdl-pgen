@@ -59,15 +59,20 @@ void test_bmain(if_func &f) {
   //  bb0:
   //    %0 = const #0 (u32)
   //  bb1:
-  //    %1 = phi %0, %7 (u32)
-  //    %2 = const #10 (u32)
-  //    %3 = xor %1, %2 (u32)
-  //    %4 = or_reduce %3 (bit)
-  //    %5 = not %4 (bit)
-  //    %6 = const #1 (u32)
-  //    %7 = add %6, %1
-  //    %8 = spawn "func", %1
-  //    br %5, bb1, bb2
+  //    %1 = phi %0, %12 (u32)
+  //    %2 = phi %0, %6 (u32)
+  //    %3 = const #1103515245 (u32)
+  //    %4 = const #12345 (u32)
+  //    %5 = mul %2, %3
+  //    %6 = add %4, %5
+  //    %7 = const #10 (u32)
+  //    %8 = xor %1, %7 (u32)
+  //    %9 = or_reduce %8 (bit)
+  //    %10 = not %9 (bit)
+  //    %11 = const #1 (u32)
+  //    %12 = add %11, %1
+  //    %13 = spawn "func", %6
+  //    br %19, bb1, bb2
   //  bb2:
   //    %9 = ret %1 (void)
 
@@ -76,7 +81,7 @@ void test_bmain(if_func &f) {
   f.bbs.resize(3);
 
   f.bbs[0].vals.resize(1);
-  f.bbs[1].vals.resize(8);
+  f.bbs[1].vals.resize(13);
   f.bbs[2].vals.resize(1);
 
   f.bbs[0].suc.push_back(&f.bbs[1]);
@@ -87,14 +92,16 @@ void test_bmain(if_func &f) {
   f.bbs[2].pred.push_back(&f.bbs[1]);
 
   f.bbs[0].branch_pred = NULL;
-  f.bbs[1].branch_pred = &f.bbs[1].vals[4];
+  f.bbs[1].branch_pred = &f.bbs[1].vals[9];
   f.bbs[2].branch_pred = NULL;
 
   f.bbs[0].live_out.push_back(&f.bbs[0].vals[0]);
   f.bbs[1].live_in.push_back(&f.bbs[0].vals[0]);
-  f.bbs[1].live_in.push_back(&f.bbs[1].vals[6]);
+  f.bbs[1].live_in.push_back(&f.bbs[1].vals[5]);
+  f.bbs[1].live_in.push_back(&f.bbs[1].vals[11]);
   f.bbs[1].live_out.push_back(&f.bbs[1].vals[0]);
-  f.bbs[1].live_out.push_back(&f.bbs[1].vals[6]);
+  f.bbs[1].live_out.push_back(&f.bbs[1].vals[5]);
+  f.bbs[1].live_out.push_back(&f.bbs[1].vals[11]);
   f.bbs[2].live_in.push_back(&f.bbs[1].vals[0]);
 
   int id = 0;
@@ -113,38 +120,61 @@ void test_bmain(if_func &f) {
   f.bbs[1].vals[0].t = u32();
   f.bbs[1].vals[0].op = VAL_PHI;
   f.bbs[1].vals[0].args.push_back(&f.bbs[0].vals[0]);
-  f.bbs[1].vals[0].args.push_back(&f.bbs[1].vals[6]);
-  
+  f.bbs[1].vals[0].args.push_back(&f.bbs[1].vals[11]);
+
   f.bbs[1].vals[1].t = u32();
-  f.bbs[1].vals[1].op = VAL_CONST;
-  to_vec_bool<5>(f.bbs[1].vals[1].const_val, 10);
+  f.bbs[1].vals[1].op = VAL_PHI;
+  f.bbs[1].vals[1].args.push_back(&f.bbs[0].vals[0]);
+  f.bbs[1].vals[1].args.push_back(&f.bbs[1].vals[5]);
   
   f.bbs[1].vals[2].t = u32();
-  f.bbs[1].vals[2].op = VAL_XOR;
-  f.bbs[1].vals[2].args.push_back(&f.bbs[1].vals[0]);
-  f.bbs[1].vals[2].args.push_back(&f.bbs[1].vals[1]);
+  f.bbs[1].vals[2].op = VAL_CONST;
+  to_vec_bool<32>(f.bbs[1].vals[2].const_val, 1103515245);
 
-  f.bbs[1].vals[3].t = bit_type();
-  f.bbs[1].vals[3].op = VAL_OR_REDUCE;
-  f.bbs[1].vals[3].args.push_back(&f.bbs[1].vals[2]);
-  
-  f.bbs[1].vals[4].t = bit_type();
-  f.bbs[1].vals[4].op = VAL_NOT;
-  f.bbs[1].vals[4].args.push_back(&f.bbs[1].vals[3]);
+  f.bbs[1].vals[3].t = u32();
+  f.bbs[1].vals[3].op = VAL_CONST;
+  to_vec_bool<32>(f.bbs[1].vals[3].const_val, 12345);
+
+  f.bbs[1].vals[4].t = u32();
+  f.bbs[1].vals[4].op = VAL_MUL;
+  f.bbs[1].vals[4].args.push_back(&f.bbs[1].vals[1]);
+  f.bbs[1].vals[4].args.push_back(&f.bbs[1].vals[2]);
 
   f.bbs[1].vals[5].t = u32();
-  f.bbs[1].vals[5].op = VAL_CONST;
-  to_vec_bool<5>(f.bbs[1].vals[5].const_val, 1);
+  f.bbs[1].vals[5].op = VAL_ADD;
+  f.bbs[1].vals[5].args.push_back(&f.bbs[1].vals[3]);
+  f.bbs[1].vals[5].args.push_back(&f.bbs[1].vals[4]);
 
   f.bbs[1].vals[6].t = u32();
-  f.bbs[1].vals[6].op = VAL_ADD;
-  f.bbs[1].vals[6].args.push_back(&f.bbs[1].vals[0]);
-  f.bbs[1].vals[6].args.push_back(&f.bbs[1].vals[5]);
-
-  f.bbs[1].vals[7].t = void_type();
-  f.bbs[1].vals[7].op = VAL_SPAWN;
-  f.bbs[1].vals[7].func_arg = "func";
+  f.bbs[1].vals[6].op = VAL_CONST;
+  to_vec_bool<32>(f.bbs[1].vals[6].const_val, 10);
+  
+  f.bbs[1].vals[7].t = u32();
+  f.bbs[1].vals[7].op = VAL_XOR;
   f.bbs[1].vals[7].args.push_back(&f.bbs[1].vals[0]);
+  f.bbs[1].vals[7].args.push_back(&f.bbs[1].vals[6]);
+
+  f.bbs[1].vals[8].t = bit_type();
+  f.bbs[1].vals[8].op = VAL_OR_REDUCE;
+  f.bbs[1].vals[8].args.push_back(&f.bbs[1].vals[7]);
+  
+  f.bbs[1].vals[9].t = bit_type();
+  f.bbs[1].vals[9].op = VAL_NOT;
+  f.bbs[1].vals[9].args.push_back(&f.bbs[1].vals[8]);
+
+  f.bbs[1].vals[10].t = u32();
+  f.bbs[1].vals[10].op = VAL_CONST;
+  to_vec_bool<5>(f.bbs[1].vals[10].const_val, 1);
+
+  f.bbs[1].vals[11].t = u32();
+  f.bbs[1].vals[11].op = VAL_ADD;
+  f.bbs[1].vals[11].args.push_back(&f.bbs[1].vals[0]);
+  f.bbs[1].vals[11].args.push_back(&f.bbs[1].vals[10]);
+
+  f.bbs[1].vals[12].t = void_type();
+  f.bbs[1].vals[12].op = VAL_SPAWN;
+  f.bbs[1].vals[12].func_arg = "func";
+  f.bbs[1].vals[12].args.push_back(&f.bbs[1].vals[5]);
 
   f.bbs[2].vals[0].t = void_type();
   f.bbs[2].vals[0].op = VAL_RET;

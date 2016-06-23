@@ -159,8 +159,10 @@ tasks/goals in order of planned completion:
     . Write a basic block level program containing spawns.
     . Add support for spawns to code generator.
     - Build a basic block level program that uses stalls.
+      - cgen-9 : src-src-dest based pipeline stalling with random insts.
       - Add support for instant broadcast variables to code generator?
-        - Helps stalls, kind-of.
+        - Helps stalls, kind-of. Definitely helps forwarding networks.
+        - Need both VAL_VALID_BCAST (bit) and VAL_BCAST (original type)
     - Add support for stalls to code generator.
     - Build a basic block level program using concatenate operator.
     - Add support for concatenate operator to code generator. <2016-06-22>
@@ -176,6 +178,7 @@ tasks/goals in order of planned completion:
     - Add support for bypass networks to code generator. <2016-06-23>
     - Build a basic block level program that uses speculation. <2016-06-24>
     - Add support for speculation to code generator. <2016-06-24>
+    - Make TAPs run-time optional.
     - Add support for C++ output to code generator (add separate cgen-cpp)
       <2016-06-28>
     - Make all of the tests self-report success or failure. <2016-06-29>
