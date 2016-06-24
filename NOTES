@@ -158,12 +158,12 @@ tasks/goals in order of planned completion:
       - CALL_BLOCKING is probably unnecessary.
     . Write a basic block level program containing spawns.
     . Add support for spawns to code generator.
-    - Build a basic block level program that uses stalls.
+    . Build a basic block level program that uses stalls.
       - cgen-9 : src-src-dest based pipeline stalling with random insts.
       - Add support for instant broadcast variables to code generator?
         - Helps stalls, kind-of. Definitely helps forwarding networks.
         - Need both VAL_VALID_BCAST (bit) and VAL_BCAST (original type)
-    - Add support for stalls to code generator.
+    . Add support for stalls to code generator.
     . Build a basic block level program using concatenate operator.
       - Turns out we need this in cgen-9.
     . Add support for concatenate operator to code generator. <2016-06-22>

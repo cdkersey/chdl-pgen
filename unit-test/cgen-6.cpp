@@ -59,7 +59,8 @@ if_staticvar u32staticvar(string name, unsigned initial = 0) {
   to_vec_bool<32>(s.initial_val, initial);
 
   s.t = u32();
-
+  s.broadcast = false;
+  
   return s;
 }
 

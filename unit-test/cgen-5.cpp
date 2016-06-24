@@ -36,7 +36,7 @@ type arr32(unsigned len) {
 
   t.type_vec.push_back(TYPE_ARRAY);
   t.type_vec.push_back(len);
-
+  
   return t;
 }
 
@@ -69,7 +69,8 @@ if_staticvar u32arraystaticvar(string name, unsigned len) {
   s.name = name;
 
   s.t = arr32(len);
-
+  s.broadcast = false;
+  
   return s;
 }
 

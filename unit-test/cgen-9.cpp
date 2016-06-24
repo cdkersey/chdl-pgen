@@ -43,17 +43,6 @@ type bit_type() {
   return t;
 }
 
-if_staticvar u32staticvar(string name, unsigned initial = 0) {
-  if_staticvar s;
-
-  s.name = name;
-  to_vec_bool<32>(s.initial_val, initial);
-
-  s.t = u32();
-
-  return s;
-}
-
 if_staticvar u3bcastvar(string name) {
   if_staticvar s;
 

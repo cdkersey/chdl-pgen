@@ -39,6 +39,8 @@ if_staticvar u32staticvar(string name, unsigned initial = 0) {
 
   s.t = u32();
 
+  s.broadcast = false;
+
   return s;
 }
 
