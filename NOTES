@@ -167,8 +167,10 @@ tasks/goals in order of planned completion:
     . Build a basic block level program using concatenate operator.
       - Turns out we need this in cgen-9.
     . Add support for concatenate operator to code generator. <2016-06-22>
-    - Do we have to prioririze back edges to avoid deadlocks? Can deadlocks
+    . Do we have to prioririze back edges to avoid deadlocks? Can deadlocks
       happen in looping pipelines? Is just having the double buffer sufficient?
+      - It seems like no matter what the priority order, independent threads are
+        incapable of deadlocking.
     - Build a basic block level program using (arr/1val) global variables.
     - Add support for global variables to code generator. <2016-06-23>
     - Understand, enumerate, and automatically check (or remove) constraints.
