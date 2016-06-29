@@ -136,8 +136,9 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
     } else {
       out << "Lit<" << v.t.size() << ">(0x" << to_hex(v.const_val) << ')';
     }
-  } else if (v.op == VAL_LD_STATIC) {
-    out << "LD_STATIC(" << fname << ", " << v.static_arg->name << ')';
+  } else if (v.op == VAL_LD_STATIC || v.op == VAL_LD_GLOBAL) {
+    string macro_name(v.op == VAL_LD_GLOBAL ? "LD_GLOBAL" : "LD_STATIC");
+    out << macro_name << '(' << fname << ", " << v.static_arg->name << ')';
   } else if (is_binary(v.op)) {
     out << aname[0] << op_str(v.op, v.args[0]->t, v.args[1]->t) << aname[1];
   } else if (is_unary(v.op)) {
@@ -152,12 +153,14 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
   } else if (v.op == VAL_ARG) {
     out << "_(_(" << fname << "_call, \"contents\"), \"arg"
         << v.static_access_id << "\")";
-  } else if (v.op == VAL_ST_STATIC) {
+  } else if (v.op == VAL_ST_STATIC || v.op == VAL_ST_GLOBAL) {
+    bool global(v.op == VAL_ST_GLOBAL);
+    string macro_name(global ? "ST_GLOBAL":"ST_STATIC");
     ostringstream preds;
     if (v.pred) {
       preds << " && " << val_name(fname, bbidx, b, *v.pred);
     }
-    out << "ST_STATIC(" << fname << ", " << v.static_arg->name << ", "
+    out << macro_name << '(' << fname << ", " << v.static_arg->name << ", "
         << aname[0] << ", "
         << fname << "_bb" << bbidx << "_run" << preds.str() << ", "
         << v.static_access_id << ')';
