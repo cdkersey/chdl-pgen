@@ -22,6 +22,8 @@ void bscotch::asm_prog::function(string name) {
 void bscotch::asm_prog::label(string name) {
   if_bb *bb = new if_bb();
 
+  b = bb;
+  
   labels[name] = bb;
 
   f->bbs.push_back(bb);
@@ -40,13 +42,22 @@ void bscotch::asm_prog::bcast_var(const type &t, string name) {
 
 asm_prog &bscotch::asm_prog::val(const type &t, asm_prog::val_id_t id, if_op op)
 {
-  // TODO
+  if_val *vp = new if_val();
+
+  v = vp;
+
+  b->vals.push_back(vp);
+
+  vp->t = t;
+  vp->op = op;
+
+  id_to_val[id].insert(vp);
   
   return *this;
 }
 
 asm_prog &bscotch::asm_prog::val(asm_prog::val_id_t id, if_op op) {
-  // TODO
+  val(void_type(), id, op);
 
   return *this;
 }

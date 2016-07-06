@@ -25,7 +25,7 @@ namespace bscotch {
     std::map<int, std::string> field_name;
 
     std::string str(int start = 0, int &chars = *((int*)NULL));
-    unsigned size(int start = 0, int &chars = *((int*)NULL));
+    unsigned size(int start = 0, int &chars = *((int*)NULL)) const;
   };
 
   type element_type(type t);
@@ -36,6 +36,7 @@ namespace bscotch {
   // Simple names for common types.
   type u(unsigned nbits);
   type s(unsigned nbits);
+  type void_type();
   
   void print(std::ostream &out, bscotch::type &t);
   std::string type_chdl(const type &t, int s = 0, int &end = *(int*)NULL);

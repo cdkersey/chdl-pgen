@@ -18,18 +18,7 @@ template <unsigned N> void to_vec_bool(vector<bool> &v, unsigned long x) {
     v.push_back(x & (1ul<<i));
 }
 
-type u32() {
-  type t;
-  t.type_vec.push_back(TYPE_U);
-  t.type_vec.push_back(32);
-
-  return t;
-}
-
-type void_type() {
-  type t;
-  return t;
-}
+type u32() { return u(32); }
 
 if_staticvar u32staticvar(string name, unsigned initial = 0) {
   if_staticvar s;

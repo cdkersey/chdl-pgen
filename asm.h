@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <map>
+#include <set>
 #include <string>
 #include <sstream>
 
@@ -35,12 +36,23 @@ namespace bscotch {
     asm_prog &target(std::string label);
 
     std::map<std::string, if_bb*> labels;
+    std::map<val_id_t, std::set<if_val*> > id_to_val;
     
     if_prog &p;
     if_func *f;
     if_bb *b;
     if_val *v;
   };
+
+  template <typename T>
+    void to_vec_bool(std::vector<bool> &v, unsigned size, T val);
+}
+
+template <typename T>
+  void bscotch::to_vec_bool(std::vector<bool> &v, unsigned size, T val)
+{
+  for (unsigned i = 0; i < size; ++i)
+    v.push_back((val & (1ul<<i)) ? true : false);
 }
 
 template <typename T>
@@ -49,7 +61,7 @@ template <typename T>
   )
 {
   static_var(t, name);
-  to_vec_bool(f->static_vars[name].initial_val, initial_val);
+  to_vec_bool(f->static_vars[name].initial_val, t.size(), initial_val);
 }
 
 #endif

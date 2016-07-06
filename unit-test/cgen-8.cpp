@@ -19,22 +19,8 @@ template <unsigned N> void to_vec_bool(vector<bool> &v, unsigned long x) {
     v.push_back(x & (1ul<<i));
 }
 
-type uN(int n) {
-  type t;
-  t.type_vec.push_back(TYPE_U);
-  t.type_vec.push_back(n);
-
-  return t;
-}
-
-type u32() {
-  return uN(32);
-}
-
-type void_type() {
-  type t;
-  return t;
-}
+type uN(int n) { return u(n); }
+type u32() { return u(32); }
 
 type bit_type() {
   type t;

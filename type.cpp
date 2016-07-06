@@ -7,7 +7,7 @@
 
 #include "type.h"
 
-unsigned bscotch::type::size(int s, int &end) {
+unsigned bscotch::type::size(int s, int &end) const {
   using namespace bscotch;
   using namespace std;
 
@@ -36,6 +36,11 @@ unsigned bscotch::type::size(int s, int &end) {
   if (&end) end = i;
   
   return sz;
+}
+
+bscotch::type bscotch::void_type() {
+  type t;
+  return t;
 }
 
 bscotch::type bscotch::u(unsigned nbits) {
