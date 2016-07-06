@@ -104,7 +104,7 @@ void bscotch::print(std::ostream &out, bscotch::if_func &f) {
   
   for (unsigned i = 0; i < f.bbs.size(); ++i) {
     out << "  bb " << i << ':' << endl;
-    print(out, f.bbs[i]);
+    print(out, *f.bbs[i]);
   }
 }
 

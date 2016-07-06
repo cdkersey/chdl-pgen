@@ -95,7 +95,7 @@ namespace bscotch {
     std::map<std::string, if_staticvar> static_vars;
     type rtype;
     std::vector<type> args;
-    std::vector<if_bb> bbs;
+    std::vector<if_bb*> bbs;
   };
 
   struct if_prog {

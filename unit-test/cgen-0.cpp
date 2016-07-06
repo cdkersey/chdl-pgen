@@ -57,40 +57,40 @@ void test_func(if_func &f) {
   
   f.rtype = void_type();
 
-  f.bbs.resize(1);
-  f.bbs[0].id = 0;
-  f.bbs[0].vals.resize(4);
+  f.bbs.push_back(new if_bb());
+  f.bbs[0]->id = 0;
+  f.bbs[0]->vals.resize(4);
 
-  f.bbs[0].vals[0].t = u32();
-  f.bbs[0].vals[0].op = VAL_CONST;
-  f.bbs[0].vals[0].static_arg = NULL;
-  f.bbs[0].vals[0].id = 0;
-  f.bbs[0].vals[0].bb = &f.bbs[0];
-  to_vec_bool<32>(f.bbs[0].vals[0].const_val, 1);
+  f.bbs[0]->vals[0].t = u32();
+  f.bbs[0]->vals[0].op = VAL_CONST;
+  f.bbs[0]->vals[0].static_arg = NULL;
+  f.bbs[0]->vals[0].id = 0;
+  f.bbs[0]->vals[0].bb = f.bbs[0];
+  to_vec_bool<32>(f.bbs[0]->vals[0].const_val, 1);
 
-  f.bbs[0].vals[1].t = u32();
-  f.bbs[0].vals[1].op = VAL_LD_STATIC;
-  f.bbs[0].vals[1].id = 1;
-  f.bbs[0].vals[1].bb = &f.bbs[0];
-  f.bbs[0].vals[1].static_arg = &f.static_vars["x"];
+  f.bbs[0]->vals[1].t = u32();
+  f.bbs[0]->vals[1].op = VAL_LD_STATIC;
+  f.bbs[0]->vals[1].id = 1;
+  f.bbs[0]->vals[1].bb = f.bbs[0];
+  f.bbs[0]->vals[1].static_arg = &f.static_vars["x"];
 
-  f.bbs[0].vals[2].t = u32();
-  f.bbs[0].vals[2].op = VAL_ADD;
-  f.bbs[0].vals[2].args.push_back(&f.bbs[0].vals[1]);
-  f.bbs[0].vals[2].args.push_back(&f.bbs[0].vals[0]);
-  f.bbs[0].vals[2].static_arg = NULL;
-  f.bbs[0].vals[2].bb = &f.bbs[0];
-  f.bbs[0].vals[2].id = 2;
+  f.bbs[0]->vals[2].t = u32();
+  f.bbs[0]->vals[2].op = VAL_ADD;
+  f.bbs[0]->vals[2].args.push_back(&f.bbs[0]->vals[1]);
+  f.bbs[0]->vals[2].args.push_back(&f.bbs[0]->vals[0]);
+  f.bbs[0]->vals[2].static_arg = NULL;
+  f.bbs[0]->vals[2].bb = f.bbs[0];
+  f.bbs[0]->vals[2].id = 2;
 
-  f.bbs[0].vals[3].op = VAL_ST_STATIC;
-  f.bbs[0].vals[3].static_arg = &f.static_vars["x"];
-  f.bbs[0].vals[3].args.push_back(&f.bbs[0].vals[2]);
-  f.bbs[0].vals[3].id = 3;
-  f.bbs[0].vals[3].bb = &f.bbs[0];
+  f.bbs[0]->vals[3].op = VAL_ST_STATIC;
+  f.bbs[0]->vals[3].static_arg = &f.static_vars["x"];
+  f.bbs[0]->vals[3].args.push_back(&f.bbs[0]->vals[2]);
+  f.bbs[0]->vals[3].id = 3;
+  f.bbs[0]->vals[3].bb = f.bbs[0];
   
-  f.bbs[0].suc.push_back(&f.bbs[0]);
-  f.bbs[0].pred.push_back(&f.bbs[0]);
-  f.bbs[0].branch_pred = NULL;
+  f.bbs[0]->suc.push_back(f.bbs[0]);
+  f.bbs[0]->pred.push_back(f.bbs[0]);
+  f.bbs[0]->branch_pred = NULL;
 }
 
 void test_prog(if_prog &p) {

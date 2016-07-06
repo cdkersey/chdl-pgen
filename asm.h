@@ -15,7 +15,7 @@ namespace bscotch {
   struct asm_prog {
     typedef unsigned val_id_t;
     
-    asm_prog(if_prog &p): p(p) {}
+    asm_prog(if_prog &p): p(p), f(0), b(0), v(0) {}
     
     void function(std::string name);
     void label(std::string name);
@@ -24,14 +24,19 @@ namespace bscotch {
     asm_prog &val(type &t, val_id_t id, if_op op);
     asm_prog &val(val_id_t id, if_op op);
     asm_prog &arg(val_id_t id);
-    asm_prog &arg(unsigned long const_arg);
+    asm_prog &arg(long const_arg);
     asm_prog &arg(std::string static_name);
 
     asm_prog &br(val_id_t sel);
     asm_prog &br();
     asm_prog &target(std::string label);
 
+    std::map<std::string, if_bb*> labels;
+    
     if_prog &p;
+    if_func *f;
+    if_bb *b;
+    if_val *v;
   };
   
 }

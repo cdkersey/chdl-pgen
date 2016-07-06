@@ -1,11 +1,12 @@
 CXXFLAGS = -std=c++11 -g
 LDLIBS = -lchdl
-OBJS = if.o type.o cgen.o find_back_edges.o break_cycles.o
-HEADERS = cgen.h type.h if.h find_back_edges.h break_cycles.h
+OBJS = if.o type.o cgen.o find_back_edges.o break_cycles.o asm.o
+HEADERS = cgen.h type.h if.h find_back_edges.h break_cycles.h asm.h
 
 bscotch.a : $(OBJS)
 	$(AR) q $@ $(OBJS)
 
+asm.o : asm.cpp $(HEADERS)
 cgen.o : cgen.cpp $(HEADERS)
 type.o : type.cpp $(HEADERS)
 if.o : if.cpp $(HEADERS)

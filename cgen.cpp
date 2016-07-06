@@ -645,7 +645,7 @@ unsigned count_loads(if_func &f, if_staticvar &s) {
   unsigned count = 0;
 
   for (auto &b : f.bbs)
-    for (auto &v : b.vals)
+    for (auto &v : b->vals)
       if (v.static_arg == &s)
 	if (is_load(v.op))
 	  v.static_access_id = count++;
@@ -656,7 +656,7 @@ unsigned count_loads(if_func &f, if_staticvar &s) {
 unsigned count_args(if_func &f) {
   unsigned count = 0;
   for (auto &b : f.bbs)
-    for (auto &v : b.vals)
+    for (auto &v : b->vals)
       if (v.op == VAL_ARG)
         v.static_access_id = count++;
 
@@ -667,7 +667,7 @@ unsigned count_stores(if_func &f, if_staticvar &s) {
   unsigned count = 0;
 
   for (auto &b : f.bbs)
-    for (auto &v : b.vals)
+    for (auto &v : b->vals)
       if (v.static_arg == &s)
 	if (is_store(v.op))
 	  v.static_access_id = count++;
@@ -712,12 +712,12 @@ void bscotch::gen_func(std::ostream &out, std::string name, if_func &f) {
   out << endl;
   
   for (unsigned i = 0; i < f.bbs.size(); ++i) {
-    live_in_phi_adj(f.bbs[i]);
-    gen_bb_decls(out, name, i, f.bbs[i], i == 0);
+    live_in_phi_adj(*f.bbs[i]);
+    gen_bb_decls(out, name, i, *f.bbs[i], i == 0);
   }
   
   for (unsigned i = 0; i < f.bbs.size(); ++i) {
-    gen_bb(out, name, i, f.bbs[i], i == 0);
+    gen_bb(out, name, i, *f.bbs[i], i == 0);
   }
 
   for (auto &s : f.static_vars)
