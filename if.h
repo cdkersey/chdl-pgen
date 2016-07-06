@@ -67,7 +67,7 @@ namespace bscotch {
   };
 
   struct if_bb {
-    std::vector<if_val> vals;
+    std::vector<if_val*> vals;
 
     // Index in function's basic block vector.
     int id;

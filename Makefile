@@ -1,4 +1,4 @@
-CXXFLAGS = -std=c++11 -g
+CXXFLAGS = -std=c++11 -g -Wfatal-errors
 LDLIBS = -lchdl
 OBJS = if.o type.o cgen.o find_back_edges.o break_cycles.o asm.o
 HEADERS = cgen.h type.h if.h find_back_edges.h break_cycles.h asm.h

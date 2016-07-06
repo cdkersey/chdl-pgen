@@ -100,7 +100,7 @@ static std::string val_name(std::string fname, int bbidx, if_bb &b, if_val &v)
   std::ostringstream oss;
   bool in_block = false;
   for (auto &y : b.vals)
-    if (y.id == v.id && v.op != VAL_PHI) in_block = true;
+    if (y->id == v.id && v.op != VAL_PHI) in_block = true;
 
   if (in_block)
     oss << fname << '_' << v.id;
@@ -442,9 +442,9 @@ static void get_val_map(std::map<int, int> &m, if_bb &a, if_bb &b) {
   // ones corresponding to phis. Scan the destination BB for phis, and insert
   // accordingly.
   for (auto &v : b.vals) {
-    if (v.op == VAL_PHI) {
+    if (v->op == VAL_PHI) {
       int src = -1;
-      for (auto &s : v.args) {
+      for (auto &s : v->args) {
 	for (auto &lo : a.live_out) {
 	  if (lo->id == s->id) {
 	    if (src != -1) {
@@ -456,7 +456,7 @@ static void get_val_map(std::map<int, int> &m, if_bb &a, if_bb &b) {
           }
 	}
       }
-      m[v.id] = src;
+      m[v->id] = src;
     }
   }
 
@@ -469,8 +469,8 @@ void print_spawn_readys(std::ostream &out, std::string fname, if_bb &b) {
   using namespace std;
   vector<if_val*> spawns;
   for (auto &v : b.vals)
-    if (v.op == VAL_SPAWN)
-      spawns.push_back(&v);
+    if (v->op == VAL_SPAWN)
+      spawns.push_back(v);
 
   if (spawns.size()) {
     out << " && (";
@@ -553,10 +553,10 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
       << "  TAP(" << fname << "_bb" << idx << "_run);" << endl;
   
   for (unsigned i = 0; i < b.vals.size(); ++i) {
-    gen_val(out, fname, idx, i, b, b.vals[i]);
-    if (b.vals[i].t.type_vec.size() > 0) {
-      out << "  tap(\"" << fname << '_' << b.vals[i].id << "\", "
-          << val_name(fname, idx, b, b.vals[i]) << ");" << endl;
+    gen_val(out, fname, idx, i, b, *b.vals[i]);
+    if (b.vals[i]->t.type_vec.size() > 0) {
+      out << "  tap(\"" << fname << '_' << b.vals[i]->id << "\", "
+          << val_name(fname, idx, b, *b.vals[i]) << ");" << endl;
     }
   }
 
@@ -568,21 +568,21 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
   out << ';' << endl;
   
   // Connect preubuf outputs
-  if (b.vals.size() >= 1 && b.vals.rbegin()->op == VAL_CALL) {
+  if (b.vals.size() >= 1 && (*b.vals.rbegin())->op == VAL_CALL) {
     out << "  " << output_signal(fname, idx, "valid") << " = _("
-        << fname << "_call_" << b.vals.rbegin()->id << "_ret, \"valid\")";
+        << fname << "_call_" << (*b.vals.rbegin())->id << "_ret, \"valid\")";
     if (b.stall) out << " && !" << val_name(fname, idx, b, *b.stall);
     out << ';' << endl
-        << "  _(" << fname << "_call_" << b.vals.rbegin()->id
+        << "  _(" << fname << "_call_" << (*b.vals.rbegin())->id
         << "_ret, \"ready\") = " << output_signal(fname, idx, "ready")
         << ';' << endl
         << "  " << input_signal(fname, idx, "ready") << " = _("
-        << fname << "_call_" << b.vals.rbegin()->id << "_args, \"ready\")";
+        << fname << "_call_" << (*b.vals.rbegin())->id << "_args, \"ready\")";
     if (b.stall) out << " && !" << val_name(fname, idx, b, *b.stall);
     print_spawn_readys(out, fname, b);
     out << ';' << endl;
     out << output_signal(fname, idx, "contents") << " = _(_("
-        << fname << "_call_" << b.vals.rbegin()->id
+        << fname << "_call_" << (*b.vals.rbegin())->id
         << "_ret, \"contents\"), \"live\");" << endl;
   } else {
     out << "  " << output_signal(fname, idx, "valid") << " = "
@@ -611,7 +611,7 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
       << endl;
 
   // Instantiate buffer/switch
-  if (b.vals.size() == 0 || b.vals.rbegin()->op != VAL_CALL) {
+  if (b.vals.size() == 0 || (*b.vals.rbegin())->op != VAL_CALL) {
     out << "  _(" << fname << "_bb" << idx << "_out_prebuf, \"contents\") = "
         << fname << "_bb" << idx << "_live;" << endl;
   }
@@ -630,13 +630,13 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
 
 static void live_in_phi_adj(if_bb &b) {
   for (auto &v : b.vals) {
-    if (v.op == VAL_PHI) {
-      for (auto &a : v.args) {
+    if (v->op == VAL_PHI) {
+      for (auto &a : v->args) {
         auto it = find(b.live_in.begin(), b.live_in.end(), a);
         if (it != b.live_in.end())
           b.live_in.erase(it);
       }
-      b.live_in.push_back(&v);
+      b.live_in.push_back(v);
     }
   }
 }
@@ -646,9 +646,9 @@ unsigned count_loads(if_func &f, if_staticvar &s) {
 
   for (auto &b : f.bbs)
     for (auto &v : b->vals)
-      if (v.static_arg == &s)
-	if (is_load(v.op))
-	  v.static_access_id = count++;
+      if (v->static_arg == &s)
+	if (is_load(v->op))
+	  v->static_access_id = count++;
 
   return count;
 }
@@ -657,8 +657,8 @@ unsigned count_args(if_func &f) {
   unsigned count = 0;
   for (auto &b : f.bbs)
     for (auto &v : b->vals)
-      if (v.op == VAL_ARG)
-        v.static_access_id = count++;
+      if (v->op == VAL_ARG)
+        v->static_access_id = count++;
 
   return count;
 }
@@ -668,9 +668,9 @@ unsigned count_stores(if_func &f, if_staticvar &s) {
 
   for (auto &b : f.bbs)
     for (auto &v : b->vals)
-      if (v.static_arg == &s)
-	if (is_store(v.op))
-	  v.static_access_id = count++;
+      if (v->static_arg == &s)
+	if (is_store(v->op))
+	  v->static_access_id = count++;
 
   return count;
 }

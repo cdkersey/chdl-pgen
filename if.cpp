@@ -75,7 +75,7 @@ void bscotch::print(std::ostream &out, bscotch::if_bb &b) {
   using namespace bscotch;
 
   for (auto &v : b.vals)
-    print(out, v);
+    print(out, *v);
 
   out << "    br ";
   if (b.branch_pred) out << '<' << b.branch_pred->id << ">, ";

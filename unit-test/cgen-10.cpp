@@ -103,54 +103,54 @@ void test_bmain(if_func &f) {
   for (unsigned i = 0; i < f.bbs.size(); ++i) {
     f.bbs[i]->id = i;
     for (unsigned j = 0; j < f.bbs[i]->vals.size(); ++j) {
-      f.bbs[i]->vals[j].bb = f.bbs[i];
-      f.bbs[i]->vals[j].id = id++;
+      f.bbs[i]->vals[j]->bb = f.bbs[i];
+      f.bbs[i]->vals[j]->id = id++;
     }
   }
 
-  f.bbs[0]->vals[0].t = u32();
-  f.bbs[0]->vals[0].op = VAL_CONST;
-  to_vec_bool<32>(f.bbs[0]->vals[0].const_val, 0);
+  f.bbs[0]->vals[0]->t = u32();
+  f.bbs[0]->vals[0]->op = VAL_CONST;
+  to_vec_bool<32>(f.bbs[0]->vals[0]->const_val, 0);
 
-  f.bbs[1]->vals[0].t = u32();
-  f.bbs[1]->vals[0].op = VAL_PHI;
-  f.bbs[1]->vals[0].args.push_back(&f.bbs[0]->vals[0]);
-  f.bbs[1]->vals[0].args.push_back(&f.bbs[1]->vals[6]);
+  f.bbs[1]->vals[0]->t = u32();
+  f.bbs[1]->vals[0]->op = VAL_PHI;
+  f.bbs[1]->vals[0]->args.push_back(&f.bbs[0]->vals[0]);
+  f.bbs[1]->vals[0]->args.push_back(&f.bbs[1]->vals[6]);
   
-  f.bbs[1]->vals[1].t = u32();
-  f.bbs[1]->vals[1].op = VAL_CONST;
-  to_vec_bool<5>(f.bbs[1]->vals[1].const_val, 10);
+  f.bbs[1]->vals[1]->t = u32();
+  f.bbs[1]->vals[1]->op = VAL_CONST;
+  to_vec_bool<5>(f.bbs[1]->vals[1]->const_val, 10);
   
-  f.bbs[1]->vals[2].t = u32();
-  f.bbs[1]->vals[2].op = VAL_XOR;
-  f.bbs[1]->vals[2].args.push_back(&f.bbs[1]->vals[0]);
-  f.bbs[1]->vals[2].args.push_back(&f.bbs[1]->vals[1]);
+  f.bbs[1]->vals[2]->t = u32();
+  f.bbs[1]->vals[2]->op = VAL_XOR;
+  f.bbs[1]->vals[2]->args.push_back(&f.bbs[1]->vals[0]);
+  f.bbs[1]->vals[2]->args.push_back(&f.bbs[1]->vals[1]);
 
-  f.bbs[1]->vals[3].t = bit_type();
-  f.bbs[1]->vals[3].op = VAL_OR_REDUCE;
-  f.bbs[1]->vals[3].args.push_back(&f.bbs[1]->vals[2]);
+  f.bbs[1]->vals[3]->t = bit_type();
+  f.bbs[1]->vals[3]->op = VAL_OR_REDUCE;
+  f.bbs[1]->vals[3]->args.push_back(&f.bbs[1]->vals[2]);
   
-  f.bbs[1]->vals[4].t = bit_type();
-  f.bbs[1]->vals[4].op = VAL_NOT;
-  f.bbs[1]->vals[4].args.push_back(&f.bbs[1]->vals[3]);
+  f.bbs[1]->vals[4]->t = bit_type();
+  f.bbs[1]->vals[4]->op = VAL_NOT;
+  f.bbs[1]->vals[4]->args.push_back(&f.bbs[1]->vals[3]);
 
-  f.bbs[1]->vals[5].t = u32();
-  f.bbs[1]->vals[5].op = VAL_CONST;
-  to_vec_bool<5>(f.bbs[1]->vals[5].const_val, 1);
+  f.bbs[1]->vals[5]->t = u32();
+  f.bbs[1]->vals[5]->op = VAL_CONST;
+  to_vec_bool<5>(f.bbs[1]->vals[5]->const_val, 1);
 
-  f.bbs[1]->vals[6].t = u32();
-  f.bbs[1]->vals[6].op = VAL_ADD;
-  f.bbs[1]->vals[6].args.push_back(&f.bbs[1]->vals[0]);
-  f.bbs[1]->vals[6].args.push_back(&f.bbs[1]->vals[5]);
+  f.bbs[1]->vals[6]->t = u32();
+  f.bbs[1]->vals[6]->op = VAL_ADD;
+  f.bbs[1]->vals[6]->args.push_back(&f.bbs[1]->vals[0]);
+  f.bbs[1]->vals[6]->args.push_back(&f.bbs[1]->vals[5]);
 
-  f.bbs[1]->vals[7].t = void_type();
-  f.bbs[1]->vals[7].op = VAL_SPAWN;
-  f.bbs[1]->vals[7].func_arg = "func";
-  f.bbs[1]->vals[7].args.push_back(&f.bbs[1]->vals[0]);
+  f.bbs[1]->vals[7]->t = void_type();
+  f.bbs[1]->vals[7]->op = VAL_SPAWN;
+  f.bbs[1]->vals[7]->func_arg = "func";
+  f.bbs[1]->vals[7]->args.push_back(&f.bbs[1]->vals[0]);
 
-  f.bbs[2]->vals[0].t = void_type();
-  f.bbs[2]->vals[0].op = VAL_RET;
-  f.bbs[2]->vals[0].args.push_back(&f.bbs[1]->vals[0]);
+  f.bbs[2]->vals[0]->t = void_type();
+  f.bbs[2]->vals[0]->op = VAL_RET;
+  f.bbs[2]->vals[0]->args.push_back(&f.bbs[1]->vals[0]);
 }
 
 void test_func(if_func &f, if_prog &p) {
@@ -175,45 +175,45 @@ void test_func(if_func &f, if_prog &p) {
   f.bbs[0]->id = 0;
 
   for (unsigned i = 0; i < f.bbs[0]->vals.size(); ++i) {
-    f.bbs[0]->vals[i].id = i;
-    f.bbs[0]->vals[i].bb = f.bbs[0];
+    f.bbs[0]->vals[i]->id = i;
+    f.bbs[0]->vals[i]->bb = f.bbs[0];
   }
 
-  f.bbs[0]->vals[0].t = u32();
-  f.bbs[0]->vals[0].op = VAL_LD_GLOBAL;
-  f.bbs[0]->vals[0].static_arg = &p.global_vars["x"];
+  f.bbs[0]->vals[0]->t = u32();
+  f.bbs[0]->vals[0]->op = VAL_LD_GLOBAL;
+  f.bbs[0]->vals[0]->static_arg = &p.global_vars["x"];
 
-  f.bbs[0]->vals[1].t = u32();
-  f.bbs[0]->vals[1].op = VAL_CONST;
-  to_vec_bool<32>(f.bbs[0]->vals[1].const_val, 5);
+  f.bbs[0]->vals[1]->t = u32();
+  f.bbs[0]->vals[1]->op = VAL_CONST;
+  to_vec_bool<32>(f.bbs[0]->vals[1]->const_val, 5);
 
-  f.bbs[0]->vals[1].t = u32();
-  f.bbs[0]->vals[1].op = VAL_ADD;
-  to_vec_bool<32>(f.bbs[0]->vals[1].const_val, 1);
+  f.bbs[0]->vals[1]->t = u32();
+  f.bbs[0]->vals[1]->op = VAL_ADD;
+  to_vec_bool<32>(f.bbs[0]->vals[1]->const_val, 1);
   
-  f.bbs[0]->vals[4].t = void_type();
-  f.bbs[0]->vals[4].op = VAL_ARG;
+  f.bbs[0]->vals[4]->t = void_type();
+  f.bbs[0]->vals[4]->op = VAL_ARG;
 
-  f.bbs[0]->vals[1].t = u32();
-  f.bbs[0]->vals[1].op = VAL_CONST;
-  to_vec_bool<32>(f.bbs[0]->vals[1].const_val, 5);
+  f.bbs[0]->vals[1]->t = u32();
+  f.bbs[0]->vals[1]->op = VAL_CONST;
+  to_vec_bool<32>(f.bbs[0]->vals[1]->const_val, 5);
 
-  f.bbs[0]->vals[2].t = u32();
-  f.bbs[0]->vals[2].op = VAL_XOR;
-  f.bbs[0]->vals[2].args.push_back(&f.bbs[0]->vals[0]);
-  f.bbs[0]->vals[2].args.push_back(&f.bbs[0]->vals[1]);
+  f.bbs[0]->vals[2]->t = u32();
+  f.bbs[0]->vals[2]->op = VAL_XOR;
+  f.bbs[0]->vals[2]->args.push_back(&f.bbs[0]->vals[0]);
+  f.bbs[0]->vals[2]->args.push_back(&f.bbs[0]->vals[1]);
 
-  f.bbs[0]->vals[3].t = bit_type();
-  f.bbs[0]->vals[3].op = VAL_OR_REDUCE;
-  f.bbs[0]->vals[3].args.push_back(&f.bbs[0]->vals[2]);
+  f.bbs[0]->vals[3]->t = bit_type();
+  f.bbs[0]->vals[3]->op = VAL_OR_REDUCE;
+  f.bbs[0]->vals[3]->args.push_back(&f.bbs[0]->vals[2]);
 
-  f.bbs[0]->vals[4].t = bit_type();
-  f.bbs[0]->vals[4].op = VAL_NOT;
-  f.bbs[0]->vals[4].args.push_back(&f.bbs[0]->vals[3]);
+  f.bbs[0]->vals[4]->t = bit_type();
+  f.bbs[0]->vals[4]->op = VAL_NOT;
+  f.bbs[0]->vals[4]->args.push_back(&f.bbs[0]->vals[3]);
 
-  f.bbs[0]->vals[5].t = void_type();
-  f.bbs[0]->vals[5].op = VAL_RET;
-  f.bbs[0]->vals[5].args.push_back(&f.bbs[0]->vals[4]);
+  f.bbs[0]->vals[5]->t = void_type();
+  f.bbs[0]->vals[5]->op = VAL_RET;
+  f.bbs[0]->vals[5]->args.push_back(&f.bbs[0]->vals[4]);
 }
 
 void test_prog(if_prog &p) {
