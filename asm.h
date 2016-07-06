@@ -19,13 +19,16 @@ namespace bscotch {
     
     void function(std::string name);
     void label(std::string name);
-    void static_var(std::string name, bool bcast = false);
+    void static_var(const type &t, std::string name);
+    void bcast_var(const type &t, std::string name);
+    template <typename T>
+      void static_var(const type &t, std::string name, const T &initial_val);
 
-    asm_prog &val(type &t, val_id_t id, if_op op);
+    asm_prog &val(const type &t, val_id_t id, if_op op);
     asm_prog &val(val_id_t id, if_op op);
     asm_prog &arg(val_id_t id);
-    asm_prog &arg(long const_arg);
-    asm_prog &arg(std::string static_name);
+    asm_prog &const_arg(long const_arg);
+    asm_prog &static_arg(std::string static_name);
 
     asm_prog &br(val_id_t sel);
     asm_prog &br();
@@ -38,7 +41,15 @@ namespace bscotch {
     if_bb *b;
     if_val *v;
   };
-  
+}
+
+template <typename T>
+  void bscotch::asm_prog::static_var(
+    const type &t, std::string name, const T &initial_val
+  )
+{
+  static_var(t, name);
+  to_vec_bool(f->static_vars[name].initial_val, initial_val);
 }
 
 #endif

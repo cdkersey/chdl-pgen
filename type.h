@@ -32,6 +32,10 @@ namespace bscotch {
   bool is_sram_array(const type &t);
   unsigned array_len(const type &t);
   bool is_struct(const type &t);
+
+  // Simple names for common types.
+  type u(unsigned nbits);
+  type s(unsigned nbits);
   
   void print(std::ostream &out, bscotch::type &t);
   std::string type_chdl(const type &t, int s = 0, int &end = *(int*)NULL);

@@ -27,9 +27,21 @@ void bscotch::asm_prog::label(string name) {
   f->bbs.push_back(bb);
 }
 
-asm_prog &bscotch::asm_prog::val(type &t, asm_prog::val_id_t id, if_op op) {
-  // TODO
+void bscotch::asm_prog::static_var(const type &t, string name) {
+  f->static_vars[name].name = name;
+  f->static_vars[name].t = t;
+  f->static_vars[name].broadcast = false;
+}
 
+void bscotch::asm_prog::bcast_var(const type &t, string name) {
+  static_var(t, name);
+  f->static_vars[name].broadcast = true;
+}
+
+asm_prog &bscotch::asm_prog::val(const type &t, asm_prog::val_id_t id, if_op op)
+{
+  // TODO
+  
   return *this;
 }
 
@@ -45,13 +57,13 @@ asm_prog &bscotch::asm_prog::arg(asm_prog::val_id_t id) {
   return *this;
 }
 
-asm_prog &bscotch::asm_prog::arg(long const_arg) {
+asm_prog &bscotch::asm_prog::const_arg(long const_arg) {
   // TODO
 
   return *this;
 }
 
-asm_prog &bscotch::asm_prog::arg(std::string static_name) {
+asm_prog &bscotch::asm_prog::static_arg(std::string static_name) {
   // TODO
 
   return *this;

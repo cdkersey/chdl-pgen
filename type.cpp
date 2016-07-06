@@ -38,6 +38,22 @@ unsigned bscotch::type::size(int s, int &end) {
   return sz;
 }
 
+bscotch::type bscotch::u(unsigned nbits) {
+  type t;
+  t.type_vec.push_back(TYPE_U);
+  t.type_vec.push_back(nbits);
+
+  return t;
+}
+
+bscotch::type bscotch::s(unsigned nbits) {
+  type t;
+  t.type_vec.push_back(TYPE_S);
+  t.type_vec.push_back(nbits);
+
+  return t;
+}
+
 bscotch::type bscotch::element_type(bscotch::type t) {
   unsigned n = t.type_vec.size();
   t.type_vec.resize(n - 2);
