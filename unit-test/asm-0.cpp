@@ -28,6 +28,8 @@ int main(int argc, char **argv) {
   a.val(u(32), 2,       VAL_ADD).         arg(0).  arg(1);
   a.val(3,        VAL_ST_STATIC).static_arg("x").  arg(2);
   a.br().target("entry");
+
+  a.assemble_func();
   
   print(cout, p);
   // gen_prog(cout, p);

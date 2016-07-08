@@ -17,8 +17,11 @@ namespace bscotch {
     typedef unsigned val_id_t;
     
     asm_prog(if_prog &p): p(p), f(0), b(0), v(0) {}
+
+    void assemble_func(); // Resolve all argument IDs, etc. in current function.
+    void bb_resolveptrs(); // Resolve suc/pred ptrs in func's basic blocks.
     
-    void function(std::string name);
+    void function(std::string name); // New function; assembler current one.
     void label(std::string name);
     void static_var(const type &t, std::string name);
     void bcast_var(const type &t, std::string name);
@@ -30,6 +33,7 @@ namespace bscotch {
     asm_prog &arg(val_id_t id);
     asm_prog &const_arg(long const_arg);
     asm_prog &static_arg(std::string static_name);
+    asm_prog &func_arg(std::string func_name);
 
     asm_prog &br(val_id_t sel);
     asm_prog &br();
@@ -37,6 +41,11 @@ namespace bscotch {
 
     std::map<std::string, if_bb*> labels;
     std::map<val_id_t, std::set<if_val*> > id_to_val;
+    std::map<if_val*, std::vector<val_id_t> > arg_ids;
+    std::map<if_bb*, val_id_t> br_id;
+    std::map<if_bb*, std::vector<std::string> > br_targets;
+
+    std::string func_name;
     
     if_prog &p;
     if_func *f;
