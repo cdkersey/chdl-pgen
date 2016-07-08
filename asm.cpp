@@ -129,12 +129,38 @@ void bscotch::asm_prog::bb_resolveptrs() {
       s->pred.push_back(b);
 }
 
+void bscotch::asm_prog::id_liveness() {
+  // Reverse id_to_val to get ids when provided with val pointers.
+  map<if_val*, val_id_t> vp_to_id;
+  for (auto &p : id_to_val)
+    for (auto &vp : p.second)
+      vp_to_id[vp] = p.first;
+
+  // Get defs and uses.
+  map<if_bb*, set<val_id_t> > def, use;
+  for (auto &b : f->bbs) {
+    for (auto &v : b->vals) {
+      def[b].insert(vp_to_id[v]);
+      for (auto &a : arg_ids[v])
+        use[b].insert(a);
+    }
+  }
+
+  // Find initial live_out and live_in based on defs/uses. TODO
+  map<if_bb*, set<val_id_t> > live_in, live_out;
+  
+  // Iterate until live_out and live_in do not change; these are live sets. TODO
+}
+
 void bscotch::asm_prog::assemble_func() {
   bb_resolveptrs();
   
-  // Do liveness analysis in terms of val ids. TODO
-  
+  // Do liveness analysis in terms of val ids.
+  id_liveness();
+
   // Add phis where appropriate. TODO
+
+  // Apply unique (SSA) value ids.
 
   // Fill in args and branch predicates with pointers. TODO
 

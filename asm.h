@@ -20,6 +20,7 @@ namespace bscotch {
 
     void assemble_func(); // Resolve all argument IDs, etc. in current function.
     void bb_resolveptrs(); // Resolve suc/pred ptrs in func's basic blocks.
+    void id_liveness(); // Liveness analysis of values in function.
     
     void function(std::string name); // New function; assembler current one.
     void label(std::string name);
