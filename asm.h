@@ -19,8 +19,9 @@ namespace bscotch {
     asm_prog(if_prog &p): p(p), f(0), b(0), v(0) {}
 
     void assemble_func(); // Resolve all argument IDs, etc. in current function.
+    void dom_analysis(std::map<if_bb*, std::set<if_bb*> > &dominates);
     void bb_resolveptrs(); // Resolve suc/pred ptrs in func's basic blocks.
-    void id_liveness(); // Liveness analysis of values in function.
+    void val_liveness(); // Liveness analysis of values in function.
     
     void function(std::string name); // New function; assembler current one.
     void label(std::string name);

@@ -43,6 +43,12 @@ bscotch::type bscotch::void_type() {
   return t;
 }
 
+bscotch::type bscotch::bit() {
+  type t;
+  t.type_vec.push_back(TYPE_BIT);
+  return t;
+}
+
 bscotch::type bscotch::u(unsigned nbits) {
   type t;
   t.type_vec.push_back(TYPE_U);
