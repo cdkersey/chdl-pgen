@@ -251,18 +251,90 @@ void bscotch::asm_prog::dom_analysis(map<if_bb*, set<if_bb*> > &dominates) {
       cout << "bb " << x.first->id << " dominates bb " << y->id << endl;
 }
 
+// Find all defs with id "id" that reach bb "use_bb", index "idx"
+void bscotch::asm_prog::reaches
+  (set<if_val*> &defs, if_bb *use_bb, int idx, val_id_t id, set<if_bb*> &vis)
+{
+  // If we have visited this (whole) basic block before, do not re-scan it.
+  if (vis.count(use_bb)) return;
+  else if (idx == use_bb->vals.size()) vis.insert(use_bb);
+  
+  // Scan the basic block backwards for the value id.
+  for (--idx; idx >= 0; --idx) {
+    if (id_to_val[id].count(use_bb->vals[idx])) {
+      defs.insert(use_bb->vals[idx]);
+      return;
+    }
+  }
+
+  // If execution reaches here, we did not find a reaching definition in this
+  // block. Recurse.
+  for (auto &p : use_bb->pred)
+    reaches(defs, p, p->vals.size(), id, vis);
+}
+
+void bscotch::asm_prog::val_resolveptrs(int phi_id) {
+  for (auto &b : f->bbs) {
+    map<set<if_val*>, if_val*> phis;
+  
+    for (unsigned i = 0; i < b->vals.size(); ++i) {
+      for (unsigned j = 0; j < arg_ids[b->vals[i]].size(); ++j) {
+        set<if_val *> s;
+	set<if_bb *> visited;
+        reaches(s, b, i, arg_ids[b->vals[i]][j], visited);
+
+	
+	cout << "Defs reaching BB " << b->id << " val " << i << " arg "
+             << j << ':';
+	for (auto &x : s)
+	  cout << ' ' << x->id;
+	cout << endl;
+
+	if (s.size() == 1) {
+	  // Set arg to pointer.
+	  b->vals[i]->args.push_back(*s.begin());
+	} else {
+	  // Create phi if necessary.
+	  if (!phis.count(s)) {
+	    if_val *phi = phis[s] = new if_val();
+	    phi->op = VAL_PHI;
+	    phi->t = (*s.begin())->t;
+	    phi->id = phi_id++;
+	    phi->bb = b;
+	    for (auto &x : s)
+              phi->args.push_back(x);
+	    b->vals.insert(b->vals.begin(), phi);
+	  }
+	  
+	  // Set arg to phi.
+	  b->vals[i]->args.push_back(phis[s]);
+	}
+      }
+    }
+  }  
+}
+
 void bscotch::asm_prog::assemble_func() {
   // Assign the basic blocks sequential IDs.
   for (unsigned i = 0; i < f->bbs.size(); ++i) f->bbs[i]->id = i;
 
+  // Assign initial, temporary IDs to values.
+  int id = 0;
+  for (auto &b : f->bbs)
+    for (auto &v : b->vals)
+      v->id = id++;
+  
   // Set "suc" and "pred" pointers in basic blocks.
   bb_resolveptrs();
 
+  // Add phis as needed and resolve args.
+  val_resolveptrs(id);
+  
   // Perform dominator analysis and find dominance frontiers.
-  map<if_bb*, set<if_bb*> > dominates, dom_fromtier;
+  map<if_bb*, set<if_bb*> > dominates;
   dom_analysis(dominates);
   
-  // Add phis at dominance frontiers where appropriate (convert to SSA).
+  // Find all defs reaching each arg of each val
 
   // Apply unique (SSA) value ids.
   
