@@ -131,47 +131,61 @@ void bscotch::asm_prog::bb_resolveptrs() {
 }
 
 void bscotch::asm_prog::val_liveness() {
-  #if 0
-  // Reverse id_to_val to get ids when provided with val pointers. (TODO: SSA)
-  map<if_val*, val_id_t> vp_to_id;
-  for (auto &p : id_to_val)
-    for (auto &vp : p.second)
-      vp_to_id[vp] = p.first;
-
-  // Get defs and uses. (TODO: SSA)
-  map<if_bb*, set<val_id_t> > def, use, def_after_use;
+  // Get defs and uses
+  map<if_bb*, set<if_val*> > def, use, def_after_use, live_in, live_out;
   for (auto &b : f->bbs) {
     for (auto &v : b->vals) {
-      if (!def[b].count(vp_to_id[v]) && use[b].count(vp_to_id[v]))
-	def_after_use[b].insert(vp_to_id[v]);
-      def[b].insert(vp_to_id[v]);
-      for (auto &a : arg_ids[v])
+      def[b].insert(v);
+      if (use[b].count(v))
+	def_after_use[b].insert(v);
+      for (auto &a : v->args)
         use[b].insert(a);
     }
   }
 
-  // Find initial live_out and live_in based on defs/uses. (TODO: SSA)
-  map<if_bb*, set<val_id_t> > live_in, live_out;
-  for (auto &x : use)
-    for (auto &id : x.second)
-      if (!def[x.first].count(id) || def_after_use[x.first].count(id))
-	live_in[x.first].insert(id);
+  // Set up initial live_in sets.
+  for (auto &b : f->bbs)
+    for (auto &v : use[b])
+      if (def_after_use[b].count(v) || !def[b].count(v))
+        live_in[b].insert(v);
 
-  for (auto &x : def)
-    for (auto &id : x.second)
-      if (!use[x.first].count(id) || def_after_use[x.first].count(id))
-	live_out[x.first].insert(id);
-  
-  // Iterate until live_out and live_in do not change. (TODO: SSA)
+  // Find live_in and live_out sets for each basic block.
   bool changed;
   do {
     changed = false;
     for (auto &b : f->bbs) {
-      // live_out = (def | live_in) & OrN(suc.live_in); (SSA)
-      // live_in = (live_out | use) & ~def; (SSA)
+      // live_in = (use & ~def_after_use) | (live_out & ~def) TODO
+      set<if_val*> new_live_in;
+
+      for (auto &v : use[b])
+	if (!def[b].count(v) || def_after_use[b].count(v))
+	  new_live_in.insert(v);
+
+      for (auto &v : live_out[b])
+	if (!def[b].count(v))
+	  new_live_in.insert(v);
+      
+      if (new_live_in != live_in[b]) {
+	live_in[b] = new_live_in;
+	changed = true;
+      }
+      
+      // live_out = union(suc.live_in)
+      for (auto &s : b->suc) {
+	for (auto &v : live_in[s]) {
+          if (!live_out[b].count(v)) changed = true;
+          live_out[b].insert(v);
+	}
+      }
+
     }
   } while (changed);
-  #endif
+
+  // Translate sets to per-basic-block vectors.
+  for (auto &b : f->bbs) {
+    for (auto &v : live_in[b]) b->live_in.push_back(v);
+    for (auto &v : live_out[b]) b->live_out.push_back(v);
+  }
 }
 
 template <typename T>
@@ -334,12 +348,8 @@ void bscotch::asm_prog::assemble_func() {
   map<if_bb*, set<if_bb*> > dominates;
   dom_analysis(dominates);
   
-  // Find all defs reaching each arg of each val
-
-  // Apply unique (SSA) value ids.
-  
   // Do liveness analysis in terms of val pointers. (find live_in, live_out)
-  // val_liveness();
+  val_liveness();
 
   // Fill in args and branch predicates with pointers. TODO
 

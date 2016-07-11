@@ -74,6 +74,12 @@ void bscotch::print(std::ostream &out, bscotch::if_bb &b) {
   using namespace std;
   using namespace bscotch;
 
+  out << "    Live in:";
+  for (auto &v : b.live_in) out << ' ' << v->id;
+  out << endl << "    Live out:";
+  for (auto &v : b.live_out) out << ' ' << v->id;
+  out << endl;
+  
   for (auto &v : b.vals)
     print(out, *v);
 
