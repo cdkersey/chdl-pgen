@@ -10,35 +10,13 @@
 using namespace bscotch;
 using namespace std;
 
-type u_n(unsigned n) {
-  type t;
-  t.type_vec.push_back(TYPE_U);
-  t.type_vec.push_back(n);
+type u8() { return u(8); }
+type u16() { return u(16); }
+type u32() { return u(32); }
 
-  return t;  
-}
-
-type s_n(unsigned n) {
-  type t;
-  t.type_vec.push_back(TYPE_S);
-  t.type_vec.push_back(n);
-
-  return t;  
-}
-
-type bit() {
-  type t;
-  t.type_vec.push_back(TYPE_BIT);
-  return t;
-}
-
-type u8() { return u_n(8); }
-type u16() { return u_n(16); }
-type u32() { return u_n(32); }
-
-type s8() { return s_n(8); }
-type s16() { return s_n(16); }
-type s32() { return s_n(32); }
+type s8() { return s(8); }
+type s16() { return s(16); }
+type s32() { return s(32); }
 
 type cpx(unsigned e, unsigned m) {
   type t;

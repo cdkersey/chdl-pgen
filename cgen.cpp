@@ -437,24 +437,24 @@ void bscotch::gen_bb_decls(std::ostream &out, std::string fname, int idx, if_bb 
   out << "  hierarchy_exit();" << endl << endl;
 }
 
-static void get_val_map(std::map<int, int> &m, if_bb &a, if_bb &b) {
+static void get_val_map(std::map<int, int> &m, int pred_idx, if_bb &b) {
   // The only ones that are not 1-1 from the live_in/live_out sets are the
   // ones corresponding to phis. Scan the destination BB for phis, and insert
   // accordingly.
   for (auto &v : b.vals) {
     if (v->op == VAL_PHI) {
       int src = -1;
-      for (auto &s : v->args) {
-	for (auto &lo : a.live_out) {
-	  if (lo->id == s->id) {
-	    if (src != -1) {
-              std::cerr << "2 phi inputs: " << src << " and " << lo->id
-                        << " from same pred block!" << std::endl;
-              std::abort();
-            }
-	    src = lo->id;
+      if_bb &a = *(b.pred[pred_idx]);
+      if_val *s = v->args[pred_idx];
+      for (auto &lo : a.live_out) {
+        if (lo->id == s->id) {
+          if (src != -1) {
+            std::cerr << "2 phi inputs: " << src << " and " << lo->id
+                      << " from same pred block!" << std::endl;
+            std::abort();
           }
-	}
+          src = lo->id;
+        }
       }
       m[v->id] = src;
     }
@@ -496,7 +496,7 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
   // Set up arbiter inputs
   for (unsigned i = 0; i < b.pred.size(); ++i) {
     map<int, int> vmap;
-    get_val_map(vmap, *b.pred[i], b);
+    get_val_map(vmap, i, b);
 
     int pred_id(b.pred[i]->id), pred_sidx = -1;
     for (unsigned j = 0; j < b.pred[i]->suc.size(); ++j) {

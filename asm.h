@@ -21,8 +21,8 @@ namespace bscotch {
     void assemble_func(); // Resolve all argument IDs, etc. in current function.
     void dom_analysis(std::map<if_bb*, std::set<if_bb*> > &dominates);
     void reaches(
-      std::set<if_val*> &defs, if_bb *use_bb, int idx, val_id_t id,
-      std::set<if_bb*> &visited
+      std::set<pair<if_val*, if_bb*> > &defs, if_bb *use_bb, int idx,
+      val_id_t id, std::set<if_bb*> &visited
     );
     void bb_resolveptrs(); // Resolve suc/pred ptrs in func's basic blocks.
     void val_resolveptrs(int phi_id); // Resolve argument pointers and add phis.
