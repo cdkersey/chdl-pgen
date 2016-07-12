@@ -267,8 +267,8 @@ void bscotch::asm_prog::dom_analysis(map<if_bb*, set<if_bb*> > &dominates) {
 
 // Find all defs with id "id" that reach bb "use_bb", index "idx"
 void bscotch::asm_prog::reaches(
-  set<pair<if_val*, if_bb*> > &defs, if_bb *use_bb, int idx, val_id_t id,
-  set<if_bb*> &vis, int 
+  set<pair<if_val*, int> > &defs, if_bb *use_bb, int idx, val_id_t id,
+  set<if_bb*> &vis, int pred_idx
 )
 {
   // If we have visited this (whole) basic block before, do not re-scan it.
@@ -278,15 +278,17 @@ void bscotch::asm_prog::reaches(
   // Scan the basic block backwards for the value id.
   for (--idx; idx >= 0; --idx) {
     if (id_to_val[id].count(use_bb->vals[idx])) {
-      defs.insert(use_bb->vals[idx]);
+      defs.insert(make_pair(use_bb->vals[idx], pred_idx));
       return;
     }
   }
 
   // If execution reaches here, we did not find a reaching definition in this
   // block. Recurse.
-  for (auto &p : use_bb->pred)
-    reaches(defs, p, p->vals.size(), id, vis);
+  for (int i = 0; i < use_bb->pred.size(); ++i) {
+    if_bb *p(use_bb->pred[i]);
+    reaches(defs, p, p->vals.size(), id, vis, (pred_idx == -1 ? i : pred_idx));
+  }
 }
 
 void bscotch::asm_prog::val_resolveptrs(int phi_id) {
@@ -295,7 +297,7 @@ void bscotch::asm_prog::val_resolveptrs(int phi_id) {
   
     for (unsigned i = 0; i < b->vals.size(); ++i) {
       for (unsigned j = 0; j < arg_ids[b->vals[i]].size(); ++j) {
-        set<pair<if_val *, if_bb *> > sa;
+        set<pair<if_val *, int> > sa;
         set<if_val *> s;
 	set<if_bb *> visited;
         reaches(sa, b, i, arg_ids[b->vals[i]][j], visited);
@@ -304,8 +306,8 @@ void bscotch::asm_prog::val_resolveptrs(int phi_id) {
 	
 	cout << "Defs reaching BB " << b->id << " val " << i << " arg "
              << j << ':';
-	for (auto &x : s)
-	  cout << ' ' << x->id;
+	for (auto &x : sa)
+	  cout << ' ' << x.first->id << '(' << x.second << ')';
 	cout << endl;
 
 	if (s.size() == 1) {
