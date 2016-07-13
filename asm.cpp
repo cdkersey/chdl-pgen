@@ -9,6 +9,7 @@
 #include "type.h"
 #include "if.h"
 #include "asm.h"
+#include "break_cycles.h"
 
 using namespace std;
 using namespace bscotch;
@@ -130,210 +131,6 @@ void bscotch::asm_prog::bb_resolveptrs() {
       s->pred.push_back(b);
 }
 
-void bscotch::asm_prog::val_liveness() {
-  // Get defs and uses
-  map<if_bb*, set<if_val*> > def, use, def_after_use, live_in, live_out;
-  for (auto &b : f->bbs) {
-    for (auto &v : b->vals) {
-      def[b].insert(v);
-      if (use[b].count(v))
-	def_after_use[b].insert(v);
-      for (auto &a : v->args)
-        use[b].insert(a);
-    }
-  }
-
-  // Set up initial live_in sets.
-  for (auto &b : f->bbs)
-    for (auto &v : use[b])
-      if (def_after_use[b].count(v) || !def[b].count(v))
-        live_in[b].insert(v);
-
-  // Find live_in and live_out sets for each basic block.
-  bool changed;
-  do {
-    changed = false;
-    for (auto &b : f->bbs) {
-      // live_in = (use & ~def_after_use) | (live_out & ~def) TODO
-      set<if_val*> new_live_in;
-
-      for (auto &v : use[b])
-	if (!def[b].count(v) || def_after_use[b].count(v))
-	  new_live_in.insert(v);
-
-      for (auto &v : live_out[b])
-	if (!def[b].count(v))
-	  new_live_in.insert(v);
-      
-      if (new_live_in != live_in[b]) {
-	live_in[b] = new_live_in;
-	changed = true;
-      }
-      
-      // live_out = union(suc.live_in)
-      for (auto &s : b->suc) {
-	for (auto &v : live_in[s]) {
-          if (!live_out[b].count(v)) changed = true;
-          live_out[b].insert(v);
-	}
-      }
-
-    }
-  } while (changed);
-
-  // Translate sets to per-basic-block vectors.
-  for (auto &b : f->bbs) {
-    for (auto &v : live_in[b]) b->live_in.push_back(v);
-    for (auto &v : live_out[b]) b->live_out.push_back(v);
-  }
-}
-
-template <typename T>
-  static void set_union(set<T> &o, const set<T> &a, const set<T> &b)
-{
-  for (auto &x : a) o.insert(x);
-  for (auto &x : b) o.insert(x);
-}
-
-template <typename T>
-  static void set_intersect(set<T> &o, const set<T> &a, const set<T> &b)
-{
-  set<T> out;
-  for (auto &x : a)
-    if (b.count(x)) out.insert(x);
-  o = out;
-}
-
-template <typename T>
-  static bool set_eq(const set<T> &a, const set<T> &b)
-{
-  if (a.size() != b.size()) return false;
-
-  for (auto &x : a)
-    if (!b.count(x)) return false;
-
-  return true;
-}
-
-void bscotch::asm_prog::dom_analysis(map<if_bb*, set<if_bb*> > &dominates) {
-  map<if_bb*, set<if_bb*> > d_by, d_front;
-  for (auto &b : f->bbs)
-    d_by[b].insert(b);
-
-  for (auto &b : f->bbs) {
-    bool changed;
-
-    d_by.clear();
-    for (auto &x : f->bbs) {
-      if (x == b) {
-	d_by[x].insert(x);
-      } else {
-	for (auto &y : f->bbs)
-	  d_by[x].insert(y);
-      }
-    }
-
-    do {
-      changed = false;
-
-      for (auto &c : f->bbs) {
-        set<if_bb*> new_d_by;
-        for (auto &x : f->bbs) new_d_by.insert(x);
-        bool empty = true;
-        for (auto it = c->pred.begin(); it != c->pred.end(); ++it)
-          if (*it != c) {
-            set_intersect(new_d_by, new_d_by, d_by[*it]);
-            empty = false;
-          }
-        if (empty) new_d_by.clear();
-
-        new_d_by.insert(c);
-      
-        if (!set_eq(d_by[c], new_d_by)) {
-          changed = true;
-          d_by[c] = new_d_by;
-        }
-      }
-    } while (changed);
-
-    for (auto &x : d_by[b])
-      dominates[x].insert(b);
-  }
-
-  for (auto &x : dominates)
-    for (auto &y : x.second)
-      cout << "bb " << x.first->id << " dominates bb " << y->id << endl;
-}
-
-// Find all defs with id "id" that reach bb "use_bb", index "idx"
-void bscotch::asm_prog::reaches(
-  set<pair<if_val*, int> > &defs, if_bb *use_bb, int idx, val_id_t id,
-  set<if_bb*> &vis, int pred_idx
-)
-{
-  // If we have visited this (whole) basic block before, do not re-scan it.
-  if (vis.count(use_bb)) return;
-  else if (idx == use_bb->vals.size()) vis.insert(use_bb);
-  
-  // Scan the basic block backwards for the value id.
-  for (--idx; idx >= 0; --idx) {
-    if (id_to_val[id].count(use_bb->vals[idx])) {
-      defs.insert(make_pair(use_bb->vals[idx], pred_idx));
-      return;
-    }
-  }
-
-  // If execution reaches here, we did not find a reaching definition in this
-  // block. Recurse.
-  for (int i = 0; i < use_bb->pred.size(); ++i) {
-    if_bb *p(use_bb->pred[i]);
-    reaches(defs, p, p->vals.size(), id, vis, (pred_idx == -1 ? i : pred_idx));
-  }
-}
-
-void bscotch::asm_prog::val_resolveptrs(int phi_id) {
-  for (auto &b : f->bbs) {
-    map<set<if_val*>, if_val*> phis;
-  
-    for (unsigned i = 0; i < b->vals.size(); ++i) {
-      for (unsigned j = 0; j < arg_ids[b->vals[i]].size(); ++j) {
-        set<pair<if_val *, int> > sa;
-        set<if_val *> s;
-	set<if_bb *> visited;
-        reaches(sa, b, i, arg_ids[b->vals[i]][j], visited);
-
-        for (auto &x : sa) s.insert(x.first);
-	
-	cout << "Defs reaching BB " << b->id << " val " << i << " arg "
-             << j << ':';
-	for (auto &x : sa)
-	  cout << ' ' << x.first->id << '(' << x.second << ')';
-	cout << endl;
-
-	if (s.size() == 1) {
-	  // Set arg to pointer.
-	  b->vals[i]->args.push_back(*s.begin());
-	} else {
-	  // Create phi if necessary.
-	  if (!phis.count(s)) {
-	    if_val *phi = phis[s] = new if_val();
-	    phi->op = VAL_PHI;
-	    phi->t = (*s.begin())->t;
-	    phi->id = phi_id++;
-	    phi->bb = b;
-	    for (auto &x : s)
-              phi->args.push_back(x);
-	    b->vals.insert(b->vals.begin(), phi);
-	  }
-	  
-	  // Set arg to phi.
-	  b->vals[i]->args.push_back(phis[s]);
-	}
-      }
-    }
-  }  
-}
-
 void bscotch::asm_prog::assemble_func() {
   // Reverse id_to_val for quick lookup.
   map<if_val*, val_id_t> val_to_id;
@@ -418,30 +215,44 @@ void bscotch::asm_prog::assemble_func() {
   for (auto &x : id_to_val) {
     cout << "Variable ID " << x.first << endl;
 
-    // Which versions of the value does each basic block carry?
-    map<if_bb*, if_val*> wr_ver;
-    map<if_bb*, set<if_val*> > ver;
-
-    // Initial set; every block that writes the variable has the last write as
-    // its output version.
-    for (auto &b : f->bbs)
-      for (auto &v : b->vals)
-        if (val_to_id[v] == x.first)
-          wr_ver[b] = v;
-
-    // Find which version is used in each block.
     bool changed, phi_added;
-    do {
-      ver.clear();
-        
+    do {      
+      // Which versions of the value does each basic block carry?
+      set<if_bb*> wr_only;
+      map<if_bb*, if_val*> wr_ver;
+      map<if_bb*, set<if_val*> > ver;
+
+      // Initial set; every block that writes the variable has the last write as
+      // its output version.
+      for (auto &b : f->bbs) {
+        bool read = false;
+
+        for (auto &v : b->vals) {
+          for (auto &a : arg_ids[v])
+            if (a == x.first) read = true;
+          if (predicate.count(v) && predicate[v] == x.first) read = true;
+          if (val_to_id[v] == x.first) {
+            wr_ver[b] = v;
+            if (!read) wr_only.insert(b);
+          }
+        }
+      }
+
+      cout << "wr_only bbs:";
+      for (auto &b : wr_only) cout << ' ' << b->id;
+      cout << endl;
+
       do {
         changed = false;
 
         for (auto &b : f->bbs) {
           set<if_val*> new_ver;
-          if (wr_ver.count(b)) {
+          if (wr_only.count(b)) {
             new_ver.insert(wr_ver[b]);
           } else if (live_in[b].count(x.first)) {
+            if (wr_ver.count(b))
+              new_ver.insert(wr_ver[b]);
+            
             for (auto &p : b->pred)
               for (auto &v : ver[p])
                 new_ver.insert(v);
@@ -459,10 +270,12 @@ void bscotch::asm_prog::assemble_func() {
  
       // Identify convergence points (phi candidate points)
       for (auto &b : f->bbs) {
-        bool convergence(ver[b].size() > 1);
-        for (auto &p : b->pred)
-          if (ver[p].size() != 1)
-            convergence = false;
+        bool convergence(b->pred.size() > 1 &&
+                         !wr_only.count(b) && ver[b].size() > 1);
+        if (convergence)
+          for (auto &p : b->pred)
+            if (ver[p].size() != 1 && !wr_ver.count(p))
+              convergence = false;
 
         // Add phis at convergence points, then update vers. Do this until
         // no blocks have multiple versions of the variable.
@@ -477,7 +290,10 @@ void bscotch::asm_prog::assemble_func() {
           for (auto &v : ver[b])
             phi->args.push_back(v);
           b->vals.insert(b->vals.begin(), phi);
-
+          id_to_val[x.first].insert(phi);
+          val_to_id[phi] = x.first;
+          // No args: should not have to 
+          
           wr_ver[b] = phi;
           phi_added = true;
         }
@@ -508,13 +324,6 @@ void bscotch::asm_prog::assemble_func() {
         }
       }
     } while (phi_added);
-    
-    for (auto &x : ver) {
-      cout << "  bb " << x.first->id << ':';
-      for (auto &y : x.second)
-        cout << ' ' << y->id;
-      cout << endl;
-    }
   }
 
   // Find live_in for all blocks, as the union of all predecessors' live_out
@@ -526,23 +335,10 @@ void bscotch::asm_prog::assemble_func() {
     for (auto &v : live_in)
       b->live_in.push_back(v);
   }
-  
-  #if 0
-  // Add phis as needed and resolve args.
-  val_resolveptrs(id);
-  
-  // Perform dominator analysis and find dominance frontiers.
-  map<if_bb*, set<if_bb*> > dominates;
-  dom_analysis(dominates);
-  
-  // Do liveness analysis in terms of val pointers. (find live_in, live_out)
-  val_liveness();
-  #endif
 
-  // Fill in args and branch predicates with pointers. TODO
-
-  // Fill in liveness information in basic blocks. TODO
-
+  // Flag back edges for 2-entry pipeline buffers.
+  break_cycles(*f);
+  
   // Prevent repeat assembly.
   f = NULL;
 }

@@ -39,12 +39,13 @@ int main(int argc, char **argv) {
   a.br(7).target("loop").target("exit");
 
   a.label("exit");
-  a.val(void_type(), 10, VAL_RET).arg(0);
+  a.val(void_type(), 9, VAL_CONST).const_arg(0);
+  a.val(void_type(), 10, VAL_RET).arg(9);
 
   a.assemble_func();
   
   print(cout, p); 
-  // gen_prog(cout, p);
+  gen_prog(cout, p);
 
   return 0;
 }
