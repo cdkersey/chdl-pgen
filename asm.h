@@ -49,6 +49,7 @@ namespace bscotch {
     std::map<std::string, if_bb*> labels;
     std::map<val_id_t, std::set<if_val*> > id_to_val;
     std::map<if_val*, std::vector<val_id_t> > arg_ids;
+    std::map<if_val*, val_id_t> predicate;
     std::map<if_bb*, val_id_t> br_id;
     std::map<if_bb*, std::vector<std::string> > br_targets;
 

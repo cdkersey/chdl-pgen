@@ -335,18 +335,199 @@ void bscotch::asm_prog::val_resolveptrs(int phi_id) {
 }
 
 void bscotch::asm_prog::assemble_func() {
-  // Assign the basic blocks sequential IDs.
-  for (unsigned i = 0; i < f->bbs.size(); ++i) f->bbs[i]->id = i;
+  // Reverse id_to_val for quick lookup.
+  map<if_val*, val_id_t> val_to_id;
+  for (auto &x : id_to_val)
+    for (auto &vp : x.second)
+      val_to_id[vp] = x.first;
 
-  // Assign initial, temporary IDs to values.
+  // Assign the basic blocks and values sequential IDs.
   int id = 0;
-  for (auto &b : f->bbs)
-    for (auto &v : b->vals)
+  for (unsigned i = 0; i < f->bbs.size(); ++i) {
+    f->bbs[i]->id = i;
+    for (auto &v : f->bbs[i]->vals) {
       v->id = id++;
-  
+      v->args.resize(arg_ids[v].size());
+    }
+  }
+
   // Set "suc" and "pred" pointers in basic blocks.
   bb_resolveptrs();
+  
+  // Find gen_v, gen_id, and kill sets used by liveness analysis.
+  map<if_bb*, set<val_id_t> > kill, gen, live_in, live_out;
 
+  for (auto &b : f->bbs) {
+    set<val_id_t> def_so_far;
+    for (auto &v : b->vals) {
+      if (predicate.count(v) &&!def_so_far.count(predicate[v]))
+        gen[b].insert(predicate[v]);
+      for (auto &a : arg_ids[v])
+        if (!def_so_far.count(a))
+          gen[b].insert(a);
+
+      kill[b].insert(val_to_id[v]);
+      def_so_far.insert(val_to_id[v]);
+    }
+    
+    if (b->branch_pred && !def_so_far.count(val_to_id[b->branch_pred]))
+      gen[b].insert(val_to_id[b->branch_pred]);
+  }
+
+  // Do ID-level liveness analysis.
+  bool changed;
+  do {
+    changed = false;
+
+    for (auto &b : f->bbs) {
+      set<val_id_t> new_live_in, new_live_out;
+      new_live_in = gen[b];
+      for (auto &v : live_out[b])
+        if (!kill[b].count(v))
+          new_live_in.insert(v);
+
+      if (new_live_in != live_in[b]) {
+        changed = true;
+        live_in[b] = new_live_in;
+      }
+
+      for (auto &p : b->suc)
+        for (auto &v : live_in[p])
+          new_live_out.insert(v);
+
+      if (new_live_out != live_out[b]) {
+        changed = true;
+        live_out[b] = new_live_out;
+      }
+    }
+  } while (changed);
+
+  for (auto &b : f->bbs) {
+    cout << "bb " << b->id << ", kill:";
+    for (auto &x : kill[b]) cout << ' ' << x;
+    cout << ", gen:";
+    for (auto &x : gen[b]) cout << ' ' << x;
+    cout << ", live_in:";
+    for (auto &x : live_in[b]) cout << ' ' << x;
+    cout << ", live_out:";
+    for (auto &x : live_out[b]) cout << ' ' << x;
+    cout << endl;
+  }
+
+  // Find which versions of variables are live out of which basic blocks.
+  for (auto &x : id_to_val) {
+    cout << "Variable ID " << x.first << endl;
+
+    // Which versions of the value does each basic block carry?
+    map<if_bb*, if_val*> wr_ver;
+    map<if_bb*, set<if_val*> > ver;
+
+    // Initial set; every block that writes the variable has the last write as
+    // its output version.
+    for (auto &b : f->bbs)
+      for (auto &v : b->vals)
+        if (val_to_id[v] == x.first)
+          wr_ver[b] = v;
+
+    // Find which version is used in each block.
+    bool changed, phi_added;
+    do {
+      ver.clear();
+        
+      do {
+        changed = false;
+
+        for (auto &b : f->bbs) {
+          set<if_val*> new_ver;
+          if (wr_ver.count(b)) {
+            new_ver.insert(wr_ver[b]);
+          } else if (live_in[b].count(x.first)) {
+            for (auto &p : b->pred)
+              for (auto &v : ver[p])
+                new_ver.insert(v);
+          }
+
+          if (ver[b] != new_ver) {
+            changed = true;
+            ver[b] = new_ver;
+          }
+        }
+      } while (changed);
+
+
+      phi_added = false;
+ 
+      // Identify convergence points (phi candidate points)
+      for (auto &b : f->bbs) {
+        bool convergence(ver[b].size() > 1);
+        for (auto &p : b->pred)
+          if (ver[p].size() != 1)
+            convergence = false;
+
+        // Add phis at convergence points, then update vers. Do this until
+        // no blocks have multiple versions of the variable.
+        if (convergence) {
+          cout << "Convergence point at BB " << b->id << endl;
+
+          if_val *phi = new if_val();
+          phi->op = VAL_PHI;
+          phi->t = (*ver[b].begin())->t;
+          phi->id = id++;
+          phi->bb = b;
+          for (auto &v : ver[b])
+            phi->args.push_back(v);
+          b->vals.insert(b->vals.begin(), phi);
+
+          wr_ver[b] = phi;
+          phi_added = true;
+        }
+      }
+
+      // Now that we know which version to use, assign args and set
+      // live_out accordingly.
+      for (auto &b : f->bbs) {
+        if (ver[b].size() != 1) continue;
+
+        if_val *current_ver = *(ver[b].begin());
+        for (auto &v : b->vals) {
+          if (predicate.count(v) && predicate[v] == x.first)
+            v->pred = current_ver;
+          for (unsigned i = 0; i < arg_ids[v].size(); ++i)
+            if (arg_ids[v][i] == x.first)
+              v->args[i] = current_ver;
+          if (val_to_id[v] == x.first) current_ver = v;
+        }
+        if (br_id.count(b) && br_id[b] == x.first) b->branch_pred = current_ver;
+
+        if (live_out[b].count(x.first)) {
+          bool found = false;
+          for (auto &v : b->live_out)
+            if (v == current_ver) found = true;
+          if (!found)
+            b->live_out.push_back(current_ver);
+        }
+      }
+    } while (phi_added);
+    
+    for (auto &x : ver) {
+      cout << "  bb " << x.first->id << ':';
+      for (auto &y : x.second)
+        cout << ' ' << y->id;
+      cout << endl;
+    }
+  }
+
+  // Find live_in for all blocks, as the union of all predecessors' live_out
+  for (auto &b : f->bbs) {
+    set<if_val *> live_in;
+    for (auto &s : b->pred)
+      for (auto &v : s->live_out)
+        live_in.insert(v);
+    for (auto &v : live_in)
+      b->live_in.push_back(v);
+  }
+  
+  #if 0
   // Add phis as needed and resolve args.
   val_resolveptrs(id);
   
@@ -356,6 +537,7 @@ void bscotch::asm_prog::assemble_func() {
   
   // Do liveness analysis in terms of val pointers. (find live_in, live_out)
   val_liveness();
+  #endif
 
   // Fill in args and branch predicates with pointers. TODO
 
