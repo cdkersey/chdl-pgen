@@ -37,6 +37,7 @@ namespace bscotch {
 
     asm_prog &br(val_id_t sel);
     asm_prog &br();
+    asm_prog &stall(val_id_t in);
     asm_prog &target(std::string label);
 
     std::map<std::string, if_bb*> labels;
@@ -44,6 +45,7 @@ namespace bscotch {
     std::map<if_val*, std::vector<val_id_t> > arg_ids;
     std::map<if_val*, val_id_t> predicate;
     std::map<if_bb*, val_id_t> br_id;
+    std::map<if_bb*, val_id_t> stall_id;
     std::map<if_bb*, std::vector<std::string> > br_targets;
 
     std::string func_name;

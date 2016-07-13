@@ -15,9 +15,14 @@ using namespace std;
 using namespace bscotch;
 
 void bscotch::asm_prog::function(string name) {
-  labels.clear();
-
   if (f) assemble_func();
+  labels.clear();
+  id_to_val.clear();
+  arg_ids.clear();
+  predicate.clear();
+  br_id.clear();
+  stall_id.clear();
+  br_targets.clear();
   
   f = &p.functions[name];
   func_name = name;
@@ -47,6 +52,10 @@ void bscotch::asm_prog::bcast_var(const type &t, string name) {
 
 asm_prog &bscotch::asm_prog::val(const type &t, asm_prog::val_id_t id, if_op op)
 {
+  // If this is an argument, add it to function argument types.
+  // (TODO: only in first basic block)
+  if (op == VAL_ARG) f->args.push_back(t);
+  
   if_val *vp = new if_val();
 
   v = vp;
@@ -57,7 +66,7 @@ asm_prog &bscotch::asm_prog::val(const type &t, asm_prog::val_id_t id, if_op op)
   vp->op = op;
 
   id_to_val[id].insert(vp);
-  
+
   return *this;
 }
 
@@ -99,6 +108,12 @@ asm_prog &bscotch::asm_prog::br(asm_prog::val_id_t sel) {
 
 asm_prog &bscotch::asm_prog::br() {
   b->branch_pred = NULL;
+
+  return *this;
+}
+
+asm_prog &bscotch::asm_prog::stall(asm_prog::val_id_t in) {
+  stall_id[b] = in;
 
   return *this;
 }
@@ -167,8 +182,13 @@ void bscotch::asm_prog::assemble_func() {
       def_so_far.insert(val_to_id[v]);
     }
     
-    if (b->branch_pred && !def_so_far.count(val_to_id[b->branch_pred]))
-      gen[b].insert(val_to_id[b->branch_pred]);
+    if (br_id.count(b) && !def_so_far.count(br_id[b]))
+      gen[b].insert(br_id[b]);
+
+    // The following will only occur in code that may
+    // intentionally stall forever:
+    if (stall_id.count(b) && !def_so_far.count(stall_id[b]))
+      gen[b].insert(stall_id[b]);
   }
 
   // Do ID-level liveness analysis.
@@ -313,7 +333,10 @@ void bscotch::asm_prog::assemble_func() {
               v->args[i] = current_ver;
           if (val_to_id[v] == x.first) current_ver = v;
         }
-        if (br_id.count(b) && br_id[b] == x.first) b->branch_pred = current_ver;
+        if (br_id.count(b) && br_id[b] == x.first)
+          b->branch_pred = current_ver;
+        if (stall_id.count(b) && stall_id[b] == x.first)
+          b->stall = current_ver;
 
         if (live_out[b].count(x.first)) {
           bool found = false;

@@ -83,6 +83,8 @@ void bscotch::print(std::ostream &out, bscotch::if_bb &b) {
   for (auto &v : b.vals)
     print(out, *v);
 
+  if (b.stall) out << "    stall <" << b.stall->id << '>' << endl;
+  
   out << "    br ";
   if (b.branch_pred) out << '<' << b.branch_pred->id << ">, ";
   for (unsigned i = 0; i < b.suc.size(); ++i) {

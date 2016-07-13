@@ -224,8 +224,8 @@ void test_func(if_func &f) {
   //  st_static @d2, %4
   // bb3:
   //  st_static @d3, %4
-  //  %7 = const #0 (void)
-  //  %8 = ret %6 (void)
+  //  %34 = const #0 (void)
+  //  %35 = ret %34 (void)
   f.static_vars["d1"] = u3bcastvar("d1");
   f.static_vars["d2"] = u3bcastvar("d2");
   f.static_vars["d3"] = u3bcastvar("d3");
