@@ -16,14 +16,18 @@ namespace bscotch {
   // Initialize the macro API. This is a thread-unsafe, stateful API designed as
   // a stop-gap solution between the assembler and a language front-end/parser.
   void init_macro_env(asm_prog &a);
+
+  void finish_macro_env();
+
+  struct varimpl;
   
   struct var {
     var(const type &t);
+    var();
 
     var &operator=(const var &r); // Assignment, propagates type inference.
 
-    asm_prog::val_id_t id;
-    type t;
+    varimpl *p;
   };
 
   // Basic arithmetic/logic operators
@@ -35,6 +39,14 @@ namespace bscotch {
   var operator*(const var &a, const var &b);
   var operator/(const var &a, const var &b);
 
+  // Basic unary operators
+  var operator!(const var &x);
+  var operator-(const var &x);
+  var operator~(const var &x);
+
+  var OrReduce(const var &x);
+  var AndReduce(const var &x);
+  
   // Basic comparison operators
   var operator==(const var &a, const var &b);
   var operator!=(const var &a, const var &b);
@@ -42,10 +54,6 @@ namespace bscotch {
   var operator>=(const var &a, const var &b);
   var operator>(const var &a, const var &b);
   var operator<=(const var &a, const var &b);
-
-  // Basic unary operators
-  var operator-(const var &x);
-  var operator~(const var &x);
 
   template <typename T> struct argcollector {
     argcollector(std::vector<T> &v): v(v) {}
@@ -64,7 +72,7 @@ namespace bscotch {
   void function(const char *name);
   void label(const char *name);
   void br(const char *dest);
-  argcollector<const char *> br(var &sel);
+  argcollector<std::string> br(var &sel);
   argcollector<var> spawn(const char *func);
 
   void call();

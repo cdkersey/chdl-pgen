@@ -52,6 +52,11 @@ void bscotch::asm_prog::bcast_var(const type &t, string name) {
 
 asm_prog &bscotch::asm_prog::val(const type &t, asm_prog::val_id_t id, if_op op)
 {
+  cout << "New val with type ";
+  type u(t);
+  print(cout, u);
+  cout << endl;
+  
   // If this is an argument, add it to function argument types.
   // (TODO: only in first basic block)
   if (op == VAL_ARG) f->args.push_back(t);

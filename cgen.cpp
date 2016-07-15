@@ -146,9 +146,13 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
   } else if (is_reduce(v.op)) {
     out << op_str(v.op, v.args[0]->t) << '(' << aname[0] << ')';
   } else if (v.op == VAL_CONCATENATE) {
-    for (unsigned i = 0; i < v.args.size(); ++i) {
-      out << "Cat(" << aname[i] << ')';
-      if (i != v.args.size() - 1) out << '.';
+    if (v.args.size() == 1) {
+      out << aname[0];
+    } else {
+      for (unsigned i = 0; i < v.args.size(); ++i) {
+        out << "Cat(" << aname[i] << ')';
+        if (i != v.args.size() - 1) out << '.';
+      }
     }
   } else if (v.op == VAL_ARG) {
     out << "_(_(" << fname << "_call, \"contents\"), \"arg"
