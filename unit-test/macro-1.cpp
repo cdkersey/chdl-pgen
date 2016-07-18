@@ -31,6 +31,8 @@ void bmain() {
   y = y - x_val;
 
   store("a", load(x_val, 0_c, 6), y);
+  var a_val(u(32));
+  a_val = load("a", load(x_val, 0_c, 6));
   store("x", x_plus_1);
 
   br("start");
@@ -50,36 +52,8 @@ int main(int argc, char **argv) {
   
   finish_macro_env();
 
-  #if 0
-  // Initialize the assembler.
-  if_prog p;
-  asm_prog a(p);
-  init_macro_env(a);
-  
-  // The assembly program.
-  function("bmain");
-  label("entry");
-  
-  var x(u(32)), y(u(32));
-  var done(bit());
-
-  x = 0_c; // Initialize counter.
-  y = 0_c; // Random seed.
-
-  label("loop");
-  y = 1103515245_c * y + 12345_c;
-  done = (x == 100_c);
-  x = x + 1_c;
-  br(done)("loop")("exit");
-
-  label("exit");
-  ret();
-
-  finish_macro_env();
-  #endif
-  
-  print(cout, p); 
-  // gen_prog(cout, p);
+  // print(cout, p); 
+  gen_prog(cout, p);
 
   return 0;
 }
