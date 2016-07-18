@@ -65,6 +65,13 @@ bscotch::type bscotch::s(unsigned nbits) {
   return t;
 }
 
+bscotch::type bscotch::a(bscotch::type t, unsigned len) {
+  t.type_vec.push_back(TYPE_ARRAY);
+  t.type_vec.push_back(len);
+  
+  return t;
+}
+
 bscotch::type bscotch::element_type(bscotch::type t) {
   unsigned n = t.type_vec.size();
   t.type_vec.resize(n - 2);

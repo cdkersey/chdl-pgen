@@ -36,6 +36,7 @@ namespace bscotch {
   // Simple names for common types.
   type u(unsigned nbits);
   type s(unsigned nbits);
+  type a(type t, unsigned len);
   type bit();
   type void_type();
   
