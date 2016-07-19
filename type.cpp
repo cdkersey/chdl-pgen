@@ -7,6 +7,32 @@
 
 #include "type.h"
 
+bscotch::type &bscotch::type::add_field(std::string n, const bscotch::type &t) {
+  if (type_vec[0] != TYPE_STRUCT_BEGIN) {
+    std::cerr << "Attempt to add field \"" << n << "\" to non-struct type."
+              << std::endl;
+    abort();
+  }
+
+  bool need_delim(type_vec[1] != 0);
+  
+  type_vec[1]++;
+
+  if (!need_delim) type_vec.pop_back();
+  unsigned origin = type_vec.size();
+  field_name[origin] = n;
+
+  for (unsigned i = 0; i < t.type_vec.size(); ++i) {
+    type_vec.push_back(t.type_vec[i]);
+    if (t.field_name.count(i))
+      field_name[origin + i] = t.field_name.find(i)->second;
+  }
+
+  type_vec.push_back(TYPE_FIELD_DELIM);
+  
+  return *this;
+}
+
 unsigned bscotch::type::size(int s, int &end) const {
   using namespace bscotch;
   using namespace std;
@@ -61,6 +87,15 @@ bscotch::type bscotch::s(unsigned nbits) {
   type t;
   t.type_vec.push_back(TYPE_S);
   t.type_vec.push_back(nbits);
+
+  return t;
+}
+
+bscotch::type bscotch::struct_type() {
+  type t;
+  t.type_vec.push_back(TYPE_STRUCT_BEGIN);
+  t.type_vec.push_back(0);
+  t.type_vec.push_back(TYPE_FIELD_DELIM);
 
   return t;
 }

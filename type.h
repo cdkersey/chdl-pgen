@@ -24,6 +24,8 @@ namespace bscotch {
     std::vector<int> type_vec;
     std::map<int, std::string> field_name;
 
+    type &add_field(std::string, const type &t);
+    
     std::string str(int start = 0, int &chars = *((int*)NULL));
     unsigned size(int start = 0, int &chars = *((int*)NULL)) const;
   };
@@ -38,6 +40,7 @@ namespace bscotch {
   type s(unsigned nbits);
   type a(type t, unsigned len);
   type bit();
+  type struct_type();
   type void_type();
   
   void print(std::ostream &out, bscotch::type &t);
