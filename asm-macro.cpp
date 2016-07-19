@@ -270,10 +270,6 @@ var bscotch::load(const char *name, const var &idx) {
   return r;
 }
 
-var bscotch::load(const char *name, const char *field) {
-  // TODO
-}
-
 var bscotch::load(const var &in, const var &idx) {
   type &t(in.p->t);
   var r(t);
@@ -300,6 +296,26 @@ var bscotch::load(const var &in, const var &idx, long len) {
 }
 
 var bscotch::load(const var &in, const char *field) {
+  type &t(in.p->t);
+  unsigned field_idx, i;
+  bool found = false;
+  
+  for (i = 0, field_idx = 0; i < t.type_vec.size(); i++) {
+    if (t.field_name.count(i) ) {
+      if (t.field_name[i] == field) { found = true; break; }
+      else field_idx++;
+    }
+  }
+
+  cout << "Found field \"" << field << "\" in struct at index " << field_idx
+       << '.' << endl;
+  
+  if (!found) {
+    cerr << "Field \"" << field << "\" not found in struct." << endl;
+    abort();
+  }
+  
+  return load(in, lit(u(32), field_idx));
 }
 
 void bscotch::store(const char *name, const var &d) {
@@ -327,12 +343,39 @@ void bscotch::store(const char *name, const char *field, const var &d) {
 }
 
 var bscotch::repl(const var &in, const var &idx, const var &d) {
+  type &t(in.p->t);
+  var r(t);
+  
+  asm_prog_ptr->val(t, r.p->id, VAL_ST_IDX).arg(in.p->id)
+    .arg(idx.p->id).arg(d.p->id);
+
+  return r;
 }
 
 var bscotch::repl(const var &in, const var &idx, const var &d, unsigned len) {
 }
 
 var bscotch::repl(const var &in, const char *field, const var &d) {
+  type &t(in.p->t);
+  unsigned field_idx, i;
+  bool found = false;
+  
+  for (i = 0, field_idx = 0; i < t.type_vec.size(); i++) {
+    if (t.field_name.count(i) ) {
+      if (t.field_name[i] == field) { found = true; break; }
+      else field_idx++;
+    }
+  }
+
+  cout << "Found field \"" << field << "\" in struct at index " << field_idx
+       << '.' << endl;
+  
+  if (!found) {
+    cerr << "Field \"" << field << "\" not found in struct." << endl;
+    abort();
+  }
+
+  return repl(in, lit(u(32), field_idx), d);
 }
 
 var bscotch::repl(const var &in, const char *field, const var &d, unsigned len)

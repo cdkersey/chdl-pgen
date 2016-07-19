@@ -76,7 +76,6 @@ namespace bscotch {
 
   var load(const char *name);
   var load(const char *name, const var &idx);
-  var load(const char *name, const char *field);
   var load(const var &in, const var &idx);
   var load(const var &in, const var &idx, long len);
   var load(const var &in, const char *field);

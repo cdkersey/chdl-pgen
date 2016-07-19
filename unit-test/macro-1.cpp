@@ -20,7 +20,8 @@ void bmain() {
   static_var("a", a(u(32), 64));
 
   label("entry");
-  var y(u(32));
+  var xyzzy(struct_type().add_field("b", u(8)).add_field("a", u(4))), y(u(32));
+  xyzzy = lit(u(12), 0);
   y = 123_c;
 
   label("start");
@@ -29,6 +30,9 @@ void bmain() {
   x_val = load("x");
   x_plus_1 = x_val + 1_c;
   y = y - x_val;
+
+  xyzzy = repl(xyzzy, lit(u(32), 1), load(xyzzy, lit(u(32), 1)) + 1_c);
+  xyzzy = repl(xyzzy, lit(u(32), 0), load(xyzzy, lit(u(32), 0)) - 1_c);
 
   store("a", load(x_val, 0_c, 6), y);
   var a_val(u(32));
@@ -52,8 +56,8 @@ int main(int argc, char **argv) {
   
   finish_macro_env();
 
-  // print(cout, p); 
-  gen_prog(cout, p);
+  print(cout, p); 
+  // gen_prog(cout, p);
 
   return 0;
 }
