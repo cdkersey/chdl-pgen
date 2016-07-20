@@ -10,10 +10,9 @@
 #include "../break_cycles.h"
 #include "../asm-macro.h"
 
-using namespace bscotch;
-using namespace std;
-
 int main(int argc, char **argv) {
+  using namespace bscotch;
+
   // Initialize the assembler.
   if_prog p;
   asm_prog a(p);
@@ -40,8 +39,8 @@ int main(int argc, char **argv) {
 
   finish_macro_env();
   
-  // print(cout, p); 
-  gen_prog(cout, p);
+  // print(std::cout, p); 
+  gen_prog(std::cout, p);
 
   return 0;
 }

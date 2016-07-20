@@ -11,7 +11,6 @@
 #include "../asm-macro.h"
 
 using namespace bscotch;
-using namespace std;
 
 void bmain() {
   function("bmain");
@@ -44,22 +43,17 @@ void bmain() {
   br("start");
 }
 
-void pipeline() {
-  // function("pipeline");
-}
-
 int main(int argc, char **argv) {
   if_prog p;
   asm_prog a(p);
   init_macro_env(a);
 
   bmain();
-  pipeline();
   
   finish_macro_env();
 
-  print(cout, p); 
-  gen_prog(cout, p);
+  print(std::cout, p); 
+  gen_prog(std::cout, p);
 
   return 0;
 }

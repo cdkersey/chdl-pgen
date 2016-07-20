@@ -8,6 +8,7 @@
 #include <set>
 #include <string>
 #include <sstream>
+#include <functional>
 
 #include "asm.h"
 #include "type.h"
@@ -58,14 +59,9 @@ namespace bscotch {
   var operator<=(const var &a, const var &b);
 
   template <typename T> struct argcollector {
-    argcollector(std::vector<T> &v): v(v) {}
-    
-    argcollector &operator()(const T& x) {
-      v.push_back(x);
-      return *this;
-    }
-
-    std::vector<T> &v;
+    argcollector(std::function<void(T)> f): f(f) {}
+    argcollector &operator()(const T& x) { f(x); return *this; }
+    std::function<void(T)> f;
   };
   
   // Custom literal type. 1234_c is a var whose type will be inferred.
@@ -93,8 +89,8 @@ namespace bscotch {
   void br(const char *dest);
   argcollector<std::string> br(const var &sel);
   argcollector<var> spawn(const char *func);
+  argcollector<var> call(const char *func);
 
-  void call();
   void ret();
   void ret(const var &rval);
 }

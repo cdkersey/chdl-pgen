@@ -212,13 +212,25 @@ void bscotch::br(const char *dest) {
 
 argcollector<std::string> bscotch::br(const var &sel) {
   asm_prog_ptr->br(sel.p->id);
-  return argcollector<string>(asm_prog_ptr->br_targets[asm_prog_ptr->b]);
+  return argcollector<string>([](std::string x){ asm_prog_ptr->br_targets[asm_prog_ptr->b].push_back(x); } );
 }
 
 argcollector<var> bscotch::spawn(const char *func) {
+  type t(void_type());
+
+  var r;
+  asm_prog_ptr->val(t, r.p->id, VAL_SPAWN).func_arg(func);
+   
+  return argcollector<var>([](var v){ asm_prog_ptr->arg(v.p->id); });
 }
 
-void bscotch::call() {
+argcollector<var> bscotch::call(const char *func) {
+  type t(void_type());
+
+  var r;
+  asm_prog_ptr->val(t, r.p->id, VAL_CALL).func_arg(func);
+   
+  return argcollector<var>([](var v){ asm_prog_ptr->arg(v.p->id); });
 }
 
 void bscotch::ret() {
