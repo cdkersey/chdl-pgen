@@ -177,7 +177,7 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
 	abort();
       }
 
-      string fieldname = v.args[0]->t.field_name[const_val(*v.args[1])];
+      string fieldname = v.args[0]->t.get_field_name(const_val(*v.args[1]));
 
       out << "_(" << aname[0] << ", \"" << fieldname << "\")";
     } else if (v.args.size() == 3 &&
@@ -199,7 +199,7 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
 	std::cout << "Attempt to index struct with non-const." << endl;
 	abort();
       }
-      string fieldname = v.args[0]->t.field_name[const_val(*v.args[1])];
+      string fieldname = v.args[0]->t.get_field_name(const_val(*v.args[1]));
 
       out << type_chdl(v.t) << ' ' << fname << '_' << v.id << ';' << endl
 	  << "  Flatten(" << fname << '_' << v.id << ") = ~~Flatten("

@@ -31,8 +31,10 @@ void bmain() {
   x_plus_1 = x_val + 1_c;
   y = y - x_val;
 
-  xyzzy = repl(xyzzy, lit(u(32), 1), load(xyzzy, lit(u(32), 1)) + 1_c);
-  xyzzy = repl(xyzzy, lit(u(32), 0), load(xyzzy, lit(u(32), 0)) - 1_c);
+  bool found = false;
+  
+  xyzzy = repl(xyzzy, "b", load(xyzzy, "b") + 1_c);
+  xyzzy = repl(xyzzy, "a", load(xyzzy, "a") - 1_c);
 
   store("a", load(x_val, 0_c, 6), y);
   var a_val(u(32));
@@ -57,7 +59,7 @@ int main(int argc, char **argv) {
   finish_macro_env();
 
   print(cout, p); 
-  // gen_prog(cout, p);
+  gen_prog(cout, p);
 
   return 0;
 }

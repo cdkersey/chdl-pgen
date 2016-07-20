@@ -25,6 +25,11 @@ namespace bscotch {
     std::map<int, std::string> field_name;
 
     type &add_field(std::string, const type &t);
+
+    void get_field_start_end(int &start, int &end, int idx);
+    std::string get_field_name(int idx);
+    int get_field_idx(std::string name);
+    type get_field_type(int idx);
     
     std::string str(int start = 0, int &chars = *((int*)NULL));
     unsigned size(int start = 0, int &chars = *((int*)NULL)) const;
@@ -47,7 +52,5 @@ namespace bscotch {
   std::string type_chdl(const type &t, int s = 0, int &end = *(int*)NULL);
   std::string type_cpp(const type &t, std::string name,
                        int s = 0, int &end = *(int*)NULL);
-
-  std::string field_name_by_idx(type &t, int idx, int s = 0);
 }
 #endif

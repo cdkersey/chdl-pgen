@@ -7,6 +7,95 @@
 
 #include "type.h"
 
+void bscotch::type::get_field_start_end(int &start, int &end, int idx) {
+  int l = 0, fields = 0, cur_field = 0;
+  bool field_start = false;
+  for (unsigned i = 0; i < type_vec.size(); ++i) {
+    if (field_start) {
+      if (cur_field == idx) {
+        start = i;
+      } else if (cur_field == idx + 1) {
+        end = i;
+        return;
+      }
+      field_start = false;
+    }
+ 
+    int p = type_vec[i];
+    if (p == TYPE_STRUCT_BEGIN) {
+      ++l;
+      fields = type_vec[++i];
+      if (l == 1) field_start = true;
+    } else if (p == TYPE_FIELD_DELIM) {
+      if (--fields == 0) {
+        --l;
+      } else {
+        if (l == 1) {
+          ++cur_field;
+          field_start = true;
+        }
+      }
+    } else if (p == TYPE_ARRAY) {
+      ++i;
+    }
+  }
+
+  end = type_vec.size() - 1;
+}
+
+std::string bscotch::type::get_field_name(int idx) {
+  int start, end;
+  get_field_start_end(start, end, idx);
+
+  return field_name[start];
+}
+
+int bscotch::type::get_field_idx(std::string name) {
+  int l = 0, fields = 0, cur_field = 0;
+  bool field_start = false;
+  for (unsigned i = 0; i < type_vec.size(); ++i) {
+    if (field_start) {
+      if (field_name.count(i) && field_name[i] == name)
+        return cur_field;
+      field_start = false;
+    }
+ 
+    int p = type_vec[i];
+    if (p == TYPE_STRUCT_BEGIN) {
+      ++l;
+      fields = type_vec[++i];
+      if (l == 1) field_start = true;
+    } else if (p == TYPE_FIELD_DELIM) {
+      if (--fields == 0) {
+        --l;
+      } else {
+        if (l == 1) {
+          ++cur_field;
+          field_start = true;
+        }
+      }
+    } else if (p == TYPE_ARRAY) {
+      ++i;
+    }
+  }
+
+  return -1;
+}
+
+bscotch::type bscotch::type::get_field_type(int idx) {
+  type r;
+  
+  int start, end;
+  get_field_start_end(start, end, idx);
+
+  for (unsigned i = start; i < end; ++i) {
+    if (field_name.count(i)) r.field_name[i - start] = field_name[i];
+    r.type_vec.push_back(type_vec[i]);
+  }
+
+  return r;
+}
+
 bscotch::type &bscotch::type::add_field(std::string n, const bscotch::type &t) {
   if (type_vec[0] != TYPE_STRUCT_BEGIN) {
     std::cerr << "Attempt to add field \"" << n << "\" to non-struct type."

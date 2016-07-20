@@ -99,12 +99,12 @@ void test_func(if_func &f) {
   f.bbs[1]->vals.push_back(new if_val());
   f.bbs[1]->vals[1]->t = uN(3);
   f.bbs[1]->vals[1]->op = VAL_CONST;
-  to_vec_bool<5>(f.bbs[1]->vals[1]->const_val, 2);
+  to_vec_bool<5>(f.bbs[1]->vals[1]->const_val, 0);
 
   f.bbs[1]->vals.push_back(new if_val());
   f.bbs[1]->vals[2]->t = uN(3);
   f.bbs[1]->vals[2]->op = VAL_CONST;
-  to_vec_bool<5>(f.bbs[1]->vals[2]->const_val, 5);
+  to_vec_bool<5>(f.bbs[1]->vals[2]->const_val, 1);
 
   f.bbs[1]->vals.push_back(new if_val());
   f.bbs[1]->vals[3]->t = u32();

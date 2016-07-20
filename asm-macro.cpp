@@ -55,7 +55,7 @@ static void infer_type(if_val *v, type *t) {
       t = &v->t;
     }
   }
-  if (!is_store && is_void_type(v->t)) v->t = *t;
+  if (!(is_store && is_static) && is_void_type(v->t)) v->t = *t;
 
   if (v->op == VAL_CONCATENATE) {
     if (v->args.size() == 1)
@@ -271,7 +271,7 @@ var bscotch::load(const char *name, const var &idx) {
 }
 
 var bscotch::load(const var &in, const var &idx) {
-  type &t(in.p->t);
+  type t(/*in.p->t*/void_type());
   var r(t);
   
   asm_prog_ptr->val(t, r.p->id, VAL_LD_IDX).arg(in.p->id).arg(idx.p->id);
@@ -297,25 +297,22 @@ var bscotch::load(const var &in, const var &idx, long len) {
 
 var bscotch::load(const var &in, const char *field) {
   type &t(in.p->t);
-  unsigned field_idx, i;
-  bool found = false;
-  
-  for (i = 0, field_idx = 0; i < t.type_vec.size(); i++) {
-    if (t.field_name.count(i) ) {
-      if (t.field_name[i] == field) { found = true; break; }
-      else field_idx++;
-    }
-  }
+  unsigned field_idx = t.get_field_idx(field);
+  type field_type = t.get_field_type(field_idx);
 
   cout << "Found field \"" << field << "\" in struct at index " << field_idx
        << '.' << endl;
   
-  if (!found) {
+  if (field_idx == -1) {
     cerr << "Field \"" << field << "\" not found in struct." << endl;
     abort();
   }
   
-  return load(in, lit(u(32), field_idx));
+  var r(field_type);
+
+  r = load(in, lit(u(32), field_idx));
+
+  return r;
 }
 
 void bscotch::store(const char *name, const var &d) {

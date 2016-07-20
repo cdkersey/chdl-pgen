@@ -68,5 +68,24 @@ int main() {
   print_type(cpx_double);
   print_type(cpx_double_1024);
 
+  type t = cpx_float();
+  cout << "Field 0 of cpx float: " << t.get_field_name(0) << endl;
+  cout << "Field 1 of cpx float: " << t.get_field_name(1) << endl;
+  cout << "Idx of r of cpx float: " << t.get_field_idx("r") << endl;
+  cout << "Idx of i of cpx float: " << t.get_field_idx("i") << endl;
+  cout << "Idx of s of cpx float: " << t.get_field_idx("s") << endl;
+  type itype = t.get_field_type(t.get_field_idx("i")),
+       rtype = t.get_field_type(t.get_field_idx("r"));
+  cout << "Field i of cpx float type: " << endl;
+  print(cout, itype);
+  cout << endl;
+  cout << "Field r of cpx float type: " << endl;
+  print(cout, rtype);
+  cout << endl;
+  cout << "Field e of that: " << endl;
+  type etype = rtype.get_field_type(rtype.get_field_idx("e"));
+  print(cout, etype);
+  cout << endl;
+  
   return 0;
 }
