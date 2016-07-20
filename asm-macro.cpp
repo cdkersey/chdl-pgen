@@ -212,7 +212,11 @@ void bscotch::br(const char *dest) {
 
 argcollector<std::string> bscotch::br(const var &sel) {
   asm_prog_ptr->br(sel.p->id);
-  return argcollector<string>([](std::string x){ asm_prog_ptr->br_targets[asm_prog_ptr->b].push_back(x); } );
+  return argcollector<string>(
+    [](std::string x){
+      asm_prog_ptr->br_targets[asm_prog_ptr->b].push_back(x);
+    }
+  );
 }
 
 argcollector<var> bscotch::spawn(const char *func) {
