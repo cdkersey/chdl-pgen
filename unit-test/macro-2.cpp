@@ -39,19 +39,15 @@ void tmain() {
   i = arg(u(32));
   i = i * i;
 
-  var j(u(32)), k(u(32));
-  j = 0_c;
-  k = 0_c;
-
-  label("loop");
-  j = j + 1_c;
-  br(j == 3_c)("loop")("loopy");
-
-  label("loopy");
-  k = k + 1_c;
-  br(k == 3_c)("loopy")("loopx");
+  //var j(u(32));
+  //j = 0_c;
   
-  label("loopx");
+  label("loop");
+  // j = j + 1_c;
+  // br(j == 3_c)("loop")("loopx");
+
+  // label("loopx");
+  // j = 0_c;
   br(i == 0_c)("loop2")("exit");
 
   label("loop2");
