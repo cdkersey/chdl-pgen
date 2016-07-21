@@ -8,6 +8,7 @@
 #include "../if.h"
 #include "../cgen.h"
 #include "../break_cycles.h"
+#include "../prevent_deadlock.h"
 
 using namespace bscotch;
 using namespace std;
@@ -90,6 +91,7 @@ void test_prog(if_prog &p) {
 
   test_func(p.functions["bmain"]);
   break_cycles(p.functions["bmain"]);
+  prevent_deadlock(p.functions["bmain"]);
 }
 
 int main() {

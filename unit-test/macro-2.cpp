@@ -15,14 +15,16 @@ using namespace bscotch;
 void bmain() {
   // Function bmain() : spawn 100 threads in tmain instance.
   function("bmain");
+  var i(u(32));
 
   label("entry");
-  var i(u(32));
 
   i = lit(u(32), 0);
   
   label("loop");
-  spawn("tmain");
+  spawn("tmain")(i);
+
+  label("loop2");
   i = i + 1_c;
   br(i == 100_c)("loop")("exit");
   
@@ -33,6 +35,30 @@ void bmain() {
 void tmain() {
   function("tmain");
   label("foo");
+  var i(u(32));
+  i = arg(u(32));
+  i = i * i;
+
+  var j(u(32)), k(u(32));
+  j = 0_c;
+  k = 0_c;
+
+  label("loop");
+  j = j + 1_c;
+  br(j == 3_c)("loop")("loopy");
+
+  label("loopy");
+  k = k + 1_c;
+  br(k == 3_c)("loopy")("loopx");
+  
+  label("loopx");
+  br(i == 0_c)("loop2")("exit");
+
+  label("loop2");
+  i = i - 1_c;
+  br("loop");
+  
+  label("exit");
   ret();
 }
 

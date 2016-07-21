@@ -32,6 +32,7 @@ namespace bscotch {
   };
 
   var lit(const type &t, unsigned long val);
+  var arg(const type &t);
   
   // Basic arithmetic/logic operators
   var operator&(const var &a, const var &b);

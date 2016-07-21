@@ -125,6 +125,16 @@ var bscotch::lit(const type &t, unsigned long val) {
   return r;
 }
 
+var bscotch::arg(const type &t) {
+  var r;
+
+  asm_prog_ptr->val(t, r.p->id, VAL_ARG);
+  r.p->v = asm_prog_ptr->v;
+  r.p->v->t = r.p->t = t;
+
+  return r;
+}
+
 // Basic arithmetic/logic operators
 static var bin_op(bscotch::if_op op, const var &a, const var &b) {
   var r(a.p->t);
@@ -224,6 +234,7 @@ argcollector<var> bscotch::spawn(const char *func) {
 
   var r;
   asm_prog_ptr->val(t, r.p->id, VAL_SPAWN).func_arg(func);
+  r.p->v = asm_prog_ptr->v;
    
   return argcollector<var>([](var v){ asm_prog_ptr->arg(v.p->id); });
 }
@@ -233,6 +244,7 @@ argcollector<var> bscotch::call(const char *func) {
 
   var r;
   asm_prog_ptr->val(t, r.p->id, VAL_CALL).func_arg(func);
+  r.p->v = asm_prog_ptr->v;
    
   return argcollector<var>([](var v){ asm_prog_ptr->arg(v.p->id); });
 }
@@ -287,7 +299,7 @@ var bscotch::load(const char *name, const var &idx) {
 }
 
 var bscotch::load(const var &in, const var &idx) {
-  type t(/*in.p->t*/void_type());
+  type t(is_struct(in.p->t)?void_type():element_type(in.p->t));
   var r(t);
   
   asm_prog_ptr->val(t, r.p->id, VAL_LD_IDX).arg(in.p->id).arg(idx.p->id);

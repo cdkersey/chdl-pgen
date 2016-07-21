@@ -7,7 +7,6 @@
 #include "../type.h"
 #include "../if.h"
 #include "../cgen.h"
-#include "../break_cycles.h"
 #include "../asm.h"
 
 using namespace bscotch;

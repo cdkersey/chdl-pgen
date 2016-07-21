@@ -10,6 +10,7 @@
 #include "if.h"
 #include "asm.h"
 #include "break_cycles.h"
+#include "prevent_deadlock.h"
 
 using namespace std;
 using namespace bscotch;
@@ -151,6 +152,75 @@ void bscotch::asm_prog::bb_resolveptrs() {
       s->pred.push_back(b);
 }
 
+static void ssa_liveness_analysis(if_func *f) {
+  // Find gen_v, gen_id, and kill sets used by liveness analysis.
+  map<if_bb*, set<if_val*> > kill, gen, live_in, live_out;
+  map<if_bb*, map<if_bb*, set<if_val*> > > live_in_mask;
+
+  for (auto &b : f->bbs) {
+    set<if_val*> def_so_far;
+    for (auto &v : b->vals) {
+      if (v->pred && !def_so_far.count(v->pred))
+        gen[b].insert(v->pred);
+      for (auto &a : v->args)
+        if (!def_so_far.count(a))
+          gen[b].insert(a);
+
+      // Mask out all off-path phi arguments.
+      if (v->op == VAL_PHI)
+        for (unsigned i = 0; i < b->pred.size(); ++i)
+          for (unsigned j = 0; j < b->pred.size(); ++j)
+            if (v->args[j] != v->args[i])
+              live_in_mask[b->pred[i]][b].insert(v->args[j]);
+ 
+      kill[b].insert(v);
+      def_so_far.insert(v);
+    }
+    
+    if (b->branch_pred && !def_so_far.count(b->branch_pred))
+      gen[b].insert(b->branch_pred);
+
+    // The following will only occur in code that may
+    // intentionally stall forever:
+    if (b->stall && !def_so_far.count(b->stall))
+      gen[b].insert(b->stall);
+  }
+
+  // Do liveness analysis.
+  bool changed;
+  do {
+    changed = false;
+
+    for (auto &b : f->bbs) {
+      set<if_val*> new_live_in, new_live_out;
+      new_live_in = gen[b];
+      for (auto &v : live_out[b])
+        if (!kill[b].count(v))
+          new_live_in.insert(v);
+
+      if (new_live_in != live_in[b]) {
+        changed = true;
+        live_in[b] = new_live_in;
+      }
+
+      for (auto &s : b->suc)
+        for (auto &v : live_in[s])
+          if (!live_in_mask[b][s].count(v))
+           new_live_out.insert(v);
+
+      if (new_live_out != live_out[b]) {
+        changed = true;
+        live_out[b] = new_live_out;
+      }
+    }
+  } while (changed);
+
+  for (auto &b : f->bbs) {
+    for (auto &v : live_in[b]) b->live_in.push_back(v);
+    for (auto &v : live_out[b]) b->live_out.push_back(v);
+  }
+}
+
 void bscotch::asm_prog::assemble_func() {
   // Reverse id_to_val for quick lookup.
   map<if_val*, val_id_t> val_to_id;
@@ -241,85 +311,87 @@ void bscotch::asm_prog::assemble_func() {
     cout << "Variable ID " << x.first << endl;
 
     bool changed, phi_added;
-    do {      
-      // Which versions of the value does each basic block carry?
-      set<if_bb*> wr_only;
+    map<if_bb*, if_val*> phi_set;
+    do {
+      set<if_bb*> live_in_bbs, live_out_bbs;
       map<if_bb*, if_val*> wr_ver;
-      map<if_bb*, set<if_val*> > ver;
-
-      // Initial set; every block that writes the variable has the last write as
-      // its output version.
       for (auto &b : f->bbs) {
-        bool read = false;
-
-        for (auto &v : b->vals) {
-          for (auto &a : arg_ids[v])
-            if (a == x.first) read = true;
-          if (predicate.count(v) && predicate[v] == x.first) read = true;
-          if (val_to_id[v] == x.first) {
+        if (live_out[b].count(x.first)) live_out_bbs.insert(b);
+        if (live_in[b].count(x.first)) live_in_bbs.insert(b);
+ 
+        for (auto &v : b->vals)
+          if (val_to_id[v] == x.first)
             wr_ver[b] = v;
-            if (!read) wr_only.insert(b);
-          }
-        }
       }
-
-      cout << "wr_only bbs:";
-      for (auto &b : wr_only) cout << ' ' << b->id;
-      cout << endl;
-
+      
+      bool change;
+      map<if_bb*, set<if_val*> > in_vers, out_vers;
       do {
-        changed = false;
-
+        change = false;
+ 
         for (auto &b : f->bbs) {
-          set<if_val*> new_ver;
-          if (wr_only.count(b)) {
-            new_ver.insert(wr_ver[b]);
-          } else if (live_in[b].count(x.first)) {
-            if (wr_ver.count(b))
-              new_ver.insert(wr_ver[b]);
-            
-            for (auto &p : b->pred)
-              for (auto &v : ver[p])
-                new_ver.insert(v);
+          set<if_val*> new_in_vers, new_out_vers;
+
+          for (auto &p : b->pred)
+            if (live_out_bbs.count(p))
+              for (auto &v : out_vers[p])
+                new_in_vers.insert(v);
+          
+          if (wr_ver.count(b)) new_out_vers.insert(wr_ver[b]);
+          else new_out_vers = new_in_vers;
+          
+          if (new_in_vers != in_vers[b]) {
+            change = true;
+            in_vers[b] = new_in_vers;
           }
 
-          if (ver[b] != new_ver) {
-            changed = true;
-            ver[b] = new_ver;
+          if (new_out_vers != out_vers[b]) {
+            change = true;
+            out_vers[b] = new_out_vers;
           }
         }
-      } while (changed);
+      } while (change);
 
+      for (auto &b : f->bbs) {
+        cout << "block " << b->id << " in vers:";
+        for (auto &v : in_vers[b])        
+          cout << ' ' << v;
+        cout << endl;
+        cout << "block " << b->id << " out vers:";
+        for (auto &v : out_vers[b])
+          cout << ' ' << v;
+        cout << endl;
+      }
 
       phi_added = false;
  
       // Identify convergence points (phi candidate points)
       for (auto &b : f->bbs) {
-        bool convergence(b->pred.size() > 1 &&
-                         !wr_only.count(b) && ver[b].size() > 1);
+        bool convergence(b->pred.size() > 1 && in_vers[b].size() > 1 &&
+                         !phi_set.count(b));
         if (convergence)
           for (auto &p : b->pred)
-            if (ver[p].size() != 1 && !wr_ver.count(p))
+            if (out_vers[p].size() != 1)
               convergence = false;
-
+         
         // Add phis at convergence points, then update vers. Do this until
         // no blocks have multiple versions of the variable.
         if (convergence) {
           cout << "Convergence point at BB " << b->id << endl;
-
           if_val *phi = new if_val();
+          phi_set[b] = phi;
           phi->op = VAL_PHI;
-          phi->t = (*ver[b].begin())->t;
+          phi->t = (*in_vers[b].begin())->t;
           phi->id = id++;
           phi->bb = b;
-          for (auto &v : ver[b])
-            phi->args.push_back(v);
+          for (auto &p : b->pred)
+            for (auto &v : out_vers[p])
+              phi->args.push_back(v);
           b->vals.insert(b->vals.begin(), phi);
           id_to_val[x.first].insert(phi);
           val_to_id[phi] = x.first;
           // No args: should not have to 
           
-          wr_ver[b] = phi;
           phi_added = true;
         }
       }
@@ -327,9 +399,18 @@ void bscotch::asm_prog::assemble_func() {
       // Now that we know which version to use, assign args and set
       // live_out accordingly.
       for (auto &b : f->bbs) {
-        if (ver[b].size() != 1) continue;
-
-        if_val *current_ver = *(ver[b].begin());
+        cout << "ver[" << b->id << "] has " << in_vers[b].size() << " entries:";
+        for (auto &p : in_vers[b]) cout << ' ' << p;
+        cout << endl;
+        cout << "in block:";
+        for (auto &p : b->vals) if (val_to_id[p] == x.first) cout << ' ' << p;
+        cout << endl;
+ 
+        if_val *current_ver;
+        if (phi_set.count(b))
+          current_ver = phi_set[b];
+        else
+          current_ver = *(in_vers[b].begin());
         for (auto &v : b->vals) {
           if (predicate.count(v) && predicate[v] == x.first)
             v->pred = current_ver;
@@ -342,30 +423,18 @@ void bscotch::asm_prog::assemble_func() {
           b->branch_pred = current_ver;
         if (stall_id.count(b) && stall_id[b] == x.first)
           b->stall = current_ver;
-
-        if (live_out[b].count(x.first)) {
-          bool found = false;
-          for (auto &v : b->live_out)
-            if (v == current_ver) found = true;
-          if (!found)
-            b->live_out.push_back(current_ver);
-        }
       }
     } while (phi_added);
   }
 
-  // Find live_in for all blocks, as the union of all predecessors' live_out
-  for (auto &b : f->bbs) {
-    set<if_val *> live_in;
-    for (auto &s : b->pred)
-      for (auto &v : s->live_out)
-        live_in.insert(v);
-    for (auto &v : live_in)
-      b->live_in.push_back(v);
-  }
+  // Do SSA-mode liveness analysis
+  ssa_liveness_analysis(f);
 
   // Flag back edges for 2-entry pipeline buffers.
   break_cycles(*f);
+
+  // Re-order block predecessor priorities to avoid deadlocks.
+  prevent_deadlock(*f);
   
   // Prevent repeat assembly.
   f = NULL;

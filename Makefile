@@ -1,7 +1,9 @@
 CXXFLAGS = -std=c++11 -g -Wfatal-errors
 LDLIBS = 
-OBJS = if.o type.o cgen.o find_back_edges.o break_cycles.o asm.o asm-macro.o
-HEADERS = cgen.h type.h if.h find_back_edges.h break_cycles.h asm.h asm-macro.h
+OBJS = if.o type.o cgen.o find_back_edges.o break_cycles.o asm.o asm-macro.o \
+       prevent_deadlock.o
+HEADERS = cgen.h type.h if.h find_back_edges.h break_cycles.h asm.h asm-macro.o\
+       prevent_deadlock.o
 
 bscotch.a : $(OBJS)
 	$(AR) q $@ $(OBJS)
