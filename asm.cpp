@@ -355,11 +355,11 @@ void bscotch::asm_prog::assemble_func() {
       for (auto &b : f->bbs) {
         cout << "block " << b->id << " in vers:";
         for (auto &v : in_vers[b])        
-          cout << ' ' << v;
+          cout << ' ' << v->id;
         cout << endl;
         cout << "block " << b->id << " out vers:";
         for (auto &v : out_vers[b])
-          cout << ' ' << v;
+          cout << ' ' << v->id;
         cout << endl;
       }
 
@@ -369,10 +369,15 @@ void bscotch::asm_prog::assemble_func() {
       for (auto &b : f->bbs) {
         bool convergence(b->pred.size() > 1 && in_vers[b].size() > 1 &&
                          !phi_set.count(b));
+
+        if (convergence) cout << "Convergence candidate at BB " << b->id << endl;
+        
         if (convergence)
           for (auto &p : b->pred)
-            if (out_vers[p].size() != 1)
+            if (p != b && out_vers[p].size() != 1) {
               convergence = false;
+              cout << " but predecessor " << p->id << " has " << out_vers[p].size() << " out versions." << endl;
+            }
          
         // Add phis at convergence points, then update vers. Do this until
         // no blocks have multiple versions of the variable.
@@ -384,9 +389,16 @@ void bscotch::asm_prog::assemble_func() {
           phi->t = (*in_vers[b].begin())->t;
           phi->id = id++;
           phi->bb = b;
-          for (auto &p : b->pred)
-            for (auto &v : out_vers[p])
-              phi->args.push_back(v);
+          for (auto &p : b->pred) {
+            if (p == b)
+              if (wr_ver.count(b))
+                phi->args.push_back(wr_ver[b]);
+              else
+                phi->args.push_back(phi);
+            else
+              for (auto &v : out_vers[p])
+                phi->args.push_back(v);
+          }
           b->vals.insert(b->vals.begin(), phi);
           id_to_val[x.first].insert(phi);
           val_to_id[phi] = x.first;
@@ -400,10 +412,11 @@ void bscotch::asm_prog::assemble_func() {
       // live_out accordingly.
       for (auto &b : f->bbs) {
         cout << "ver[" << b->id << "] has " << in_vers[b].size() << " entries:";
-        for (auto &p : in_vers[b]) cout << ' ' << p;
+        for (auto &p : in_vers[b]) cout << ' ' << p->id;
         cout << endl;
         cout << "in block:";
-        for (auto &p : b->vals) if (val_to_id[p] == x.first) cout << ' ' << p;
+        for (auto &p : b->vals)
+          if (val_to_id[p] == x.first) cout << ' ' << p->id;
         cout << endl;
  
         if_val *current_ver;

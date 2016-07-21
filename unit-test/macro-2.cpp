@@ -35,19 +35,18 @@ void bmain() {
 void tmain() {
   function("tmain");
   label("foo");
-  var i(u(32));
+  var i(u(32)), j(u(32));
   i = arg(u(32));
   i = i * i;
 
-  //var j(u(32));
-  //j = 0_c;
+  j = 0_c;
   
   label("loop");
-  // j = j + 1_c;
-  // br(j == 3_c)("loop")("loopx");
+  j = j + 1_c;
+  br(j == 3_c)("loop")("loopx");
 
-  // label("loopx");
-  // j = 0_c;
+  label("loopx");
+  j = 0_c;
   br(i == 0_c)("loop2")("exit");
 
   label("loop2");
