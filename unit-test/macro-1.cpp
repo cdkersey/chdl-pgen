@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
   
   finish_macro_env();
 
-  print(std::cout, p); 
+  // print(std::cout, p); 
   gen_prog(std::cout, p);
 
   return 0;

@@ -290,9 +290,6 @@ var bscotch::load(const var &in, const char *field) {
   unsigned field_idx = t.get_field_idx(field);
   type field_type = t.get_field_type(field_idx);
 
-  cout << "Found field \"" << field << "\" in struct at index " << field_idx
-       << '.' << endl;
-  
   if (field_idx == -1) {
     cerr << "Field \"" << field << "\" not found in struct." << endl;
     abort();
@@ -334,9 +331,6 @@ void bscotch::store(const char *name, const char *field, const var &d) {
   unsigned field_idx = t.get_field_idx(field);
   type field_type = t.get_field_type(field_idx);
 
-  cout << "Found field \"" << field << "\" in struct at index " << field_idx
-       << '.' << endl;
-  
   if (field_idx == -1) {
     cerr << "Field \"" << field << "\" not found in struct." << endl;
     abort();
@@ -381,9 +375,6 @@ var bscotch::repl(const var &in, const char *field, const var &d) {
     }
   }
 
-  cout << "Found field \"" << field << "\" in struct at index " << field_idx
-       << '.' << endl;
-  
   if (!found) {
     cerr << "Field \"" << field << "\" not found in struct." << endl;
     abort();
