@@ -4,6 +4,7 @@
 #include <chdl/numeric.h>
 #include <chdl/net.h>
 
+#include "print_hex.h"
 #include "late.h"
 using namespace std;
 using namespace chdl;

@@ -29,6 +29,7 @@ int main(int argc, char **argv) {
   y = lit(u(32), 1); // Random seed.
 
   label("loop");
+  spawn("print_hex")(y);
   y = lit(u(32), 1103515245) * y + lit(u(32), 12345);
   done = (x == lit(u(32), 100));
   x = x + lit(u(32), 1);
