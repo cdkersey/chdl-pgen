@@ -53,11 +53,6 @@ void bscotch::asm_prog::bcast_var(const type &t, string name) {
 
 asm_prog &bscotch::asm_prog::val(const type &t, asm_prog::val_id_t id, if_op op)
 {
-  cout << "New val with type ";
-  type u(t);
-  print(cout, u);
-  cout << endl;
-  
   // If this is an argument, add it to function argument types.
   // (TODO: only in first basic block)
   if (op == VAL_ARG) f->args.push_back(t);
@@ -294,6 +289,7 @@ void bscotch::asm_prog::assemble_func() {
     }
   } while (changed);
 
+  #ifdef DEBUG_LIVENESS_ANALYSIS
   for (auto &b : f->bbs) {
     cout << "bb " << b->id << ", kill:";
     for (auto &x : kill[b]) cout << ' ' << x;
@@ -305,11 +301,10 @@ void bscotch::asm_prog::assemble_func() {
     for (auto &x : live_out[b]) cout << ' ' << x;
     cout << endl;
   }
+  #endif
 
   // Find which versions of variables are live out of which basic blocks.
   for (auto &x : id_to_val) {
-    cout << "Variable ID " << x.first << endl;
-
     bool changed, phi_added;
     map<if_bb*, if_val*> phi_set;
     do {
@@ -352,17 +347,6 @@ void bscotch::asm_prog::assemble_func() {
         }
       } while (change);
 
-      for (auto &b : f->bbs) {
-        cout << "block " << b->id << " in vers:";
-        for (auto &v : in_vers[b])        
-          cout << ' ' << v->id;
-        cout << endl;
-        cout << "block " << b->id << " out vers:";
-        for (auto &v : out_vers[b])
-          cout << ' ' << v->id;
-        cout << endl;
-      }
-
       phi_added = false;
  
       // Identify convergence points (phi candidate points)
@@ -370,19 +354,14 @@ void bscotch::asm_prog::assemble_func() {
         bool convergence(b->pred.size() > 1 && in_vers[b].size() > 1 &&
                          !phi_set.count(b));
 
-        if (convergence) cout << "Convergence candidate at BB " << b->id << endl;
-        
         if (convergence)
           for (auto &p : b->pred)
-            if (p != b && out_vers[p].size() != 1) {
+            if (p != b && out_vers[p].size() != 1)
               convergence = false;
-              cout << " but predecessor " << p->id << " has " << out_vers[p].size() << " out versions." << endl;
-            }
          
         // Add phis at convergence points, then update vers. Do this until
         // no blocks have multiple versions of the variable.
         if (convergence) {
-          cout << "Convergence point at BB " << b->id << endl;
           if_val *phi = new if_val();
           phi_set[b] = phi;
           phi->op = VAL_PHI;
@@ -411,14 +390,6 @@ void bscotch::asm_prog::assemble_func() {
       // Now that we know which version to use, assign args and set
       // live_out accordingly.
       for (auto &b : f->bbs) {
-        cout << "ver[" << b->id << "] has " << in_vers[b].size() << " entries:";
-        for (auto &p : in_vers[b]) cout << ' ' << p->id;
-        cout << endl;
-        cout << "in block:";
-        for (auto &p : b->vals)
-          if (val_to_id[p] == x.first) cout << ' ' << p->id;
-        cout << endl;
- 
         if_val *current_ver;
         if (phi_set.count(b))
           current_ver = phi_set[b];

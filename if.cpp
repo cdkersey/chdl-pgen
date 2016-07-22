@@ -16,6 +16,7 @@ const char *bscotch::if_op_str[] = {
   "ld_bcast_valid",
   "neg", "not",
   "add", "sub", "mul", "div", "and", "or", "xor",
+  "eq", "lt",
   "and_reduce", "or_reduce",
   "cat",
   "call_static", "call", "spawn", "ret"

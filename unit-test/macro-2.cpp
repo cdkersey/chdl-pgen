@@ -13,7 +13,7 @@
 using namespace bscotch;
 
 void bmain() {
-  // Function bmain() : spawn 100 threads in tmain instance.
+  // Function bmain() : spawn 5 threads in tmain instance.
   function("bmain");
   var i(u(32));
 
@@ -25,8 +25,8 @@ void bmain() {
   spawn("tmain")(i);
 
   label("loop2");
-  i = i + 1_c;
-  br(i == 100_c)("loop")("exit");
+  i = i + lit(u(32), 1);
+  br(i == lit(u(32), 5))("loop")("exit");
   
   label("exit");
   ret();
@@ -39,18 +39,18 @@ void tmain() {
   i = arg(u(32));
   i = i * i;
 
-  j = 0_c;
+  j = lit(u(32), 0);
   
   label("loop");
-  j = j + 1_c;
-  br(j == 3_c)("loop")("loopx");
+  j = j + lit(u(32), 1);
+  br(j == lit(u(32), 3))("loop")("loopx");
 
   label("loopx");
-  j = 0_c;
-  br(i == 0_c)("loop2")("exit");
+  j = lit(u(32), 0);
+  br(i == lit(u(32), 0))("loop2")("exit");
 
   label("loop2");
-  i = i - 1_c;
+  i = i - lit(u(32), 1);
   br("loop");
   
   label("exit");
@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
   
   finish_macro_env();
 
-  print(std::cout, p); 
+  // print(std::cout, p); 
   gen_prog(std::cout, p);
 
   return 0;

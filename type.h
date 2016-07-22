@@ -44,6 +44,7 @@ namespace bscotch {
   type u(unsigned nbits);
   type s(unsigned nbits);
   type a(type t, unsigned len);
+  type sa(type t, unsigned len);
   type bit();
   type struct_type();
   type void_type();

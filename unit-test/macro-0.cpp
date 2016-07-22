@@ -22,16 +22,16 @@ int main(int argc, char **argv) {
   function("bmain");
   label("entry");
   
-  var x(u(32)), y(u(32));
+  var x(u(32));//, y(u(32));
   var done(bit());
 
-  x = 0_c; // Initialize counter.
-  y = 0_c; // Random seed.
+  x = lit(u(32), 0); // Initialize counter.
+  // y = lit(u(32), 1); // Random seed.
 
   label("loop");
-  y = 1103515245_c * y + 12345_c;
-  done = (x == 100_c);
-  x = x + 1_c;
+  // y = lit(u(32), 1103515245) * y + lit(u(32), 12345);
+  done = (x == lit(u(32), 100));
+  x = x + lit(u(32), 1);
   br(done)("loop")("exit");
 
   label("exit");
@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
 
   finish_macro_env();
   
-  // print(std::cout, p); 
+  print(std::cout, p); 
   gen_prog(std::cout, p);
 
   return 0;

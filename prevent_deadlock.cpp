@@ -30,11 +30,6 @@ void bscotch::prevent_deadlock(if_func &f) {
       }
     );
 
-    cout << "BB " << b->id << " predecessor reordering:";
-    for (auto &x : perm)
-      cout << ' ' << x.first->id << '(' << score[x.first] << ')';
-    cout << endl;
-
     // Reorder predicate vector and phi args
     i = 0;
     for (auto &p : perm)

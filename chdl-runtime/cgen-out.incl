@@ -25,9 +25,9 @@ template <typename OPAQUE> void bmain(bmain_ret_t<OPAQUE> &bmain_ret, bmain_call
 
   // bmain BB 1 declarations
   hierarchy_enter("bmain_bb1_decls");
-  typedef ag<STP("live"), OPAQUE, ag<STP("val12"), ui<32> > > bmain_bb1_in_contents_t;
+  typedef ag<STP("live"), OPAQUE, ag<STP("val10"), ui<32> > > bmain_bb1_in_contents_t;
   typedef flit<bmain_bb1_in_contents_t> bmain_bb1_in_t;
-  typedef ag<STP("live"), OPAQUE, ag<STP("val12"), ui<32> > > bmain_bb1_out_contents_t;
+  typedef ag<STP("live"), OPAQUE, ag<STP("val10"), ui<32> > > bmain_bb1_out_contents_t;
   typedef flit<bmain_bb1_out_contents_t> bmain_bb1_out_t;
   bmain_bb1_in_t bmain_bb1_in_prebuf, bmain_bb1_in;
   TAP(bmain_bb1_in);
@@ -42,7 +42,7 @@ template <typename OPAQUE> void bmain(bmain_ret_t<OPAQUE> &bmain_ret, bmain_call
 
   // bmain BB 2 declarations
   hierarchy_enter("bmain_bb2_decls");
-  typedef ag<STP("live"), OPAQUE, ag<STP("val12"), ui<32> > > bmain_bb2_in_contents_t;
+  typedef ag<STP("live"), OPAQUE, ag<STP("val10"), ui<32> > > bmain_bb2_in_contents_t;
   typedef flit<bmain_bb2_in_contents_t> bmain_bb2_in_t;
   typedef ag<STP("live"), OPAQUE, ag<STP("val5"), ui<32> > > bmain_bb2_out_contents_t;
   typedef flit<bmain_bb2_out_contents_t> bmain_bb2_out_t;
@@ -84,7 +84,8 @@ template <typename OPAQUE> void bmain(bmain_ret_t<OPAQUE> &bmain_ret, bmain_call
   node bmain_bb0_run;  TAP(bmain_bb0_run);
   ui<32> bmain_0 = Lit<32>(0x0000000000000000);
   tap("bmain_0", bmain_0);
-  ui<32> bmain_1 = bmain_0;
+  ui<32> bmain_1;
+  Flatten(bmain_1) = bmain_0;
   tap("bmain_1", bmain_1);
 bmain_bb0_run = _(bmain_bb0_in, "valid") &&  _(bmain_bb0_in, "ready");
   _(bmain_bb0_out_prebuf, "valid") = _(bmain_bb0_in, "valid");
@@ -99,30 +100,30 @@ bmain_bb0_run = _(bmain_bb0_in, "valid") &&  _(bmain_bb0_in, "ready");
   hierarchy_enter("bmain_bb1");
   _(bmain_bb1_arb_in[0], "valid") = _(bmain_bb2_out[0], "valid");
   _(bmain_bb2_out[0], "ready") = _(bmain_bb1_arb_in[0], "ready");
-  // BB2 val 5 -> BB 1 val 12
-  _(_(bmain_bb1_arb_in[0], "contents"), "val12") = _(_(bmain_bb2_out[0], "contents"), "val5");
+  // BB2 val 5 -> BB 1 val 10
+  _(_(bmain_bb1_arb_in[0], "contents"), "val10") = _(_(bmain_bb2_out[0], "contents"), "val5");
   _(_(bmain_bb1_arb_in[0], "contents"), "live") = _(_(bmain_bb2_out[0], "contents"), "live");
   _(bmain_bb1_arb_in[1], "valid") = _(bmain_bb0_out[0], "valid");
   _(bmain_bb0_out[0], "ready") = _(bmain_bb1_arb_in[1], "ready");
-  // BB0 val 1 -> BB 1 val 12
-  _(_(bmain_bb1_arb_in[1], "contents"), "val12") = _(_(bmain_bb0_out[0], "contents"), "val1");
+  // BB0 val 1 -> BB 1 val 10
+  _(_(bmain_bb1_arb_in[1], "contents"), "val10") = _(_(bmain_bb0_out[0], "contents"), "val1");
   _(_(bmain_bb1_arb_in[1], "contents"), "live") = _(_(bmain_bb0_out[0], "contents"), "live");
   BBArbiter(bmain_bb1_in_prebuf, bmain_bb1_arb_in);
   BBInputBuf2(bmain_bb1_in, bmain_bb1_in_prebuf);
   node bmain_bb1_run;  TAP(bmain_bb1_run);
-    tap("bmain_12", _(_(bmain_bb1_in, "contents"), "val12"));
+    tap("bmain_10", _(_(bmain_bb1_in, "contents"), "val10"));
   tmain_ret_t<chdl_void > bmain_call_2_ret;
   tmain_call_t<chdl_void > bmain_call_2_args;
   TAP(bmain_call_2_ret);
   TAP(bmain_call_2_args);
   _(bmain_call_2_args, "valid") = _(bmain_bb1_in, "valid") && _(bmain_bb1_out_prebuf, "valid");
   _(bmain_call_2_ret, "ready") = Lit(1);
-  _(_(bmain_call_2_args, "contents"), "arg0") = _(_(bmain_bb1_in, "contents"), "val12");
+  _(_(bmain_call_2_args, "contents"), "arg0") = _(_(bmain_bb1_in, "contents"), "val10");
   tmain(bmain_call_2_ret, bmain_call_2_args);
 bmain_bb1_run = _(bmain_bb1_in, "valid") &&  _(bmain_bb1_in, "ready");
   _(bmain_bb1_out_prebuf, "valid") = _(bmain_bb1_in, "valid") && (_(bmain_call_2_args, "ready"));
   _(bmain_bb1_in, "ready") = _(bmain_bb1_out_prebuf, "ready") && (_(bmain_call_2_args, "ready"));
-  _(bmain_bb1_live, "val12") = _(_(bmain_bb1_in, "contents"), "val12");
+  _(bmain_bb1_live, "val10") = _(_(bmain_bb1_in, "contents"), "val10");
   _(bmain_bb1_live, "live") = _(_(bmain_bb1_in, "contents"), "live");
   _(bmain_bb1_out_prebuf, "contents") = bmain_bb1_live;
   BBOutputBuf(bmain_bb1_out, bmain_bb1_out_prebuf);
@@ -132,33 +133,30 @@ bmain_bb1_run = _(bmain_bb1_in, "valid") &&  _(bmain_bb1_in, "ready");
   hierarchy_enter("bmain_bb2");
   _(bmain_bb2_arb_in[0], "valid") = _(bmain_bb1_out[0], "valid");
   _(bmain_bb1_out[0], "ready") = _(bmain_bb2_arb_in[0], "ready");
-  // BB1 val 12 -> BB 2 val 12
-  _(_(bmain_bb2_arb_in[0], "contents"), "val12") = _(_(bmain_bb1_out[0], "contents"), "val12");
+  // BB1 val 10 -> BB 2 val 10
+  _(_(bmain_bb2_arb_in[0], "contents"), "val10") = _(_(bmain_bb1_out[0], "contents"), "val10");
   _(_(bmain_bb2_arb_in[0], "contents"), "live") = _(_(bmain_bb1_out[0], "contents"), "live");
   BBArbiter(bmain_bb2_in_prebuf, bmain_bb2_arb_in);
   BBInputBuf(bmain_bb2_in, bmain_bb2_in_prebuf);
   node bmain_bb2_run;  TAP(bmain_bb2_run);
   ui<32> bmain_3 = Lit<32>(0x0000000000000001);
   tap("bmain_3", bmain_3);
-  ui<32> bmain_4 = _(_(bmain_bb2_in, "contents"), "val12") + bmain_3;
+  ui<32> bmain_4 = _(_(bmain_bb2_in, "contents"), "val10") + bmain_3;
   tap("bmain_4", bmain_4);
-  ui<32> bmain_5 = bmain_4;
+  ui<32> bmain_5;
+  Flatten(bmain_5) = bmain_4;
   tap("bmain_5", bmain_5);
-  ui<32> bmain_6 = Lit<32>(0x0000000000000064);
+  ui<32> bmain_6 = Lit<32>(0x0000000000000005);
   tap("bmain_6", bmain_6);
-  ui<32> bmain_7 = bmain_5 ^ bmain_6;
+  node bmain_7 = bmain_5 == bmain_6;
   tap("bmain_7", bmain_7);
-  node bmain_8 = OrN(bmain_7);
-  tap("bmain_8", bmain_8);
-  node bmain_9 = !(bmain_8);
-  tap("bmain_9", bmain_9);
 bmain_bb2_run = _(bmain_bb2_in, "valid") &&  _(bmain_bb2_in, "ready");
   _(bmain_bb2_out_prebuf, "valid") = _(bmain_bb2_in, "valid");
   _(bmain_bb2_in, "ready") = _(bmain_bb2_out_prebuf, "ready");
   _(bmain_bb2_live, "val5") = bmain_5;
   _(bmain_bb2_live, "live") = _(_(bmain_bb2_in, "contents"), "live");
   _(bmain_bb2_out_prebuf, "contents") = bmain_bb2_live;
-  BBOutputBuf(bmain_9, bmain_bb2_out, bmain_bb2_out_prebuf);
+  BBOutputBuf(bmain_7, bmain_bb2_out, bmain_bb2_out_prebuf);
   hierarchy_exit();
 
   // bmain BB 3 body
@@ -169,7 +167,7 @@ bmain_bb2_run = _(bmain_bb2_in, "valid") &&  _(bmain_bb2_in, "ready");
   BBArbiter(bmain_bb3_in_prebuf, bmain_bb3_arb_in);
   BBInputBuf(bmain_bb3_in, bmain_bb3_in_prebuf);
   node bmain_bb3_run;  TAP(bmain_bb3_run);
-  chdl_void bmain_10 = Lit<0>(0x0);
+  chdl_void bmain_8 = Lit<0>(0x0);
     _(bmain_ret, "valid") = _(bmain_bb3_out_prebuf, "valid");
   _(bmain_bb3_out_prebuf, "ready") = _(bmain_ret, "ready");
   _(_(bmain_ret, "contents"), "live") = _(_(bmain_bb3_out_prebuf, "contents"), "live");
@@ -203,9 +201,9 @@ template <typename OPAQUE> void tmain(tmain_ret_t<OPAQUE> &tmain_ret, tmain_call
 
   // tmain BB 1 declarations
   hierarchy_enter("tmain_bb1_decls");
-  typedef ag<STP("live"), OPAQUE, ag<STP("val25"), ui<32>, ag<STP("val24"), ui<32> > > > tmain_bb1_in_contents_t;
+  typedef ag<STP("live"), OPAQUE, ag<STP("val21"), ui<32>, ag<STP("val20"), ui<32> > > > tmain_bb1_in_contents_t;
   typedef flit<tmain_bb1_in_contents_t> tmain_bb1_in_t;
-  typedef ag<STP("live"), OPAQUE, ag<STP("val8"), ui<32>, ag<STP("val24"), ui<32> > > > tmain_bb1_out_contents_t;
+  typedef ag<STP("live"), OPAQUE, ag<STP("val8"), ui<32>, ag<STP("val20"), ui<32> > > > tmain_bb1_out_contents_t;
   typedef flit<tmain_bb1_out_contents_t> tmain_bb1_out_t;
   tmain_bb1_in_t tmain_bb1_in_prebuf, tmain_bb1_in;
   TAP(tmain_bb1_in);
@@ -220,9 +218,9 @@ template <typename OPAQUE> void tmain(tmain_ret_t<OPAQUE> &tmain_ret, tmain_call
 
   // tmain BB 2 declarations
   hierarchy_enter("tmain_bb2_decls");
-  typedef ag<STP("live"), OPAQUE, ag<STP("val24"), ui<32> > > tmain_bb2_in_contents_t;
+  typedef ag<STP("live"), OPAQUE, ag<STP("val20"), ui<32> > > tmain_bb2_in_contents_t;
   typedef flit<tmain_bb2_in_contents_t> tmain_bb2_in_t;
-  typedef ag<STP("live"), OPAQUE, ag<STP("val14"), ui<32>, ag<STP("val24"), ui<32> > > > tmain_bb2_out_contents_t;
+  typedef ag<STP("live"), OPAQUE, ag<STP("val12"), ui<32>, ag<STP("val20"), ui<32> > > > tmain_bb2_out_contents_t;
   typedef flit<tmain_bb2_out_contents_t> tmain_bb2_out_t;
   tmain_bb2_in_t tmain_bb2_in_prebuf, tmain_bb2_in;
   TAP(tmain_bb2_in);
@@ -237,9 +235,9 @@ template <typename OPAQUE> void tmain(tmain_ret_t<OPAQUE> &tmain_ret, tmain_call
 
   // tmain BB 3 declarations
   hierarchy_enter("tmain_bb3_decls");
-  typedef ag<STP("live"), OPAQUE, ag<STP("val14"), ui<32>, ag<STP("val24"), ui<32> > > > tmain_bb3_in_contents_t;
+  typedef ag<STP("live"), OPAQUE, ag<STP("val12"), ui<32>, ag<STP("val20"), ui<32> > > > tmain_bb3_in_contents_t;
   typedef flit<tmain_bb3_in_contents_t> tmain_bb3_in_t;
-  typedef ag<STP("live"), OPAQUE, ag<STP("val14"), ui<32>, ag<STP("val21"), ui<32> > > > tmain_bb3_out_contents_t;
+  typedef ag<STP("live"), OPAQUE, ag<STP("val12"), ui<32>, ag<STP("val17"), ui<32> > > > tmain_bb3_out_contents_t;
   typedef flit<tmain_bb3_out_contents_t> tmain_bb3_out_t;
   tmain_bb3_in_t tmain_bb3_in_prebuf, tmain_bb3_in;
   TAP(tmain_bb3_in);
@@ -279,15 +277,18 @@ template <typename OPAQUE> void tmain(tmain_ret_t<OPAQUE> &tmain_ret, tmain_call
   node tmain_bb0_run;  TAP(tmain_bb0_run);
   ui<32> tmain_0 = _(_(tmain_call, "contents"), "arg0");
   tap("tmain_0", tmain_0);
-  ui<32> tmain_1 = tmain_0;
+  ui<32> tmain_1;
+  Flatten(tmain_1) = tmain_0;
   tap("tmain_1", tmain_1);
   ui<32> tmain_2 = tmain_1 * tmain_1;
   tap("tmain_2", tmain_2);
-  ui<32> tmain_3 = tmain_2;
+  ui<32> tmain_3;
+  Flatten(tmain_3) = tmain_2;
   tap("tmain_3", tmain_3);
   ui<32> tmain_4 = Lit<32>(0x0000000000000000);
   tap("tmain_4", tmain_4);
-  ui<32> tmain_5 = tmain_4;
+  ui<32> tmain_5;
+  Flatten(tmain_5) = tmain_4;
   tap("tmain_5", tmain_5);
 tmain_bb0_run = _(tmain_bb0_in, "valid") &&  _(tmain_bb0_in, "ready");
   _(tmain_bb0_out_prebuf, "valid") = _(tmain_bb0_in, "valid");
@@ -303,109 +304,104 @@ tmain_bb0_run = _(tmain_bb0_in, "valid") &&  _(tmain_bb0_in, "ready");
   hierarchy_enter("tmain_bb1");
   _(tmain_bb1_arb_in[0], "valid") = _(tmain_bb1_out[0], "valid");
   _(tmain_bb1_out[0], "ready") = _(tmain_bb1_arb_in[0], "ready");
-  // BB1 val 24 -> BB 1 val 24
-  _(_(tmain_bb1_arb_in[0], "contents"), "val24") = _(_(tmain_bb1_out[0], "contents"), "val24");
-  // BB1 val 8 -> BB 1 val 25
-  _(_(tmain_bb1_arb_in[0], "contents"), "val25") = _(_(tmain_bb1_out[0], "contents"), "val8");
+  // BB1 val 20 -> BB 1 val 20
+  _(_(tmain_bb1_arb_in[0], "contents"), "val20") = _(_(tmain_bb1_out[0], "contents"), "val20");
+  // BB1 val 8 -> BB 1 val 21
+  _(_(tmain_bb1_arb_in[0], "contents"), "val21") = _(_(tmain_bb1_out[0], "contents"), "val8");
   _(_(tmain_bb1_arb_in[0], "contents"), "live") = _(_(tmain_bb1_out[0], "contents"), "live");
   _(tmain_bb1_arb_in[1], "valid") = _(tmain_bb3_out[0], "valid");
   _(tmain_bb3_out[0], "ready") = _(tmain_bb1_arb_in[1], "ready");
-  // BB3 val 21 -> BB 1 val 24
-  _(_(tmain_bb1_arb_in[1], "contents"), "val24") = _(_(tmain_bb3_out[0], "contents"), "val21");
-  // BB3 val 14 -> BB 1 val 25
-  _(_(tmain_bb1_arb_in[1], "contents"), "val25") = _(_(tmain_bb3_out[0], "contents"), "val14");
+  // BB3 val 17 -> BB 1 val 20
+  _(_(tmain_bb1_arb_in[1], "contents"), "val20") = _(_(tmain_bb3_out[0], "contents"), "val17");
+  // BB3 val 12 -> BB 1 val 21
+  _(_(tmain_bb1_arb_in[1], "contents"), "val21") = _(_(tmain_bb3_out[0], "contents"), "val12");
   _(_(tmain_bb1_arb_in[1], "contents"), "live") = _(_(tmain_bb3_out[0], "contents"), "live");
   _(tmain_bb1_arb_in[2], "valid") = _(tmain_bb0_out[0], "valid");
   _(tmain_bb0_out[0], "ready") = _(tmain_bb1_arb_in[2], "ready");
-  // BB0 val 3 -> BB 1 val 24
-  _(_(tmain_bb1_arb_in[2], "contents"), "val24") = _(_(tmain_bb0_out[0], "contents"), "val3");
-  // BB0 val 5 -> BB 1 val 25
-  _(_(tmain_bb1_arb_in[2], "contents"), "val25") = _(_(tmain_bb0_out[0], "contents"), "val5");
+  // BB0 val 3 -> BB 1 val 20
+  _(_(tmain_bb1_arb_in[2], "contents"), "val20") = _(_(tmain_bb0_out[0], "contents"), "val3");
+  // BB0 val 5 -> BB 1 val 21
+  _(_(tmain_bb1_arb_in[2], "contents"), "val21") = _(_(tmain_bb0_out[0], "contents"), "val5");
   _(_(tmain_bb1_arb_in[2], "contents"), "live") = _(_(tmain_bb0_out[0], "contents"), "live");
   BBArbiter(tmain_bb1_in_prebuf, tmain_bb1_arb_in);
   BBInputBuf2(tmain_bb1_in, tmain_bb1_in_prebuf);
   node tmain_bb1_run;  TAP(tmain_bb1_run);
-    tap("tmain_25", _(_(tmain_bb1_in, "contents"), "val25"));
-    tap("tmain_24", _(_(tmain_bb1_in, "contents"), "val24"));
+    tap("tmain_21", _(_(tmain_bb1_in, "contents"), "val21"));
+    tap("tmain_20", _(_(tmain_bb1_in, "contents"), "val20"));
   ui<32> tmain_6 = Lit<32>(0x0000000000000001);
   tap("tmain_6", tmain_6);
-  ui<32> tmain_7 = _(_(tmain_bb1_in, "contents"), "val25") + tmain_6;
+  ui<32> tmain_7 = _(_(tmain_bb1_in, "contents"), "val21") + tmain_6;
   tap("tmain_7", tmain_7);
-  ui<32> tmain_8 = tmain_7;
+  ui<32> tmain_8;
+  Flatten(tmain_8) = tmain_7;
   tap("tmain_8", tmain_8);
   ui<32> tmain_9 = Lit<32>(0x0000000000000003);
   tap("tmain_9", tmain_9);
-  ui<32> tmain_10 = tmain_8 ^ tmain_9;
+  node tmain_10 = tmain_8 == tmain_9;
   tap("tmain_10", tmain_10);
-  node tmain_11 = OrN(tmain_10);
-  tap("tmain_11", tmain_11);
-  node tmain_12 = !(tmain_11);
-  tap("tmain_12", tmain_12);
 tmain_bb1_run = _(tmain_bb1_in, "valid") &&  _(tmain_bb1_in, "ready");
   _(tmain_bb1_out_prebuf, "valid") = _(tmain_bb1_in, "valid");
   _(tmain_bb1_in, "ready") = _(tmain_bb1_out_prebuf, "ready");
   _(tmain_bb1_live, "val8") = tmain_8;
-  _(tmain_bb1_live, "val24") = _(_(tmain_bb1_in, "contents"), "val24");
+  _(tmain_bb1_live, "val20") = _(_(tmain_bb1_in, "contents"), "val20");
   _(tmain_bb1_live, "live") = _(_(tmain_bb1_in, "contents"), "live");
   _(tmain_bb1_out_prebuf, "contents") = tmain_bb1_live;
-  BBOutputBuf(tmain_12, tmain_bb1_out, tmain_bb1_out_prebuf);
+  BBOutputBuf(tmain_10, tmain_bb1_out, tmain_bb1_out_prebuf);
   hierarchy_exit();
 
   // tmain BB 2 body
   hierarchy_enter("tmain_bb2");
   _(tmain_bb2_arb_in[0], "valid") = _(tmain_bb1_out[1], "valid");
   _(tmain_bb1_out[1], "ready") = _(tmain_bb2_arb_in[0], "ready");
-  // BB1 val 24 -> BB 2 val 24
-  _(_(tmain_bb2_arb_in[0], "contents"), "val24") = _(_(tmain_bb1_out[1], "contents"), "val24");
+  // BB1 val 20 -> BB 2 val 20
+  _(_(tmain_bb2_arb_in[0], "contents"), "val20") = _(_(tmain_bb1_out[1], "contents"), "val20");
   _(_(tmain_bb2_arb_in[0], "contents"), "live") = _(_(tmain_bb1_out[1], "contents"), "live");
   BBArbiter(tmain_bb2_in_prebuf, tmain_bb2_arb_in);
   BBInputBuf(tmain_bb2_in, tmain_bb2_in_prebuf);
   node tmain_bb2_run;  TAP(tmain_bb2_run);
+  ui<32> tmain_11 = Lit<32>(0x0000000000000000);
+  tap("tmain_11", tmain_11);
+  ui<32> tmain_12;
+  Flatten(tmain_12) = tmain_11;
+  tap("tmain_12", tmain_12);
   ui<32> tmain_13 = Lit<32>(0x0000000000000000);
   tap("tmain_13", tmain_13);
-  ui<32> tmain_14 = tmain_13;
+  node tmain_14 = _(_(tmain_bb2_in, "contents"), "val20") == tmain_13;
   tap("tmain_14", tmain_14);
-  ui<32> tmain_15 = Lit<32>(0x0000000000000000);
-  tap("tmain_15", tmain_15);
-  ui<32> tmain_16 = _(_(tmain_bb2_in, "contents"), "val24") ^ tmain_15;
-  tap("tmain_16", tmain_16);
-  node tmain_17 = OrN(tmain_16);
-  tap("tmain_17", tmain_17);
-  node tmain_18 = !(tmain_17);
-  tap("tmain_18", tmain_18);
 tmain_bb2_run = _(tmain_bb2_in, "valid") &&  _(tmain_bb2_in, "ready");
   _(tmain_bb2_out_prebuf, "valid") = _(tmain_bb2_in, "valid");
   _(tmain_bb2_in, "ready") = _(tmain_bb2_out_prebuf, "ready");
-  _(tmain_bb2_live, "val14") = tmain_14;
-  _(tmain_bb2_live, "val24") = _(_(tmain_bb2_in, "contents"), "val24");
+  _(tmain_bb2_live, "val12") = tmain_12;
+  _(tmain_bb2_live, "val20") = _(_(tmain_bb2_in, "contents"), "val20");
   _(tmain_bb2_live, "live") = _(_(tmain_bb2_in, "contents"), "live");
   _(tmain_bb2_out_prebuf, "contents") = tmain_bb2_live;
-  BBOutputBuf(tmain_18, tmain_bb2_out, tmain_bb2_out_prebuf);
+  BBOutputBuf(tmain_14, tmain_bb2_out, tmain_bb2_out_prebuf);
   hierarchy_exit();
 
   // tmain BB 3 body
   hierarchy_enter("tmain_bb3");
   _(tmain_bb3_arb_in[0], "valid") = _(tmain_bb2_out[0], "valid");
   _(tmain_bb2_out[0], "ready") = _(tmain_bb3_arb_in[0], "ready");
-  // BB2 val 14 -> BB 3 val 14
-  _(_(tmain_bb3_arb_in[0], "contents"), "val14") = _(_(tmain_bb2_out[0], "contents"), "val14");
-  // BB2 val 24 -> BB 3 val 24
-  _(_(tmain_bb3_arb_in[0], "contents"), "val24") = _(_(tmain_bb2_out[0], "contents"), "val24");
+  // BB2 val 12 -> BB 3 val 12
+  _(_(tmain_bb3_arb_in[0], "contents"), "val12") = _(_(tmain_bb2_out[0], "contents"), "val12");
+  // BB2 val 20 -> BB 3 val 20
+  _(_(tmain_bb3_arb_in[0], "contents"), "val20") = _(_(tmain_bb2_out[0], "contents"), "val20");
   _(_(tmain_bb3_arb_in[0], "contents"), "live") = _(_(tmain_bb2_out[0], "contents"), "live");
   BBArbiter(tmain_bb3_in_prebuf, tmain_bb3_arb_in);
   BBInputBuf(tmain_bb3_in, tmain_bb3_in_prebuf);
   node tmain_bb3_run;  TAP(tmain_bb3_run);
-  ui<32> tmain_19 = Lit<32>(0x0000000000000001);
-  tap("tmain_19", tmain_19);
-  ui<32> tmain_20 = _(_(tmain_bb3_in, "contents"), "val24") - tmain_19;
-  tap("tmain_20", tmain_20);
-  ui<32> tmain_21 = tmain_20;
-  tap("tmain_21", tmain_21);
+  ui<32> tmain_15 = Lit<32>(0x0000000000000001);
+  tap("tmain_15", tmain_15);
+  ui<32> tmain_16 = _(_(tmain_bb3_in, "contents"), "val20") - tmain_15;
+  tap("tmain_16", tmain_16);
+  ui<32> tmain_17;
+  Flatten(tmain_17) = tmain_16;
+  tap("tmain_17", tmain_17);
 tmain_bb3_run = _(tmain_bb3_in, "valid") &&  _(tmain_bb3_in, "ready");
   _(tmain_bb3_out_prebuf, "valid") = _(tmain_bb3_in, "valid");
   _(tmain_bb3_in, "ready") = _(tmain_bb3_out_prebuf, "ready");
-  _(tmain_bb3_live, "val14") = _(_(tmain_bb3_in, "contents"), "val14");
-  _(tmain_bb3_live, "val21") = tmain_21;
+  _(tmain_bb3_live, "val12") = _(_(tmain_bb3_in, "contents"), "val12");
+  _(tmain_bb3_live, "val17") = tmain_17;
   _(tmain_bb3_live, "live") = _(_(tmain_bb3_in, "contents"), "live");
   _(tmain_bb3_out_prebuf, "contents") = tmain_bb3_live;
   BBOutputBuf(tmain_bb3_out, tmain_bb3_out_prebuf);
@@ -419,7 +415,7 @@ tmain_bb3_run = _(tmain_bb3_in, "valid") &&  _(tmain_bb3_in, "ready");
   BBArbiter(tmain_bb4_in_prebuf, tmain_bb4_arb_in);
   BBInputBuf(tmain_bb4_in, tmain_bb4_in_prebuf);
   node tmain_bb4_run;  TAP(tmain_bb4_run);
-  chdl_void tmain_22 = Lit<0>(0x0);
+  chdl_void tmain_18 = Lit<0>(0x0);
     _(tmain_ret, "valid") = _(tmain_bb4_out_prebuf, "valid");
   _(tmain_bb4_out_prebuf, "ready") = _(tmain_ret, "ready");
   _(_(tmain_ret, "contents"), "live") = _(_(tmain_bb4_out_prebuf, "contents"), "live");

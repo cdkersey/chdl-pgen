@@ -65,25 +65,23 @@ namespace bscotch {
     std::function<void(T)> f;
   };
   
-  // Custom literal type. 1234_c is a var whose type will be inferred.
-  var operator "" _c(const char *x);
-
   void static_var(const char *name, const type &t);
   void static_var(const char *name, const type &t, long initialval);
 
   var load(const char *name);
   var load(const char *name, const var &idx);
   var load(const var &in, const var &idx);
-  var load(const var &in, const var &idx, long len);
+  var load(const var &in, const var &idx, const var &len);
+  var load(const var &in, const var &idx, unsigned len);
   var load(const var &in, const char *field);
 
   void store(const char *name, const var &d);
   void store(const char *name, const var &idx, const var &d);
   void store(const char *name, const char *field, const var &d);
   var repl(const var &in, const var &idx, const var &d);
+  var repl(const var &in, const var &idx, const var &d, const var &len);
   var repl(const var &in, const var &idx, const var &d, unsigned len);
   var repl(const var &in, const char *field, const var &d);
-  var repl(const var &in, const char *field, const var &d, unsigned len);
   
   void function(const char *name);
   void label(const char *name);
@@ -91,7 +89,8 @@ namespace bscotch {
   argcollector<std::string> br(const var &sel);
   argcollector<var> spawn(const char *func);
   argcollector<var> call(const char *func);
-
+  argcollector<var> cat(var &r);
+  
   void ret();
   void ret(const var &rval);
 }

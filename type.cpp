@@ -134,7 +134,7 @@ unsigned bscotch::type::size(int s, int &end) const {
     } else if (type_vec[i] == TYPE_S || type_vec[i] == TYPE_U) {
       sz += type_vec[++i];
     } else if (type_vec[i] == TYPE_ARRAY) {
-      /* sz *= type_vec[++i]; TODO: what's the "size" of an SRAM? */
+      sz *= type_vec[++i]; /* TODO: what's the "size" of an SRAM? */
     } else if (type_vec[i] == TYPE_STATIC_ARRAY) {
       sz *= type_vec[++i];
     } else if (type_vec[i] == TYPE_STRUCT_BEGIN) {
@@ -191,6 +191,13 @@ bscotch::type bscotch::struct_type() {
 
 bscotch::type bscotch::a(bscotch::type t, unsigned len) {
   t.type_vec.push_back(TYPE_ARRAY);
+  t.type_vec.push_back(len);
+  
+  return t;
+}
+
+bscotch::type bscotch::sa(bscotch::type t, unsigned len) {
+  t.type_vec.push_back(TYPE_STATIC_ARRAY);
   t.type_vec.push_back(len);
   
   return t;

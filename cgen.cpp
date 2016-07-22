@@ -50,7 +50,8 @@ static void gen_static_var_bottom
 
 static bool is_binary(if_op o) {
   return (o == VAL_ADD) || (o == VAL_SUB) || (o == VAL_MUL) || (o == VAL_DIV) ||
-         (o == VAL_AND) || (o == VAL_OR) || (o == VAL_XOR);
+         (o == VAL_AND) || (o == VAL_OR) || (o == VAL_XOR) || (o == VAL_EQ) ||
+         (o == VAL_LT);
 }
 
 static bool is_unary(if_op o) {
@@ -75,6 +76,8 @@ static std::string op_str(if_op o, const type &t, const type &u) {
   case VAL_AND: return bit ? " && " : " & ";
   case VAL_OR:  return bit ? " || " : " | ";
   case VAL_XOR: return bit ? " != " : " ^ ";
+  case VAL_EQ:  return " == ";
+  case VAL_LT:  return " < ";
   };
 
   return " UNSUPPORTED OP ";
@@ -119,7 +122,7 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
   out << "  ";
 
   if (!is_store(v.op) && v.op != VAL_PHI && v.op != VAL_CALL
-      && v.op != VAL_RET && v.op != VAL_SPAWN)
+      && v.op != VAL_RET && v.op != VAL_SPAWN && v.op != VAL_CONCATENATE)
   {
     out << type_chdl(v.t) << ' ' << fname << '_' << v.id << " = ";
   }
@@ -146,6 +149,8 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
   } else if (is_reduce(v.op)) {
     out << op_str(v.op, v.args[0]->t) << '(' << aname[0] << ')';
   } else if (v.op == VAL_CONCATENATE) {
+    out << type_chdl(v.t) << ' ' << fname << '_' << v.id << ';' << endl
+        << "  Flatten(" << fname << '_' << v.id << ") = ";
     if (v.args.size() == 1) {
       out << aname[0];
     } else {
@@ -214,7 +219,7 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
           << "  Flatten(" << fname << '_' << v.id << ") = ~~Flatten("
           << aname[0] << ");" << endl
           << "  " << fname << '_' << v.id << "[range<" << idx << ", "
-          << idx + len << ">()]" << " = " << aname[3] << ';';
+          << idx + len - 1 << ">()]" << " = " << aname[3] << ';';
     } else if (v.args.size() == 4 && v.args[2]->op == VAL_CONST) {
       out << type_chdl(v.t) << ' ' << fname << '_' << v.id << ';' << endl
           << "  Flatten(" << fname << '_' << v.id << ") = ~~Flatten("

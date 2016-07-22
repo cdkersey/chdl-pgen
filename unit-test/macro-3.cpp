@@ -11,7 +11,6 @@
 #include "../asm-macro.h"
 
 using namespace bscotch;
-using namespace std;
 
 type mem_req(unsigned B, unsigned N, unsigned A, unsigned I) {
   return struct_type().
@@ -31,18 +30,31 @@ type mem_resp(unsigned B, unsigned N, unsigned I) {
     add_field("id", u(I));
 }
 
-const usnigned B(8), N(4), A(30), I(27);
+const unsigned B(8), N(4), A(30), I(27);
 
 void bmain() {
-  type req_t = mem_req(B, N, A, I), resp_t = mem_req(B, N, I);
+  type req_t = mem_req(B, N, A, I), resp_t = mem_resp(B, N, I);
+
+  var i(u(32)), seed(u(32)), r(u(32)), req(req_t), resp(resp_t);
 
   function("bmain");
-
   label("entry");
+  i = 0_c;
+  seed = 1_c;
+  cat(req)(lit(u(req_t.size()), 0));
+  cat(resp)(lit(u(resp_t.size()), 0));
 
-  label("start");
+  label("loop");
+  i = i + 1_c;
+  seed = seed * 1103515245_c + 12345_c;
+  req = repl(req, "wr", load(seed, 30_c) & load(seed, 31_c));
+  req = repl(req, "llsc", 0_c);
+  cat(r)(lit(u(17), 0))(load(seed, 16_c, 15));
 
-  br("start");
+  br(i < 100_c)("end")("loop");
+
+  label("end");
+  ret();
 }
 
 void req_thread() {
@@ -53,14 +65,16 @@ void mem_unit() {
   function("mem_unit");
 }
 
+using namespace std;
+
 int main(int argc, char **argv) {
   if_prog p;
   asm_prog a(p);
   init_macro_env(a);
 
   bmain();
-  req_thread();
-  mem_unit();
+  //req_thread();
+  //mem_unit();
   
   finish_macro_env();
 
