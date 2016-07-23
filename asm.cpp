@@ -26,6 +26,9 @@ void bscotch::asm_prog::function(string name) {
   br_targets.clear();
   
   f = &p.functions[name];
+  b = NULL;
+  v = NULL;
+
   func_name = name;
 }
 

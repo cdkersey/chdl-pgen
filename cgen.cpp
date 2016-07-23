@@ -160,7 +160,7 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
       }
     }
   } else if (v.op == VAL_ARG) {
-    out << "_(_(" << fname << "_call, \"contents\"), \"arg"
+    out << "_(_(_(" << fname << "_bb0_in, \"contents\"), \"args\"), \"arg"
         << v.static_access_id << "\")";
   } else if (v.op == VAL_ST_STATIC || v.op == VAL_ST_GLOBAL) {
     bool global(v.op == VAL_ST_GLOBAL);
@@ -268,16 +268,16 @@ void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, 
         << "  TAP(" << fname << "_call_" << v.id << "_ret);" << endl
         << "  TAP(" << fname << "_call_" << v.id << "_args);" << endl;
 
-    out << "  _(" << fname << "_call_" << v.id << "_args, \"valid\") = _("
-        << fname << "_bb" << bbidx << "_in, \"valid\")";
-    if (b.stall) out << " && !" << val_name(fname, bbidx, b, *b.stall);
     if (v.op == VAL_CALL) {
+      out << "  _(" << fname << "_call_" << v.id << "_args, \"valid\") = _("
+          << fname << "_bb" << bbidx << "_in, \"valid\")";
+      if (b.stall) out << " && !" << val_name(fname, bbidx, b, *b.stall);
       out << ';' << endl;
       out << "  _(" << fname << "_call_" << v.id << "_ret, \"ready\") = _("
           << fname << "_bb" << bbidx << "_out_prebuf, \"ready\");" << endl;
     } else {
-      out << " && _(" << fname << "_bb" << bbidx << "_out_prebuf, \"valid\");"
-          << endl;
+      out << "  _(" << fname << "_call_" << v.id << "_args, \"valid\") = "
+          << fname << "_bb" << bbidx << "_run;" << endl;
       out << "  _(" << fname << "_call_" << v.id << "_ret, \"ready\") = Lit(1);"
           << endl;
     }
@@ -408,6 +408,7 @@ void bscotch::gen_bb_decls(std::ostream &out, std::string fname, int idx, if_bb 
     out << ", ";
     print_live_type(out, b.live_in);
   }
+  if (entry) out << ", ag<STP(\"args\"), " << fname << "_call_contents_t<OPAQUE> > ";
   out << " > " << fname << "_bb" << idx << "_in_contents_t;" << endl
       << "  typedef flit<" << fname << "_bb" << idx << "_in_contents_t> "
       << fname << "_bb" << idx << "_in_t;" << endl;
@@ -624,7 +625,7 @@ void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bo
     out << "  _(" << fname << "_bb" << idx << "_out_prebuf, \"contents\") = "
         << fname << "_bb" << idx << "_live;" << endl;
   }
-  
+
   if (b.suc.size() == 1) {
     out << "  BBOutputBuf(" << fname << "_bb" << idx << "_out, " << fname
         << "_bb" << idx << "_out_prebuf);" << endl;
@@ -692,11 +693,13 @@ void bscotch::gen_func_decls(std::ostream &out, std::string name, if_func &f) {
       << "flit<ag<STP(\"live\"), T, ag<STP(\"rval\"), "
       << type_chdl(f.rtype) << " > > >;" << endl;
 
-  out << "template <typename T> using " << name << "_call_t = "
-      << "flit<ag<STP(\"live\"), T";
+  out << "template <typename T> using " << name << "_call_contents_t = "
+      << "ag<STP(\"live\"), T";
   if (f.args.size() > 0) out << ',';
   print_arg_type(out, f.args);
-  out << " > >;" << endl;
+  out << " >;" << endl;
+  out << "template <typename T> using " << name << "_call_t = flit<" << name
+      << "_call_contents_t<T> >;" << endl;
 
   // Prototype the function.
   out << "template <typename OPAQUE> void " << name
@@ -724,6 +727,10 @@ void bscotch::gen_func(std::ostream &out, std::string name, if_func &f) {
     live_in_phi_adj(*f.bbs[i]);
     gen_bb_decls(out, name, i, *f.bbs[i], i == 0);
   }
+
+  // Connect args to first basic block's input
+  out << "  _(_(" << name << "_bb0_arb_in[0], \"contents\"), \"args\") = _("
+      << name << "_call, \"contents\");" << endl;
   
   for (unsigned i = 0; i < f.bbs.size(); ++i) {
     gen_bb(out, name, i, *f.bbs[i], i == 0);

@@ -20,7 +20,8 @@ namespace chdl {
     using namespace std;
     unsigned *val = new unsigned();
     
-    _(call, "ready") = Lit(1);
+    _(ret, "valid") = _(call, "valid");
+    _(call, "ready") = _(ret, "ready");
     node printhex(_(call, "valid"));
     EgressInt(*val, _(_(call, "contents"), "arg0"));
     EgressFunc([val](bool valid) {
