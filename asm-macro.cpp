@@ -36,8 +36,6 @@ void bscotch::init_macro_env(asm_prog &a) {
   vars.clear();
 }
 
-static bool is_void_type(const type &t) { return t.type_vec.size() == 0; }
-
 void bscotch::finish_macro_env() {
   asm_prog_ptr->assemble_func();
 

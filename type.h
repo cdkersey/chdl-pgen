@@ -39,6 +39,7 @@ namespace bscotch {
   bool is_sram_array(const type &t);
   unsigned array_len(const type &t);
   bool is_struct(const type &t);
+  bool is_void_type(const type &t);
 
   // Simple names for common types.
   type u(unsigned nbits);

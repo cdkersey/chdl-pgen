@@ -12,6 +12,14 @@
 
 using namespace bscotch;
 
+namespace bscotch {
+  static void gen_val(std::ostream &out, std::string fname, int bbidx, int idx, if_bb &b, if_val &v);
+  static void gen_bb_decls(std::ostream &out, std::string fname, int idx, if_bb &b, bool entry);
+  static void gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bool entry);
+  static void gen_func_decls(std::ostream &out, std::string name, if_func &f);
+  static void gen_func(std::ostream &out, std::string name, if_func &f);
+}
+
 static bool is_store(if_op op) {
   return op == VAL_ST_GLOBAL || op == VAL_ST_STATIC ||
          op == VAL_ST_IDX || op == VAL_ST_IDX_STATIC;
@@ -113,7 +121,7 @@ static std::string val_name(std::string fname, int bbidx, if_bb &b, if_val &v)
   return oss.str();
 }
 
-void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, if_bb &b, if_val &v)
+static void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, if_bb &b, if_val &v)
 {
   using std::endl;
   using std::string;
@@ -397,7 +405,7 @@ static std::string output_signal(std::string fname, int bbidx, std::string signa
   return oss.str();
 }
 
-void bscotch::gen_bb_decls(std::ostream &out, std::string fname, int idx, if_bb &b, bool entry) {
+static void bscotch::gen_bb_decls(std::ostream &out, std::string fname, int idx, if_bb &b, bool entry) {
   using std::endl;
 
   out << "  // " << fname << " BB " << idx << " declarations" << endl;
@@ -494,7 +502,7 @@ void print_spawn_readys(std::ostream &out, std::string fname, if_bb &b) {
   }
 }
 
-void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bool entry)
+static void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bool entry)
 {
   using std::endl;
   using std::map;
@@ -685,7 +693,7 @@ unsigned count_stores(if_func &f, if_staticvar &s) {
   return count;
 }
 
-void bscotch::gen_func_decls(std::ostream &out, std::string name, if_func &f) {
+static void bscotch::gen_func_decls(std::ostream &out, std::string name, if_func &f) {
   using std::endl;
   
   // Typedef call/ret types
@@ -707,7 +715,7 @@ void bscotch::gen_func_decls(std::ostream &out, std::string name, if_func &f) {
       << name << "_call_t<OPAQUE> &" << name << "_call);" << endl;
 }
 
-void bscotch::gen_func(std::ostream &out, std::string name, if_func &f) {
+static void bscotch::gen_func(std::ostream &out, std::string name, if_func &f) {
   using std::endl;
   
   out << "template <typename OPAQUE> void " << name

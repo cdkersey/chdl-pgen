@@ -224,6 +224,8 @@ bool bscotch::is_struct(const bscotch::type &t) {
   return t.type_vec.size() >= 1 && t.type_vec[0] == TYPE_STRUCT_BEGIN;
 }
 
+bool bscotch::is_void_type(const type &t) { return t.type_vec.size() == 0; }
+
 std::string bscotch::type::str(int s, int &end) {
   using namespace bscotch;
   using namespace std;
