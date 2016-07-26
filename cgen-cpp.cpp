@@ -58,33 +58,40 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v) {
 
   ostringstream val_name;
   val_name << "val" << v.id;
-  if (!is_void_type(v.t))
-    out << "  " << type_cpp(v.t) << ' ' << val_name.str() << ';' << endl;
+  if (!is_void_type(v.t) && v.op != VAL_PHI)
+    out << "    " << type_cpp(v.t) << ' ' << val_name.str() << ';' << endl;
   
   if (v.op == VAL_PHI) {
     // Handled in arbiter.
   } else if (v.op == VAL_NEG || v.op == VAL_NOT) {
-    out << "  val" << v.id << " = " << op_string(v.op)
+    out << "    val" << v.id << " = " << op_string(v.op)
         << arg_name(&b, v.args[0]) << ';' << endl;
   } else if (v.op == VAL_OR_REDUCE || v.op == VAL_AND_REDUCE) {
-    out << "  val" << v.id << " = ";
+    out << "    val" << v.id << " = ";
     if (v.op == VAL_OR_REDUCE) out << "or_reduce";
     else out << "and_reduce";
     out << '(' << arg_name(&b, v.args[0]) << ");" << endl;
   } else if (v.op == VAL_CONST) {
-    out << "  val" << v.id << " = 0x" << to_hex(v.const_val) << "ull;" << endl;
+    out << "    val" << v.id << " = 0x" << to_hex(v.const_val) << "ull;"
+        << endl;
   } else if (v.op == VAL_CONCATENATE) {
-    out << "  Cat(val" << v.id << ')';
+    out << "    cat(val" << v.id << ')';
     for (unsigned i = 0; i < v.args.size(); ++i)
       out << '(' << arg_name(&b, v.args[i]) << ')';
     out << ';' << endl;
+  } else if (v.op == VAL_RET) {
+    out << "    if (!s.ret.valid) {" << endl;
+    if (v.args.size() && !is_void_type(v.args[0]->t))
+      out << "      s.ret.rval = " << arg_name(&b, v.args[0]) << ';';
+    out << "      s.ret.valid = true;" << endl
+        << "    }" << endl;
   } else {
     if (v.args.size() == 2) {
-      out << "  s.bb" << b.id << "_out.val" << v.id << " = "
+      out << "    val" << v.id << " = "
           << arg_name(&b, v.args[0]) << ' ' << op_string(v.op)
           << ' ' << arg_name(&b, v.args[1]) << ';' << endl;
     } else {
-      out << "UNKNOWN" << endl;
+      out << "    // UNKNOWN" << endl;
     }
   }
 }
@@ -96,6 +103,14 @@ static
 
   out << "  // arbiter for basic block" << b.id << endl;
 
+  if (b.cycle_breaker) {
+    out << "  if (!s.bb" << b.id << "_in.valid && s.bb" << b.id
+        << "_in_tmp.valid) {" << endl
+        << "    s.bb" << b.id << "_in = s.bb" << b.id << "_in_tmp;" << endl
+        << "    s.bb" << b.id << "_in_tmp.valid = false;" << endl
+        << "  }" << endl;
+  }
+  
   unsigned phi_arg_idx = 0;
   for (auto &p : b.pred) {
     map<int, int> phis;
@@ -119,17 +134,47 @@ static
       else
         out << "s.bb" << p->id << "_out.val" << v->id << ';' << endl;
     }
-    out << "    s.bb" << b.id << "_in.valid = true;" << endl;
+    out << "    s.bb" << b.id << "_in.valid = true;" << endl
+        << "    s.bb" << p->id << "_out.valid = false;" << endl;
     
     out << "  }" << endl;
+
+    if (b.cycle_breaker) {
+      out << "  if (!s.bb" << b.id <<  "_in_tmp.valid && s.bb" << p->id
+          << "_out.valid";
+      if (p->suc.size() > 1)
+        out << " && s.bb" << p->id << "_out.sel == " << which_suc(p, &b);
+      out << ") {" << endl;
+
+      // copy live inputs
+      for (auto &v : b.live_in) {
+        out << "    s.bb" << b.id << "_in_tmp.val" << v->id << " = ";
+        if (phis.count(v->id))
+          out << "s.bb" << p->id << "_out.val" << phis[v->id] << ';' << endl;
+        else
+          out << "s.bb" << p->id << "_out.val" << v->id << ';' << endl;
+      }
+      out << "    s.bb" << b.id << "_in_tmp.valid = true;" << endl
+          << "    s.bb" << p->id << "_out.valid = false;" << endl;
+    
+      out << "  }" << endl;      
+    }
 
     phi_arg_idx++;
   }
 
   if (&b == f.bbs[0]) {
     out << "  // " << fname << " call input." << endl
-        << "  if (!s.bb" << b.id << "_in.valid && s.call.valid)" << endl
-        << "    s.bb" << b.id << "_in.valid = true;" << endl;
+        << "  if (!s.bb" << b.id << "_in.valid && s.call.valid) {" << endl
+        << "    s.call.valid = false;" << endl
+        << "    s.bb" << b.id << "_in.valid = true;" << endl
+        << "  }" << endl;
+    if (b.cycle_breaker) {
+      out << "  if (!s.bb" << b.id << "_in_tmp.valid && s.call.valid) {" << endl
+          << "    s.call.valid = false;" << endl
+          << "    s.bb" << b.id << "_in_tmp.valid = true;" << endl
+          << "  }" << endl;
+    }
   }
 
 }
@@ -137,16 +182,29 @@ static
 static void gen_block(std::ostream &out, std::string fname, if_bb &b) {
   using namespace std;
 
-  out << "  // basic block " << b.id << endl;
+  out << "  // basic block " << b.id << endl
+      << "  if (s.bb" << b.id << "_in.valid) {" << endl;
 
   for (auto &v : b.vals)
     gen_val(out, fname, b, *v);
 
-  out << "  // output connections" << endl;
+  if (b.branch_pred) {
+    out << "    s.bb" << b.id << "_out.sel = " << arg_name(&b, b.branch_pred)
+        << ';' << endl;
+  }
+
+  out << "    // output connections" << endl
+      << "    if (!s.bb" << b.id << "_out.valid && s.bb"
+      << b.id << "_in.valid) {" << endl
+      << "      s.bb" << b.id << "_out.valid = true;" << endl
+      << "      s.bb" << b.id << "_in.valid = false;" << endl;
+
   for (auto &v : b.live_out) {
-    out << "  s.bb" << b.id << "_out.val" << v->id << " = "
+    out << "      s.bb" << b.id << "_out.val" << v->id << " = "
         << arg_name(&b, v) << ';' << endl;
   }
+  out << "    }" << endl
+      << "  }" << endl;
 
   out << endl;
 }

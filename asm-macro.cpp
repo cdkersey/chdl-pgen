@@ -202,7 +202,6 @@ argcollector<var> bscotch::cat(var &r) {
 }
 
 void bscotch::ret() {
-  asm_prog_ptr->val(void_type(), varimpl::next_id++, VAL_CONST).const_arg(0);
   asm_prog_ptr->val(void_type(), varimpl::next_id++, VAL_RET);
 }
 

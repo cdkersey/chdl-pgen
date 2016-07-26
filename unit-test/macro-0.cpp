@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 
 #include <vector>
 #include <string>
@@ -7,6 +8,7 @@
 #include "../type.h"
 #include "../if.h"
 #include "../cgen.h"
+#include "../cgen-cpp.h"
 #include "../break_cycles.h"
 #include "../asm-macro.h"
 
@@ -39,9 +41,12 @@ int main(int argc, char **argv) {
   ret();
 
   finish_macro_env();
-  
-  // print(std::cout, p); 
+
+  print(std::cout, p); 
   gen_prog(std::cout, p);
+
+  std::ofstream out("macro-0.sim.cpp");
+  gen_prog_cpp(out, p);
 
   return 0;
 }

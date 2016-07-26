@@ -16,8 +16,30 @@ tasks/goals in order of planned completion:
     - coalesce.bpi
   - Code gen/back end <2016-07-06-23>
     - Add support for C++ output to code generator (add separate cgen-cpp)
-      <2016-07-04>
-      - Simple working prototype. (depending on being run after CHDL code gen)
+      <2016-07-27>
+      - Full working prototype. (depending on being run after CHDL code gen)
+        - asm-0.cpp
+        - asm-1.cpp
+        - asm-2.cpp
+        - macro-0.cpp
+        - macro-1.cpp
+        - macro-2.cpp
+        - macro-3.cpp
+        - cgen-0.cpp
+        - cgen-1.cpp
+        - cgen-2.cpp
+        - cgen-3.cpp
+        - cgen-4.cpp
+        - cgen-5.cpp
+        - cgen-6.cpp
+        - cgen-7.cpp
+        - cgen-8.cpp
+        - cgen-9.cpp
+        - Simple loops and control flow
+        - Stalls
+        - Predicates
+        - Structs and struct members.
+        - Calls, arguments, and live value preservation
       - Split out phi conversion from CHDL code gen as a separate pass.
     - Build a basic block level program using (arr/1val) global variables.
     - Add support for global variables to code generator. <2016-06-30>
