@@ -1,10 +1,12 @@
 #include <iostream>
 
+#include <map>
 #include <vector>
 #include <string>
 #include <sstream>
 #include <algorithm>
 #include <cstdlib>
+#include <sstream>
 
 #include "type.h"
 #include "if.h"
@@ -12,10 +14,156 @@
 
 using namespace bscotch;
 
+static int which_suc(if_bb *a, if_bb *b) {
+  for (unsigned i = 0; i < a->suc.size(); ++i)
+    if (a->suc[i] == b) return i;
+  return -1;
+}
+
+static std::string arg_name(if_bb *b, if_val *v) {
+  std::ostringstream out;
+  
+  bool in_live_in = false;
+  for (auto &x : b->live_in)
+    if (x == v) in_live_in = true;
+
+  if (in_live_in) {
+    out << "s.bb" << b->id << "_in.val" << v->id;
+  } else {
+    out << "val" << v->id;
+  }
+
+  return out.str();
+}
+
+static const char *op_string(if_op op) {
+  switch(op) {
+  case VAL_NEG: return "-";
+  case VAL_NOT: return "~";
+  case VAL_ADD: return "+";
+  case VAL_SUB: return "-";
+  case VAL_MUL: return "*";
+  case VAL_DIV: return "/";
+  case VAL_AND: return "&";
+  case VAL_OR: return "|";
+  case VAL_XOR: return "^";
+  case VAL_EQ: return "==";
+  case VAL_LT: return "<";
+  default: return "UNKNOWN_OP";
+  }
+}
+
+static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v) {
+  using namespace std;
+
+  ostringstream val_name;
+  val_name << "val" << v.id;
+  if (!is_void_type(v.t))
+    out << "  " << type_cpp(v.t) << ' ' << val_name.str() << ';' << endl;
+  
+  if (v.op == VAL_PHI) {
+    // Handled in arbiter.
+  } else if (v.op == VAL_NEG || v.op == VAL_NOT) {
+    out << "  val" << v.id << " = " << op_string(v.op)
+        << arg_name(&b, v.args[0]) << ';' << endl;
+  } else if (v.op == VAL_OR_REDUCE || v.op == VAL_AND_REDUCE) {
+    out << "  val" << v.id << " = ";
+    if (v.op == VAL_OR_REDUCE) out << "or_reduce";
+    else out << "and_reduce";
+    out << '(' << arg_name(&b, v.args[0]) << ");" << endl;
+  } else if (v.op == VAL_CONST) {
+    out << "  val" << v.id << " = 0x" << to_hex(v.const_val) << "ull;" << endl;
+  } else if (v.op == VAL_CONCATENATE) {
+    out << "  Cat(val" << v.id << ')';
+    for (unsigned i = 0; i < v.args.size(); ++i)
+      out << '(' << arg_name(&b, v.args[i]) << ')';
+    out << ';' << endl;
+  } else {
+    if (v.args.size() == 2) {
+      out << "  s.bb" << b.id << "_out.val" << v.id << " = "
+          << arg_name(&b, v.args[0]) << ' ' << op_string(v.op)
+          << ' ' << arg_name(&b, v.args[1]) << ';' << endl;
+    } else {
+      out << "UNKNOWN" << endl;
+    }
+  }
+}
+
+static
+  void gen_arbiter(std::ostream &out, std::string fname, if_func &f, if_bb &b)
+{
+  using namespace std;
+
+  out << "  // arbiter for basic block" << b.id << endl;
+
+  unsigned phi_arg_idx = 0;
+  for (auto &p : b.pred) {
+    map<int, int> phis;
+    for (auto &v : b.vals)
+      if (v->op == VAL_PHI)
+        phis[v->id] = v->args[phi_arg_idx]->id;
+    
+    out << "  // input from bb" << p->id << endl;
+    
+    out << "  if (!s.bb" << b.id <<  "_in.valid && s.bb" << p->id
+        << "_out.valid";
+    if (p->suc.size() > 1)
+      out << " && s.bb" << p->id << "_out.sel == " << which_suc(p, &b);
+    out << ") {" << endl;
+
+    // copy live inputs
+    for (auto &v : b.live_in) {
+      out << "    s.bb" << b.id << "_in.val" << v->id << " = ";
+      if (phis.count(v->id))
+        out << "s.bb" << p->id << "_out.val" << phis[v->id] << ';' << endl;
+      else
+        out << "s.bb" << p->id << "_out.val" << v->id << ';' << endl;
+    }
+    out << "    s.bb" << b.id << "_in.valid = true;" << endl;
+    
+    out << "  }" << endl;
+
+    phi_arg_idx++;
+  }
+
+  if (&b == f.bbs[0]) {
+    out << "  // " << fname << " call input." << endl
+        << "  if (!s.bb" << b.id << "_in.valid && s.call.valid)" << endl
+        << "    s.bb" << b.id << "_in.valid = true;" << endl;
+  }
+
+}
+
+static void gen_block(std::ostream &out, std::string fname, if_bb &b) {
+  using namespace std;
+
+  out << "  // basic block " << b.id << endl;
+
+  for (auto &v : b.vals)
+    gen_val(out, fname, b, *v);
+
+  out << "  // output connections" << endl;
+  for (auto &v : b.live_out) {
+    out << "  s.bb" << b.id << "_out.val" << v->id << " = "
+        << arg_name(&b, v) << ';' << endl;
+  }
+
+  out << endl;
+}
+
 static void gen_func(std::ostream &out, std::string name, if_func &f) {
   using namespace std;
 
-  out << "// " << name << " definition." << endl;
+  out << "// " << name << " definition." << endl
+      << "void tick_" << name << "(" << name << "_state_t &s) {" << endl;
+
+  for (auto &b : f.bbs)
+    gen_arbiter(out, name, f, *b);
+  
+  for (auto &b : f.bbs)
+    gen_block(out, name, *b);
+  
+  out << '}' << endl;  
 }
 
 static void gen_func_decls(std::ostream &out, std::string name, if_func &f) {
@@ -30,7 +178,7 @@ static void gen_func_decls(std::ostream &out, std::string name, if_func &f) {
   for (unsigned i = 0; i < f.args.size(); ++i) {
     ostringstream arg_name;
     arg_name << "arg" << i;
-    out << "  " << type_cpp(f.args[i], arg_name.str()) << ';' << endl;
+    out << "  " << type_cpp(f.args[i]) << ' ' << arg_name.str() << ';' << endl;
   }
     
   out << "};" << endl << endl
@@ -38,7 +186,7 @@ static void gen_func_decls(std::ostream &out, std::string name, if_func &f) {
       << "  bool valid;" << endl
       << "  void *live;" << endl;
   if (!is_void_type(f.rtype))
-      out << "  " << type_cpp(f.rtype, "rval") << ';' << endl;
+      out << "  " << type_cpp(f.rtype) << " rval;" << endl;
   out << "};" << endl << endl;
   
   // Input and output types for every basic block.
@@ -50,23 +198,27 @@ static void gen_func_decls(std::ostream &out, std::string name, if_func &f) {
       if_val *v = f.bbs[i]->live_in[j];
       ostringstream var_name;
       var_name << "val" << v->id;
-      out << "  " << type_cpp(v->t, var_name.str()) << ';' << endl;
+      out << "  " << type_cpp(v->t) << ' ' << var_name.str() << ';' << endl;
     }
     out << "};" << endl << endl;
 
     out << "struct " << name << "_bb" << i << "_out_t {" << endl
         << "  bool valid;" << endl
         << "  void *live;" << endl;
+    if (f.bbs[i]->suc.size() > 1) out << "  int sel;" << endl;
     for (unsigned j = 0; j < f.bbs[i]->live_out.size(); ++j) {
       if_val *v = f.bbs[i]->live_out[j];
       ostringstream var_name;
       var_name << "val" << v->id;
-      out << "  " << type_cpp(v->t, var_name.str()) << ';' << endl;
+      out << "  " << type_cpp(v->t) << ' ' << var_name.str() << ';' << endl;
     }
     out << "};" << endl << endl;
   }
-  
-  out << "struct " << name << "_state_t {" << endl;
+
+  // State type containing all blocks' inputs/outputs.
+  out << "struct " << name << "_state_t {" << endl
+      << "  " << name << "_call_t call;" << endl
+      << "  " << name << "_ret_t ret;" << endl;
   for (unsigned i = 0; i < f.bbs.size(); ++i) {
     out << "  " << name << "_bb" << i << "_in_t bb" << i << "_in";
     if (f.bbs[i]->cycle_breaker)
@@ -75,6 +227,9 @@ static void gen_func_decls(std::ostream &out, std::string name, if_func &f) {
     out << "  " << name << "_bb" << i << "_out_t bb" << i << "_out;" << endl;
   }
   out << "};" << endl << endl;
+
+  // Function declaration.
+  out << "void tick_" << name << "(" << name << "_state_t &s);" << endl << endl;
 }
 
 void bscotch::gen_prog_cpp(std::ostream &out, if_prog &p) {

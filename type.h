@@ -52,7 +52,6 @@ namespace bscotch {
   
   void print(std::ostream &out, bscotch::type &t);
   std::string type_chdl(const type &t, int s = 0, int &end = *(int*)NULL);
-  std::string type_cpp(const type &t, std::string name,
-                       int s = 0, int &end = *(int*)NULL);
+  std::string type_cpp(const type &t, int s = 0, int &end = *(int*)NULL);
 }
 #endif

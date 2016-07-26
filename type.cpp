@@ -317,9 +317,7 @@ std::string bscotch::type_chdl(const bscotch::type &t, int s, int &end)
   return oss.str();
 }
 
-std::string bscotch::type_cpp
-  (const bscotch::type &t, std::string name, int s, int &end)
-{
+std::string bscotch::type_cpp(const bscotch::type &t, int s, int &end) {
   using namespace bscotch;
   using namespace std;
 
@@ -328,20 +326,20 @@ std::string bscotch::type_cpp
 
   for (i = s; i < t.type_vec.size() && t.type_vec[i] != TYPE_FIELD_DELIM; ++i) {
     if (t.type_vec[i] == TYPE_BIT) {
-      oss << "bool " << name;
+      oss << "bool";
     } else if (t.type_vec[i] == TYPE_S) {
-      oss << "si<" << t.type_vec[++i] << "> " << name;
+      oss << "si<" << t.type_vec[++i] << "> ";
     } else if (t.type_vec[i] == TYPE_U) {
-      oss << "ui<" << t.type_vec[++i] << "> " << name;
+      oss << "ui<" << t.type_vec[++i] << "> ";
     } else if (t.type_vec[i] == TYPE_ARRAY) {
       // TODO: Are SRAM arrays best represented as arrays?
       string s = oss.str();
       oss = ostringstream();
-      oss << s << '[' << t.type_vec[++i] << ']';
+      oss << "array<" << t.type_vec[++i] << ", " << s << '>';
     } else if (t.type_vec[i] == TYPE_STATIC_ARRAY) {
       string s = oss.str();
       oss = ostringstream();
-      oss << s << '[' << t.type_vec[++i] << ']';
+      oss << "array<" << t.type_vec[++i] << ", " << s << '>';
     } else if (t.type_vec[i] == TYPE_STRUCT_BEGIN) {
       unsigned fields = t.type_vec[++i];
       if (fields == 0) {
@@ -351,10 +349,11 @@ std::string bscotch::type_cpp
         for (unsigned j = 0; j < fields; ++j) {
           ++i;
           int pos;
-          oss << type_cpp(t, t.field_name.find(i)->second, i, pos) << ';';
+          oss << type_cpp(t, i, pos)
+              << ' ' << t.field_name.find(i)->second << ';';
           i = pos;
         }
-	oss << "} " << name;
+	oss << "} ";
       }
     }
   }

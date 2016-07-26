@@ -15,6 +15,10 @@ tasks/goals in order of planned completion:
     - binsearch.bpi
     - coalesce.bpi
   - Code gen/back end <2016-07-06-23>
+    - Add support for C++ output to code generator (add separate cgen-cpp)
+      <2016-07-04>
+      - Simple working prototype. (depending on being run after CHDL code gen)
+      - Split out phi conversion from CHDL code gen as a separate pass.
     - Build a basic block level program using (arr/1val) global variables.
     - Add support for global variables to code generator. <2016-06-30>
     - Understand, enumerate, and automatically check (or remove) constraints.
@@ -27,17 +31,15 @@ tasks/goals in order of planned completion:
     - Build a basic block level program that uses speculation. <2016-07-10>
     - Add support for speculation to code generator. <2016-07-10>
     - Make TAPs run-time optional.
-    - Add support for C++ output to code generator (add separate cgen-cpp)
-      <2016-07-04>
     - Make all of the tests self-report success or failure. <2016-07-10>
     - Decide whether functions need to be predicatable. <2016-07-10>
-  - C++-based Pipeline Construction Macro Assembler <2016-07-10>
+  . C++-based Pipeline Construction Macro Assembler <2016-07-10>
     . Write an assembler back-end.
-    - Write a macro layer.
-      - Basic macros
-        - Vars, types, and operators
-        - Constants
-      - Structs and members
+    . Write a macro layer.
+      . Basic macros
+        . Vars, types, and operators
+        . Constants
+      . Structs and members
   - Parser/front end <?>
     - Build a skeleton flex/bison parser <?>
     - Get simple static function to parse to AST. <?>

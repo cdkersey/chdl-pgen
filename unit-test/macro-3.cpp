@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
 
   std::ofstream cpp_out("macro-3.sim.cpp");
   
-  // print(std::cout, p); 
+  print(std::cout, p); 
   gen_prog(std::cout, p);
   gen_prog_cpp(cpp_out, p);
 
