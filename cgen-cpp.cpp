@@ -53,12 +53,20 @@ static const char *op_string(if_op op) {
   }
 }
 
+static if_val *find_call_or_spawn(if_bb &b) {
+  for (auto &v : b.vals)
+    if (v->op == VAL_CALL || v->op == VAL_SPAWN)
+      return v;
+
+  return NULL;
+}
+
 static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v) {
   using namespace std;
 
   ostringstream val_name;
   val_name << "val" << v.id;
-  if (!is_void_type(v.t) && v.op != VAL_PHI)
+  if (!is_void_type(v.t) && v.op != VAL_PHI && v.op != VAL_SPAWN)
     out << "    " << type_cpp(v.t) << ' ' << val_name.str() << ';' << endl;
   
   if (v.op == VAL_PHI) {
@@ -79,6 +87,9 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v) {
     for (unsigned i = 0; i < v.args.size(); ++i)
       out << '(' << arg_name(&b, v.args[i]) << ')';
     out << ';' << endl;
+  } else if (v.op == VAL_ARG) {
+    out << "    val" << v.id << " = s.call.arg" << v.static_access_id << ';'
+        << endl;
   } else if (v.op == VAL_RET) {
     out << "    if (!s.ret.valid) {" << endl;
     if (v.args.size() && !is_void_type(v.args[0]->t))
@@ -89,8 +100,12 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v) {
     out << "    val" << v.id << " = s.static_var_" << v.static_arg->name << ';'
         << endl;
   } else if (v.op == VAL_ST_STATIC) {
-    out << "    s.next_static_var_" << v.static_arg->name << " = "
+    out << "    s.";
+    if (!v.static_arg->broadcast) out << "next_";
+    out << "static_var_" << v.static_arg->name << " = "
         << arg_name(&b, v.args[0]) << ';' << endl;
+  } else if (v.op == VAL_SPAWN) {
+    // TODO: copy args, etc.
   } else {
     if (v.args.size() == 2) {
       out << "    val" << v.id << " = "
@@ -188,8 +203,14 @@ static
 static void gen_block(std::ostream &out, std::string fname, if_bb &b) {
   using namespace std;
 
+  if_val *call = find_call_or_spawn(b);
+  
   out << "  // basic block " << b.id << endl
-      << "  if (s.bb" << b.id << "_in.valid) {" << endl;
+      << "  if (s.bb" << b.id << "_in.valid";
+  if (call) {
+    out << " && /* can make a call */";
+  }
+  out << ") {" << endl;
 
   for (auto &v : b.vals)
     gen_val(out, fname, b, *v);
@@ -201,7 +222,9 @@ static void gen_block(std::ostream &out, std::string fname, if_bb &b) {
 
   out << "    // output connections" << endl
       << "    if (!s.bb" << b.id << "_out.valid && s.bb"
-      << b.id << "_in.valid) {" << endl
+      << b.id << "_in.valid";
+  if (b.stall) out << " && !" << arg_name(&b, b.stall);
+  out << ") {" << endl
       << "      s.bb" << b.id << "_out.valid = true;" << endl
       << "      s.bb" << b.id << "_in.valid = false;" << endl;
 
@@ -222,8 +245,9 @@ static void gen_func(std::ostream &out, std::string name, if_func &f) {
       << "void tick_" << name << "(" << name << "_state_t &s) {" << endl;
 
   for (auto &s : f.static_vars) {
-    out << "  s.static_var_" << s.second.name << " = s.next_static_var_"
-        << s.second.name << ';' << endl;
+    if (!s.second.broadcast)
+      out << "  s.static_var_" << s.second.name << " = s.next_static_var_"
+          << s.second.name << ';' << endl;
     out << "  std::cout << \"" << s.second.name << " = \" << s.static_var_"
         << s.second.name << " << std::endl;" << endl;
   }
@@ -290,10 +314,12 @@ static void gen_func_decls(std::ostream &out, std::string name, if_func &f) {
   out << "struct " << name << "_state_t {" << endl
       << "  " << name << "_call_t call;" << endl
       << "  " << name << "_ret_t ret;" << endl;
-  for (auto &v : f.static_vars)
+  for (auto &v : f.static_vars) {
     out << "  " << type_cpp(v.second.t)
-        << " static_var_" << v.second.name << ", next_static_var_"
-        << v.second.name << ';' << endl;
+        << " static_var_" << v.second.name;
+    if (!v.second.broadcast) out << ", next_static_var_";
+    out << v.second.name << ';' << endl;
+  }
   for (unsigned i = 0; i < f.bbs.size(); ++i) {
     out << "  " << name << "_bb" << i << "_in_t bb" << i << "_in";
     if (f.bbs[i]->cycle_breaker)

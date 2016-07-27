@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 
 #include <vector>
 #include <string>
@@ -7,6 +8,7 @@
 #include "../type.h"
 #include "../if.h"
 #include "../cgen.h"
+#include "../cgen-cpp.h"
 #include "../break_cycles.h"
 #include "../asm.h"
 
@@ -99,6 +101,9 @@ int main(int argc, char **argv) {
   
   print(cout, p); 
   gen_prog(cout, p);
+
+  ofstream out("asm-1.sim.cpp");
+  gen_prog_cpp(out, p);
 
   return 0;
 }
