@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include <map>
+#include <set>
 #include <vector>
 #include <string>
 #include <sstream>
@@ -61,6 +62,70 @@ static if_val *find_call_or_spawn(if_bb &b) {
   return NULL;
 }
 
+template <typename T> static bool is_subset(std::set<T> &a, std::set<T> &b) {
+  for (auto &x : a) if (!b.count(x)) return false;
+  return true;
+}
+
+// Reorder blocks so broadcast variables are
+static void order_blocks(std::vector<if_bb*> &out,
+                         const std::vector<if_bb*> &in)
+{
+  using namespace std;
+
+  map<if_bb*, set<if_bb*> > bcast_st_ld, bcast_ld_st;
+
+  set<if_staticvar*> vars;
+  map<if_staticvar*, set<if_bb*> > loads;
+  map<if_staticvar*, if_bb*> stores;
+
+  // Find constraints.  
+  for (auto &b : in) {
+    for (auto &v : b->vals) {
+      if (v->op == VAL_LD_STATIC && v->static_arg->broadcast) {
+        loads[v->static_arg].insert(b);
+        vars.insert(v->static_arg);
+      } else if (v->op == VAL_ST_STATIC && v->static_arg->broadcast) {
+        stores[v->static_arg] = b;
+        vars.insert(v->static_arg);
+      }
+    }
+  }
+
+  for (auto &s : vars)
+    bcast_st_ld[stores[s]] = loads[s];
+
+  // Reverse constraints.
+  for (auto &x : bcast_st_ld)
+    for (auto &y : x.second)
+      bcast_ld_st[y].insert(x.first);
+      
+  // Scan through repeatedly until no constraints are left.
+  set<if_bb*> emitted;
+  bool changed;
+  do {
+    changed = false;
+    for (auto &b : in) {
+      if (emitted.count(b)) continue;
+
+      if (bcast_ld_st.count(b))
+        if (is_subset(bcast_ld_st[b], emitted))
+          bcast_ld_st.erase(b);
+
+      if (!bcast_ld_st.count(b)) {
+        out.push_back(b);
+        emitted.insert(b);
+        changed = true;
+      }
+    }
+  } while (bcast_ld_st.size() && changed);
+
+  if (!changed) {
+    cerr << "Cycle in broadcast var dependencies." << endl;
+    abort();
+  }
+}
+
 static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v) {
   using namespace std;
 
@@ -99,13 +164,32 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v) {
   } else if (v.op == VAL_LD_STATIC) {
     out << "    val" << v.id << " = s.static_var_" << v.static_arg->name << ';'
         << endl;
+  } else if (v.op == VAL_LD_BCAST_VALID) {
+    out << "    val" << v.id << " = s.static_var_" << v.static_arg->name
+        << "_valid;" << endl;
   } else if (v.op == VAL_ST_STATIC) {
     out << "    s.";
     if (!v.static_arg->broadcast) out << "next_";
     out << "static_var_" << v.static_arg->name << " = "
         << arg_name(&b, v.args[0]) << ';' << endl;
+    if (v.static_arg->broadcast)
+      out << "    s.static_var_" << v.static_arg->name << "_valid = true;"
+          << endl;
+  } else if (v.op == VAL_LD_IDX) {
+    if (is_integer_type(v.t)) {
+      out << "    val" << v.id << " = (" << arg_name(&b, v.args[0]) << " >> "
+          << arg_name(&b, v.args[1]) << ')';
+      if (v.args.size() > 2)
+        out << " & ((1<<" << arg_name(&b, v.args[2]) << ")-1)";
+      out << ';' << endl;
+    } else {
+      out << "    // UNSUPPORTED TYPE FOR LD_IDX" << endl;
+    }
   } else if (v.op == VAL_SPAWN) {
-    // TODO: copy args, etc.
+    out << "    s.func" << v.id << "->call.valid = true;" << endl;
+    for (unsigned i = 0; i < v.args.size(); ++i)
+      out << "    s.func" << v.id << "->call.arg" << i << " = "
+          << arg_name(&b, v.args[i]) << ';' << endl;
   } else {
     if (v.args.size() == 2) {
       out << "    val" << v.id << " = "
@@ -208,7 +292,7 @@ static void gen_block(std::ostream &out, std::string fname, if_bb &b) {
   out << "  // basic block " << b.id << endl
       << "  if (s.bb" << b.id << "_in.valid";
   if (call) {
-    out << " && /* can make a call */";
+    out << " && !s.func" << call->id << "->call.valid";
   }
   out << ") {" << endl;
 
@@ -235,30 +319,65 @@ static void gen_block(std::ostream &out, std::string fname, if_bb &b) {
   out << "    }" << endl
       << "  }" << endl;
 
+  if (call)
+    out << "  tick_" << call->func_arg << "(*s.func"
+        << call->id << ");" << endl;
+
   out << endl;
 }
 
 static void gen_func(std::ostream &out, std::string name, if_func &f) {
   using namespace std;
 
-  out << "// " << name << " definition." << endl
-      << "void tick_" << name << "(" << name << "_state_t &s) {" << endl;
+  out << "// " << name << " definitions." << endl
+      << "void init_" << name << '(' << name << "_state_t &s) {" << endl;
+  for (auto &b : f.bbs) {
+    out << "  s.bb" << b->id << "_in.valid = false;" << endl
+        << "  s.bb" << b->id << "_out.valid = false;" << endl;
+    
+    if_val *call = find_call_or_spawn(*b);
+    if (call) {
+      out << "  s.func" << call->id << " = new " << call->func_arg
+          << "_state_t();" << endl
+          << "  init_" << call->func_arg << "(*s.func" << call->id
+          << ");" << endl;
+    }
+  }
+  out << '}' << endl << endl;
+  
+  out << "void tick_" << name << "(" << name << "_state_t &s) {" << endl;
 
   for (auto &s : f.static_vars) {
     if (!s.second.broadcast)
       out << "  s.static_var_" << s.second.name << " = s.next_static_var_"
           << s.second.name << ';' << endl;
+    else
+      out << "  s.static_var_" << s.second.name << "_valid = false;" << endl;
     out << "  std::cout << \"" << s.second.name << " = \" << s.static_var_"
         << s.second.name << " << std::endl;" << endl;
   }
+
+  vector<if_bb*> bbs;
   
-  for (auto &b : f.bbs)
+  order_blocks(bbs, f.bbs);
+  
+  for (auto &b : bbs)
     gen_arbiter(out, name, f, *b);
   
-  for (auto &b : f.bbs)
+  for (auto &b : bbs)
     gen_block(out, name, *b);
   
   out << '}' << endl;  
+}
+
+static void gen_func_forward_decls
+  (std::ostream &out, std::string name, if_func &f)
+{
+  using namespace std;
+
+  out << "struct " << name << "_state_t;" << endl
+      << "void init_" << name << "(" << name << "_state_t&);" << endl
+      << "void tick_" << name << "(" << name << "_state_t&);" << endl;
 }
 
 static void gen_func_decls(std::ostream &out, std::string name, if_func &f) {
@@ -318,7 +437,10 @@ static void gen_func_decls(std::ostream &out, std::string name, if_func &f) {
     out << "  " << type_cpp(v.second.t)
         << " static_var_" << v.second.name;
     if (!v.second.broadcast) out << ", next_static_var_";
-    out << v.second.name << ';' << endl;
+    out << ';' << endl;
+
+    if (v.second.broadcast)
+      out << "  bool static_var_" << v.second.name << "_valid;" << endl;
   }
   for (unsigned i = 0; i < f.bbs.size(); ++i) {
     out << "  " << name << "_bb" << i << "_in_t bb" << i << "_in";
@@ -326,6 +448,10 @@ static void gen_func_decls(std::ostream &out, std::string name, if_func &f) {
       out << ", bb" << i << "_in_tmp";
     out << ';' << endl;
     out << "  " << name << "_bb" << i << "_out_t bb" << i << "_out;" << endl;
+    if_val *call = find_call_or_spawn(*f.bbs[i]);
+    if (call)
+      out << "  " << call->func_arg << "_state_t *func"
+          << call->id << ';' << endl;
   }
   out << "};" << endl << endl;
 
@@ -334,6 +460,11 @@ static void gen_func_decls(std::ostream &out, std::string name, if_func &f) {
 }
 
 void bscotch::gen_prog_cpp(std::ostream &out, if_prog &p) {
+  out << "// Forward declarations." << std::endl;
+  for (auto &f : p.functions)
+    gen_func_forward_decls(out, f.first, f.second);
+  out << std::endl;
+  
   for (auto &f : p.functions)
     gen_func_decls(out, f.first, f.second);
 

@@ -42,8 +42,7 @@ int main(int argc, char **argv) {
   a.br(7).target("loop").target("exit");
 
   a.label("exit");
-  a.val(void_type(), 9, VAL_CONST).const_arg(0);
-  a.val(void_type(), 10, VAL_RET).arg(9);
+  a.val(void_type(), 10, VAL_RET);
 
   a.function("func");
 
@@ -94,8 +93,7 @@ int main(int argc, char **argv) {
 
   a.label("stage_3");
   a.val(void_type(), 33, VAL_ST_STATIC).static_arg("d3").arg(4);
-  a.val(void_type(), 34, VAL_CONST).const_arg(0);
-  a.val(void_type(), 35, VAL_RET).arg(34);
+  a.val(void_type(), 35, VAL_RET);
   
   a.assemble_func();
   

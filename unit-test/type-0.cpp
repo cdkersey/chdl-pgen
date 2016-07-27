@@ -51,7 +51,7 @@ void print_type(type (*f)()) {
   cout << " === " << endl << "bpi:  ";
   print(cout, t);
   cout << endl << "chdl: " << type_chdl(t)
-       << endl << "cpp:  " << type_cpp(t, "foo") << endl;
+       << endl << "cpp:  " << type_cpp(t) << endl;
   cout << "size: " << t.size() << endl;
 }
 

@@ -220,6 +220,15 @@ bool bscotch::is_sram_array(const bscotch::type &t) {
   return t.type_vec[n - 2] == TYPE_ARRAY;
 }
 
+bool bscotch::is_static_array(const type &t) {
+  unsigned n = t.type_vec.size();
+  return t.type_vec[n - 2] == TYPE_STATIC_ARRAY;
+}
+
+bool bscotch::is_integer_type(const type &t) {
+  return t.type_vec[0] == TYPE_S || t.type_vec[0] == TYPE_U;
+}
+
 bool bscotch::is_struct(const bscotch::type &t) {
   return t.type_vec.size() >= 1 && t.type_vec[0] == TYPE_STRUCT_BEGIN;
 }
