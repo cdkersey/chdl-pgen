@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 
 #include <vector>
 #include <string>
@@ -7,6 +8,7 @@
 #include "../type.h"
 #include "../if.h"
 #include "../cgen.h"
+#include "../cgen-cpp.h"
 #include "../break_cycles.h"
 #include "../prevent_deadlock.h"
 
@@ -99,9 +101,12 @@ int main() {
 
   test_prog(p);
 
-  // print(cout, p);
+  print(cout, p);
 
   gen_prog(cout, p);
+
+  ofstream out("cgen-0.sim.cpp");
+  gen_prog_cpp(out, p);
   
   return 0;
 }

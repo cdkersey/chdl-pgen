@@ -18,14 +18,14 @@ tasks/goals in order of planned completion:
     - Add support for C++ output to code generator (add separate cgen-cpp)
       <2016-07-27>
       - Full working prototype. (depending on being run after CHDL code gen)
-        - asm-0.cpp
+        . asm-0.cpp
         - asm-1.cpp
         - asm-2.cpp
         - macro-0.cpp
         - macro-1.cpp
         - macro-2.cpp
         - macro-3.cpp
-        - cgen-0.cpp
+        . cgen-0.cpp
         - cgen-1.cpp
         - cgen-2.cpp
         - cgen-3.cpp

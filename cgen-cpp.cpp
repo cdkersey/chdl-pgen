@@ -85,6 +85,12 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v) {
       out << "      s.ret.rval = " << arg_name(&b, v.args[0]) << ';';
     out << "      s.ret.valid = true;" << endl
         << "    }" << endl;
+  } else if (v.op == VAL_LD_STATIC) {
+    out << "    val" << v.id << " = s.static_var_" << v.static_arg->name << ';'
+        << endl;
+  } else if (v.op == VAL_ST_STATIC) {
+    out << "    s.next_static_var_" << v.static_arg->name << " = "
+        << arg_name(&b, v.args[0]) << ';' << endl;
   } else {
     if (v.args.size() == 2) {
       out << "    val" << v.id << " = "
@@ -215,6 +221,13 @@ static void gen_func(std::ostream &out, std::string name, if_func &f) {
   out << "// " << name << " definition." << endl
       << "void tick_" << name << "(" << name << "_state_t &s) {" << endl;
 
+  for (auto &s : f.static_vars) {
+    out << "  s.static_var_" << s.second.name << " = s.next_static_var_"
+        << s.second.name << ';' << endl;
+    out << "  std::cout << \"" << s.second.name << " = \" << s.static_var_"
+        << s.second.name << " << std::endl;" << endl;
+  }
+  
   for (auto &b : f.bbs)
     gen_arbiter(out, name, f, *b);
   
@@ -277,6 +290,10 @@ static void gen_func_decls(std::ostream &out, std::string name, if_func &f) {
   out << "struct " << name << "_state_t {" << endl
       << "  " << name << "_call_t call;" << endl
       << "  " << name << "_ret_t ret;" << endl;
+  for (auto &v : f.static_vars)
+    out << "  " << type_cpp(v.second.t)
+        << " static_var_" << v.second.name << ", next_static_var_"
+        << v.second.name << ';' << endl;
   for (unsigned i = 0; i < f.bbs.size(); ++i) {
     out << "  " << name << "_bb" << i << "_in_t bb" << i << "_in";
     if (f.bbs[i]->cycle_breaker)
