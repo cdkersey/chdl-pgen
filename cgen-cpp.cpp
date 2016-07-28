@@ -192,11 +192,23 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v) {
     } else {
       out << "    // UNSUPPORTED TYPE FOR LD_IDX" << endl;
     }
-  } else if (v.op == VAL_SPAWN) {
+  } else if (v.op == VAL_SPAWN || v.op == VAL_CALL) {
     out << "    s.func" << v.id << "->call.valid = true;" << endl;
     for (unsigned i = 0; i < v.args.size(); ++i)
       out << "    s.func" << v.id << "->call.arg" << i << " = "
           << arg_name(&b, v.args[i]) << ';' << endl;
+
+    // Calls must store live values on heap.
+    if (v.op == VAL_CALL) {
+      out << "    s.func" << v.id << "->call.live = new "
+          << fname << "_bb" << b.id << "_out_t();" << endl;
+      out << "    s.func" << v->id << "->call.live->valid = true;";
+      for (auto &w : b.live_out) {
+        out << "    s.func" << v->id << "->call.live->val" << w->id
+            << " = " << arg_name(&b, v) << ';' << endl;
+      }
+      out << "    s." << fname << "_bb" << b.id << "_in.valid = false;" << endl;
+    }
   } else {
     if (v.args.size() == 2) {
       out << "    val" << v.id << " = "
@@ -300,6 +312,15 @@ static void gen_block(std::ostream &out, std::string fname, if_bb &b) {
   using namespace std;
 
   if_val *call = find_call_or_spawn(b);
+
+  if (call) {
+    out << "  tick_" << call->func_arg << "(*s.func"
+        << call->id << ");" << endl;
+
+    // Always ready for return from spawn.
+    if (call->op == VAL_SPAWN)
+      out << "  s.func" << call->id << "->ret.valid = false;" << endl;
+  }
   
   out << "  // basic block " << b.id << endl
       << "  if (s.bb" << b.id << "_in.valid";
@@ -319,13 +340,18 @@ static void gen_block(std::ostream &out, std::string fname, if_bb &b) {
         << ';' << endl;
   }
 
-  out << "    // output connections" << endl
-      << "    if (!s.bb" << b.id << "_out.valid && s.bb"
-      << b.id << "_in.valid";
-  if (b.stall) out << " && !" << arg_name(&b, b.stall);
-  out << ") {" << endl
-      << "      s.bb" << b.id << "_out.valid = true;" << endl
-      << "      s.bb" << b.id << "_in.valid = false;" << endl;
+  out << "    // output connections" << endl;
+  if (call && call->op == VAL_CALL) {
+    out << "    // TODO: support call" << endl;
+    // TODO: connect function "live" to block outputs and delete it.
+  } else {
+    out << "    if (!s.bb" << b.id << "_out.valid && s.bb"
+        << b.id << "_in.valid";
+    if (b.stall) out << " && !" << arg_name(&b, b.stall);
+    out << ") {" << endl
+        << "      s.bb" << b.id << "_out.valid = true;" << endl
+        << "      s.bb" << b.id << "_in.valid = false;" << endl;
+  }
 
   for (auto &v : b.live_out) {
     out << "      s.bb" << b.id << "_out.val" << v->id << " = "
@@ -333,15 +359,6 @@ static void gen_block(std::ostream &out, std::string fname, if_bb &b) {
   }
   out << "    }" << endl
       << "  }" << endl;
-
-  if (call) {
-    out << "  tick_" << call->func_arg << "(*s.func"
-        << call->id << ");" << endl;
-
-    // Always ready for return from spawn.
-    if (call->op == VAL_SPAWN)
-      out << "  s.func" << call->id << "->ret.valid = false;" << endl;
-  }
 
   out << endl;
 }
@@ -362,6 +379,8 @@ static void gen_func(std::ostream &out, std::string name, if_func &f) {
   for (auto &b : f.bbs) {
     out << "  s.bb" << b->id << "_in.valid = false;" << endl
         << "  s.bb" << b->id << "_out.valid = false;" << endl;
+    if (b->cycle_breaker)
+      out << "  s.bb" << b->id << "_in_tmp.valid = false;" << endl;
     
     if_val *call = find_call_or_spawn(*b);
     if (call) {

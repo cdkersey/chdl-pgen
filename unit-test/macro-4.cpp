@@ -23,7 +23,7 @@ void bmain() {
   i = lit(u(32), 0);
   
   label("loop");
-  spawn("tmain")(i);
+  call("tmain")(i); // Must be last in basic block.
 
   label("loop2");
   i = i + lit(u(32), 1);
