@@ -26,4 +26,4 @@ macro-3: macro-3.cpp
 macro-4: macro-4.cpp
 
 clean:
-	$(RM) $(TESTS) *~
+	$(RM) $(TESTS) *.sim.cpp *.chdl.cpp *~

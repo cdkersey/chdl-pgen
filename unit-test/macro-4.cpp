@@ -23,7 +23,7 @@ void bmain() {
   i = lit(u(32), 0);
   
   label("loop");
-  call("tmain")(i); // Must be last in basic block.
+  spawn("tmain")(i); // Must be last in basic block.
 
   label("loop2");
   i = i + lit(u(32), 1);
@@ -37,9 +37,17 @@ void tmain() {
   function("tmain");
   static_var("x", u(32), 0);
 
-  label("foo");
-  store("x", arg(u(32)));
+  var x(u(32)), tid(u(32));
   
+  label("entry");
+  tid = arg(u(32));
+  x = tid;
+  x = x + lit(u(32), 1);
+  
+  label("foo");
+  x = x - lit(u(32), 1);
+  store("x", tid);
+  br(x == lit(u(32), 0))("foo")("exit");
   
   label("exit");
   ret();

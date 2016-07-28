@@ -162,12 +162,14 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v) {
       out << '(' << arg_name(&b, v.args[i]) << ')';
     out << ';' << endl;
   } else if (v.op == VAL_ARG) {
-    out << "    val" << v.id << " = s.call.arg" << v.static_access_id << ';'
-        << endl;
+    out << "    val" << v.id << " = s.bb" << b.id << "_in.arg"
+        << v.static_access_id << ';' << endl;
   } else if (v.op == VAL_RET) {
     if (v.args.size() && !is_void_type(v.args[0]->t))
       out << "    s.ret.rval = " << arg_name(&b, v.args[0]) << ';';
-    out << "    s.ret.valid = true;" << endl;
+    out << "    s.ret.valid = true;" << endl
+        << "    s.ret.live = s.bb" << b.id << "_in.live;" << endl
+        << "    s.bb" << b.id << "_out.valid = false;" << endl;
   } else if (v.op == VAL_LD_STATIC) {
     out << "    val" << v.id << " = s.static_var_" << v.static_arg->name << ';'
         << endl;
@@ -202,12 +204,16 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v) {
     if (v.op == VAL_CALL) {
       out << "    s.func" << v.id << "->call.live = new "
           << fname << "_bb" << b.id << "_out_t();" << endl;
-      out << "    s.func" << v->id << "->call.live->valid = true;";
+      out << "    ((" << fname << "_bb" << b.id << "_out_t*)s.func"
+          << v.id << "->call.live)->valid = true;" << endl
+          << "    ((" << fname << "_bb" << b.id << "_out_t*)s.func"
+          << v.id << "->call.live)->live = s.bb" << b.id << "_in.live;" << endl;
       for (auto &w : b.live_out) {
-        out << "    s.func" << v->id << "->call.live->val" << w->id
-            << " = " << arg_name(&b, v) << ';' << endl;
+        out << "    ((" << fname << "_bb" << b.id << "_out_t*)s.func"
+            << v.id << "->call.live)->val" << w->id
+            << " = " << arg_name(&b, w) << ';' << endl;
       }
-      out << "    s." << fname << "_bb" << b.id << "_in.valid = false;" << endl;
+      out << "    s." << "bb" << b.id << "_in.valid = false;" << endl;
     }
   } else {
     if (v.args.size() == 2) {
@@ -232,14 +238,6 @@ static
 
   out << "  // arbiter for basic block" << b.id << endl;
 
-  if (b.cycle_breaker) {
-    out << "  if (!s.bb" << b.id << "_in.valid && s.bb" << b.id
-        << "_in_tmp.valid) {" << endl
-        << "    s.bb" << b.id << "_in = s.bb" << b.id << "_in_tmp;" << endl
-        << "    s.bb" << b.id << "_in_tmp.valid = false;" << endl
-        << "  }" << endl;
-  }
-  
   unsigned phi_arg_idx = 0;
   for (auto &p : b.pred) {
     map<int, int> phis;
@@ -255,6 +253,10 @@ static
       out << " && s.bb" << p->id << "_out.sel == " << which_suc(p, &b);
     out << ") {" << endl;
 
+    // copy caller live values pointer
+    out << "    s.bb" << b.id << "_in.live = s.bb" << p->id << "_out.live;"
+        << endl;
+    
     // copy live inputs
     for (auto &v : b.live_in) {
       out << "    s.bb" << b.id << "_in.val" << v->id << " = ";
@@ -268,27 +270,6 @@ static
     
     out << "  }" << endl;
 
-    if (b.cycle_breaker) {
-      out << "  if (!s.bb" << b.id <<  "_in_tmp.valid && s.bb" << p->id
-          << "_out.valid";
-      if (p->suc.size() > 1)
-        out << " && s.bb" << p->id << "_out.sel == " << which_suc(p, &b);
-      out << ") {" << endl;
-
-      // copy live inputs
-      for (auto &v : b.live_in) {
-        out << "    s.bb" << b.id << "_in_tmp.val" << v->id << " = ";
-        if (phis.count(v->id))
-          out << "s.bb" << p->id << "_out.val" << phis[v->id] << ';' << endl;
-        else
-          out << "s.bb" << p->id << "_out.val" << v->id << ';' << endl;
-      }
-      out << "    s.bb" << b.id << "_in_tmp.valid = true;" << endl
-          << "    s.bb" << p->id << "_out.valid = false;" << endl;
-    
-      out << "  }" << endl;      
-    }
-
     phi_arg_idx++;
   }
 
@@ -297,13 +278,13 @@ static
         << "  if (!s.bb" << b.id << "_in.valid && s.call.valid) {" << endl
         << "    s.call.valid = false;" << endl
         << "    s.bb" << b.id << "_in.valid = true;" << endl
-        << "  }" << endl;
-    if (b.cycle_breaker) {
-      out << "  if (!s.bb" << b.id << "_in_tmp.valid && s.call.valid) {" << endl
-          << "    s.call.valid = false;" << endl
-          << "    s.bb" << b.id << "_in_tmp.valid = true;" << endl
-          << "  }" << endl;
+        << "    s.bb" << b.id << "_in.live = s.call.live;" << endl;
+    for (unsigned i = 0; i < f.args.size(); ++i) {
+      out << "    s.bb" << b.id << "_in.arg" << i << " = s.call.arg" << i
+          << ';' << endl;
     }
+
+    out << "  }" << endl;
   }
 
 }
@@ -327,10 +308,12 @@ static void gen_block(std::ostream &out, std::string fname, if_bb &b) {
   if (call) {
     out << " && !s.func" << call->id << "->call.valid";
   }
+  if (!call || call->op == VAL_SPAWN)
+    out << " && !s.bb" << b.id << "_out.valid";
   out << ") {" << endl;
 
   out << "    std::cout << \"running " << fname << " basic block " << b.id
-      << "\" << std::endl;" << endl;
+      << ", live = \" << s.bb" << b.id << "_in.live << std::endl;" << endl;
 
   for (auto &v : b.vals)
     gen_val(out, fname, b, *v);
@@ -342,33 +325,36 @@ static void gen_block(std::ostream &out, std::string fname, if_bb &b) {
 
   out << "    // output connections" << endl;
   if (call && call->op == VAL_CALL) {
-    out << "    // TODO: support call" << endl;
-    // TODO: connect function "live" to block outputs and delete it.
+    out << "  }" << endl
+        << "  if (!s.bb" << b.id << "_out.valid && s.func" << call->id
+        << "->ret.valid) {" << endl
+        << "    s.func" << call->id << "->ret.valid = false;" << endl
+        << "    s.bb" << b.id << "_out = *((" << fname << "_bb"
+        << b.id << "_out_t*)s.func" << call->id << "->ret.live);"
+        << endl
+        << "    delete (" << fname << "_bb" << b.id << "_out_t*)s.func"
+        << call->id << "->ret.live;" << endl
+        << "  }" << endl;
   } else {
     out << "    if (!s.bb" << b.id << "_out.valid && s.bb"
         << b.id << "_in.valid";
     if (b.stall) out << " && !" << arg_name(&b, b.stall);
-    out << ") {" << endl
-        << "      s.bb" << b.id << "_out.valid = true;" << endl
-        << "      s.bb" << b.id << "_in.valid = false;" << endl;
-  }
+    out << ") {" << endl;
+    if (!find_ret(b))
+      out << "      s.bb" << b.id << "_out.valid = true;" << endl;
+    out << "      s.bb" << b.id << "_in.valid = false;" << endl
+        << "      s.bb" << b.id << "_out.live = s.bb" << b.id << "_in.live;"
+        << endl;
 
-  for (auto &v : b.live_out) {
-    out << "      s.bb" << b.id << "_out.val" << v->id << " = "
-        << arg_name(&b, v) << ';' << endl;
+    for (auto &v : b.live_out) {
+      out << "      s.bb" << b.id << "_out.val" << v->id << " = "
+          << arg_name(&b, v) << ';' << endl;
+    }
+    out << "    }" << endl
+        << "  }" << endl;
   }
-  out << "    }" << endl
-      << "  }" << endl;
 
   out << endl;
-}
-
-static void gen_ret_arbiter(std::ostream &out, if_bb &b, if_val &v) {
-  using namespace std;
-  out << "  if (s.bb" << b.id << "_out.valid && !s.ret.valid) {" << endl
-      << "    s.ret.valid = true;" << endl
-      << "    s.bb" << b.id << "_out.valid = false;" << endl
-      << "  }" << endl;
 }
 
 static void gen_func(std::ostream &out, std::string name, if_func &f) {
@@ -379,8 +365,6 @@ static void gen_func(std::ostream &out, std::string name, if_func &f) {
   for (auto &b : f.bbs) {
     out << "  s.bb" << b->id << "_in.valid = false;" << endl
         << "  s.bb" << b->id << "_out.valid = false;" << endl;
-    if (b->cycle_breaker)
-      out << "  s.bb" << b->id << "_in_tmp.valid = false;" << endl;
     
     if_val *call = find_call_or_spawn(*b);
     if (call) {
@@ -411,11 +395,6 @@ static void gen_func(std::ostream &out, std::string name, if_func &f) {
   for (auto &b : bbs)
     gen_arbiter(out, name, f, *b);
 
-  for (auto &b : bbs) {
-    if_val *v = find_ret(*b);
-    if (v) gen_ret_arbiter(out, *b, *v);
-  }
-  
   for (auto &b : bbs)
     gen_block(out, name, *b);
   
@@ -460,6 +439,10 @@ static void gen_func_decls(std::ostream &out, std::string name, if_func &f) {
     out << "struct " << name << "_bb" << i << "_in_t {" << endl
         << "  bool valid;" << endl
         << "  void *live;" << endl;
+    if (i == 0)
+      for (unsigned j = 0; j < f.args.size(); ++j)
+        out << "  " << type_cpp(f.args[j]) << " arg" << j << ';' << endl;
+         
     for (unsigned j = 0; j < f.bbs[i]->live_in.size(); ++j) {
       if_val *v = f.bbs[i]->live_in[j];
       ostringstream var_name;
@@ -496,8 +479,6 @@ static void gen_func_decls(std::ostream &out, std::string name, if_func &f) {
   }
   for (unsigned i = 0; i < f.bbs.size(); ++i) {
     out << "  " << name << "_bb" << i << "_in_t bb" << i << "_in";
-    if (f.bbs[i]->cycle_breaker)
-      out << ", bb" << i << "_in_tmp";
     out << ';' << endl;
     out << "  " << name << "_bb" << i << "_out_t bb" << i << "_out;" << endl;
     if_val *call = find_call_or_spawn(*f.bbs[i]);
