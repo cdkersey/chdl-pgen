@@ -62,6 +62,14 @@ static if_val *find_call_or_spawn(if_bb &b) {
   return NULL;
 }
 
+static if_val *find_ret(if_bb &b) {
+ for (auto &v : b.vals)
+   if (v->op == VAL_RET)
+      return v;
+
+  return NULL;
+}
+
 template <typename T> static bool is_subset(std::set<T> &a, std::set<T> &b) {
   for (auto &x : a) if (!b.count(x)) return false;
   return true;
@@ -131,8 +139,9 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v) {
 
   ostringstream val_name;
   val_name << "val" << v.id;
-  if (!is_void_type(v.t) && v.op != VAL_PHI && v.op != VAL_SPAWN)
+  if (!is_void_type(v.t) && v.op != VAL_PHI && v.op != VAL_SPAWN) {
     out << "    " << type_cpp(v.t) << ' ' << val_name.str() << ';' << endl;
+  }
   
   if (v.op == VAL_PHI) {
     // Handled in arbiter.
@@ -156,11 +165,9 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v) {
     out << "    val" << v.id << " = s.call.arg" << v.static_access_id << ';'
         << endl;
   } else if (v.op == VAL_RET) {
-    out << "    if (!s.ret.valid) {" << endl;
     if (v.args.size() && !is_void_type(v.args[0]->t))
-      out << "      s.ret.rval = " << arg_name(&b, v.args[0]) << ';';
-    out << "      s.ret.valid = true;" << endl
-        << "    }" << endl;
+      out << "    s.ret.rval = " << arg_name(&b, v.args[0]) << ';';
+    out << "    s.ret.valid = true;" << endl;
   } else if (v.op == VAL_LD_STATIC) {
     out << "    val" << v.id << " = s.static_var_" << v.static_arg->name << ';'
         << endl;
@@ -198,6 +205,11 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v) {
     } else {
       out << "    // UNKNOWN" << endl;
     }
+  }
+
+  if (!is_void_type(v.t) && v.op != VAL_PHI && v.op != VAL_SPAWN) {
+    out << "    std::cout << \"" << fname << v.id << " = \" << "
+        << val_name.str() << " << std::endl;" << endl;
   }
 }
 
@@ -296,6 +308,9 @@ static void gen_block(std::ostream &out, std::string fname, if_bb &b) {
   }
   out << ") {" << endl;
 
+  out << "    std::cout << \"running " << fname << " basic block " << b.id
+      << "\" << std::endl;" << endl;
+
   for (auto &v : b.vals)
     gen_val(out, fname, b, *v);
 
@@ -319,11 +334,24 @@ static void gen_block(std::ostream &out, std::string fname, if_bb &b) {
   out << "    }" << endl
       << "  }" << endl;
 
-  if (call)
+  if (call) {
     out << "  tick_" << call->func_arg << "(*s.func"
         << call->id << ");" << endl;
 
+    // Always ready for return from spawn.
+    if (call->op == VAL_SPAWN)
+      out << "  s.func" << call->id << "->ret.valid = false;" << endl;
+  }
+
   out << endl;
+}
+
+static void gen_ret_arbiter(std::ostream &out, if_bb &b, if_val &v) {
+  using namespace std;
+  out << "  if (s.bb" << b.id << "_out.valid && !s.ret.valid) {" << endl
+      << "    s.ret.valid = true;" << endl
+      << "    s.bb" << b.id << "_out.valid = false;" << endl
+      << "  }" << endl;
 }
 
 static void gen_func(std::ostream &out, std::string name, if_func &f) {
@@ -363,6 +391,11 @@ static void gen_func(std::ostream &out, std::string name, if_func &f) {
   
   for (auto &b : bbs)
     gen_arbiter(out, name, f, *b);
+
+  for (auto &b : bbs) {
+    if_val *v = find_ret(*b);
+    if (v) gen_ret_arbiter(out, *b, *v);
+  }
   
   for (auto &b : bbs)
     gen_block(out, name, *b);
@@ -436,7 +469,7 @@ static void gen_func_decls(std::ostream &out, std::string name, if_func &f) {
   for (auto &v : f.static_vars) {
     out << "  " << type_cpp(v.second.t)
         << " static_var_" << v.second.name;
-    if (!v.second.broadcast) out << ", next_static_var_";
+    if (!v.second.broadcast) out << ", next_static_var_" << v.second.name;
     out << ';' << endl;
 
     if (v.second.broadcast)

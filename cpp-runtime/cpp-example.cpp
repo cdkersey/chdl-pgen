@@ -66,11 +66,14 @@ template <typename T> concatenator<T> cat(T &out) {
 #include "./cgen-out.incl"
 
 int main() {
+  using namespace std;
+
   bmain_state_t s;
   init_bmain(s);
   s.call.valid = true;
   
   for (unsigned i = 0; i < 10000; ++i) {
+    cout << "=== cycle " << i << " ===" << endl;
     tick_bmain(s);
   }
   
