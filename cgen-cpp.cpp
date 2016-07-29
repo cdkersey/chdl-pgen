@@ -37,17 +37,17 @@ static std::string arg_name(if_bb *b, if_val *v) {
   return out.str();
 }
 
-static const char *op_string(if_op op) {
+static const char *op_string(if_op op, bool bit) {
   switch(op) {
   case VAL_NEG: return "-";
-  case VAL_NOT: return "~";
+  case VAL_NOT: return bit ? "!" : "~";
   case VAL_ADD: return "+";
   case VAL_SUB: return "-";
   case VAL_MUL: return "*";
   case VAL_DIV: return "/";
-  case VAL_AND: return "&";
-  case VAL_OR: return "|";
-  case VAL_XOR: return "^";
+  case VAL_AND: return bit ? "&&" : "&";
+  case VAL_OR: return bit ? "||" : "|";
+  case VAL_XOR: return bit ? "!=" : "^";
   case VAL_EQ: return "==";
   case VAL_LT: return "<";
   default: return "UNKNOWN_OP";
@@ -146,7 +146,7 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v) {
   if (v.op == VAL_PHI) {
     // Handled in arbiter.
   } else if (v.op == VAL_NEG || v.op == VAL_NOT) {
-    out << "    val" << v.id << " = " << op_string(v.op)
+    out << "    val" << v.id << " = " << op_string(v.op, is_bit_type(v.t))
         << arg_name(&b, v.args[0]) << ';' << endl;
   } else if (v.op == VAL_OR_REDUCE || v.op == VAL_AND_REDUCE) {
     out << "    val" << v.id << " = ";
@@ -218,7 +218,7 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v) {
   } else {
     if (v.args.size() == 2) {
       out << "    val" << v.id << " = "
-          << arg_name(&b, v.args[0]) << ' ' << op_string(v.op)
+          << arg_name(&b, v.args[0]) << ' ' << op_string(v.op, is_bit_type(v.t))
           << ' ' << arg_name(&b, v.args[1]) << ';' << endl;
     } else {
       out << "    // UNKNOWN" << endl;

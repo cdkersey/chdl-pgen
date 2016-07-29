@@ -19,9 +19,10 @@ tasks/goals in order of planned completion:
       <2016-07-27>
       - Full working prototype. (depending on being run after CHDL code gen)
         . asm-0.cpp
-        - asm-1.cpp
-          - Support for spawn
-          - Correct support for bcast variables, including block reordering.
+        . asm-1.cpp
+          . Support for spawn
+          . Correct support for bcast variables, including block reordering.
+          . Proper stall support
         - asm-2.cpp
         - macro-0.cpp
         - macro-1.cpp

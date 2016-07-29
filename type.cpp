@@ -229,6 +229,10 @@ bool bscotch::is_integer_type(const type &t) {
   return t.type_vec[0] == TYPE_S || t.type_vec[0] == TYPE_U;
 }
 
+bool bscotch::is_bit_type(const type &t) {
+  return t.type_vec[0] == TYPE_BIT;
+}
+
 bool bscotch::is_struct(const bscotch::type &t) {
   return t.type_vec.size() >= 1 && t.type_vec[0] == TYPE_STRUCT_BEGIN;
 }

@@ -53,10 +53,31 @@ template <typename T> struct concatenator {
   template <unsigned N> concatenator operator()(const ui<N> &x) {
     out |= (x & ((1<<N)-1)) << bit_pos;
     bit_pos += N;
+
+    return *this;
+  }
+
+  concatenator operator()(const bool &x) {
+    out = out & ~(1<<bit_pos);
+    out = out | ((x ? 1 : 0) << bit_pos);
+    bit_pos++;
+
+    return *this;
   }
   
   T &out;
   unsigned bit_pos;
+};
+
+template <> struct concatenator<bool> {
+  concatenator(bool &out): out(out) {}
+  
+  concatenator operator()(bool &x) {
+    out = x;
+    return *this;
+  }
+
+  bool &out;
 };
 
 template <typename T> concatenator<T> cat(T &out) {
@@ -71,6 +92,7 @@ int main() {
   bmain_state_t s;
   init_bmain(s);
   s.call.valid = true;
+  s.call.live = NULL;
   
   for (unsigned i = 0; i < 10000; ++i) {
     cout << "=== cycle " << i << " ===" << endl;
