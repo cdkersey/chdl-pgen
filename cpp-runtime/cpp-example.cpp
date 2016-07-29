@@ -1,27 +1,38 @@
 #include <iostream>
 #include <vector>
 #include <cstring>
+#include <iomanip>
 
 template <unsigned N> struct ui {
   ui(): val(0) {}
   ui(unsigned long val): val(val) {}
   operator unsigned long() const { return val; }
-  ui &operator=(unsigned long x) { val = x; return *this; }
+  ui &operator=(unsigned long x) { val = x & ((1ull<<N)-1); return *this; }
   unsigned long val;
 };
 
 template <unsigned N> struct si {
   si(): val(0) {}
   si(long val): val(val) {}
-  operator long() const { return val; return *this; }
-  si &operator=(long x) { val = x; }
+  operator long() const {
+    if ((val>>(N-1))&1) return val | ~((1ull<<N)-1);
+    else return val;
+  }
+  si &operator=(long x) { val = (x & ((1ull<<N) - 1)); }
   long val;
 };
   
 template <unsigned N, typename T> struct array {
-  array(): contents(N) {}
+  array() {}
 
-  std::vector<T> contents;
+  array &operator=(const array &r) {
+    for (unsigned i = 0; i < N; ++i)
+      contents[i] = r.contents[i];
+  }
+
+  operator T*() { return contents; }
+
+  T contents[N];
 };
 
 bool or_reduce(const ui<0> &x) { return false; }
@@ -43,7 +54,7 @@ template <unsigned N> bool and_reduce(const ui<N> &x) {
 }
 
 template <typename T> struct concatenator {
-  concatenator(T &out): out(out), bit_pos(0) {}
+  concatenator(T &out): out(out), bit_pos(0) { out = 0; }
   
   concatenator operator()(const T &x) {
     out = x;
@@ -51,15 +62,16 @@ template <typename T> struct concatenator {
   }
 
   template <unsigned N> concatenator operator()(const ui<N> &x) {
-    out |= (x & ((1<<N)-1)) << bit_pos;
+    out = out << N;
+    out = out | (x & ((1<<N)-1));
     bit_pos += N;
 
     return *this;
   }
 
   concatenator operator()(const bool &x) {
-    out = out & ~(1<<bit_pos);
-    out = out | ((x ? 1 : 0) << bit_pos);
+    out = out << 1;
+    out = out | (x ? 1 : 0);
     bit_pos++;
 
     return *this;
@@ -82,6 +94,59 @@ template <> struct concatenator<bool> {
 
 template <typename T> concatenator<T> cat(T &out) {
   return concatenator<T>(out);
+}
+
+// print_hex declarations.
+struct print_hex_state_t;
+void init_print_hex(print_hex_state_t&);
+void tick_print_hex(print_hex_state_t&);
+
+struct print_hex_call_t    { bool valid; void *live;  ui<32> arg0; };
+struct print_hex_ret_t     { bool valid; void *live;               };
+struct print_hex_bb0_in_t  { bool valid; void *live;  ui<32> arg0; };
+struct print_hex_bb0_out_t { bool valid; void *live;               };
+
+struct print_hex_state_t {
+  print_hex_call_t call;
+  print_hex_ret_t ret;
+  print_hex_bb0_in_t bb0_in;
+  print_hex_bb0_out_t bb0_out;
+};
+
+void init_print_hex(print_hex_state_t &s) {
+  s.bb0_in.valid = false;
+  s.bb0_out.valid = false;
+}
+
+void tick_print_hex(print_hex_state_t &s) {
+  // arbiter for basic block0
+  // print_hex call input.
+  if (!s.bb0_in.valid && s.call.valid) {
+    s.call.valid = false;
+    s.bb0_in.valid = true;
+    s.bb0_in.live = s.call.live;
+    s.bb0_in.arg0 = s.call.arg0;
+  }
+
+  // basic block 0
+  if (s.bb0_in.valid && !s.bb0_out.valid) {
+    using namespace std;
+
+    ui<32>  val0;
+    val0 = s.bb0_in.arg0;
+    cout << "printhex> " << hex << setw(8) << setfill('0') << val0 << dec << endl;
+
+    s.ret.valid = true;
+    s.ret.live = s.bb0_in.live;
+    s.bb0_out.valid = false;
+
+    // output connections
+    if (!s.bb0_out.valid && s.bb0_in.valid) {
+      s.bb0_in.valid = false;
+      s.bb0_out.live = s.bb0_in.live;
+    }
+  }
+
 }
 
 #include "./cgen-out.incl"

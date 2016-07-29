@@ -97,8 +97,10 @@ int main(int argc, char **argv) {
   
   a.assemble_func();
   
-  print(cout, p); 
-  gen_prog(cout, p);
+  print(cout, p);
+
+  ofstream chdl_out("asm-1.chdl.cpp");
+  gen_prog(chdl_out, p);
 
   ofstream out("asm-1.sim.cpp");
   gen_prog_cpp(out, p);

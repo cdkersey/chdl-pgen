@@ -1,6 +1,5 @@
 #include <iostream>
 #include <fstream>
-
 #include <vector>
 #include <string>
 #include <sstream>
@@ -42,11 +41,12 @@ int main(int argc, char **argv) {
 
   finish_macro_env();
 
-  print(std::cout, p); 
-  gen_prog(std::cout, p);
+  print(std::cout, p);
+  std::ofstream out_chdl("macro-0.chdl.cpp");
+  gen_prog(out_chdl, p);
 
-  std::ofstream out("macro-0.sim.cpp");
-  gen_prog_cpp(out, p);
+  std::ofstream out_sim("macro-0.sim.cpp");
+  gen_prog_cpp(out_sim, p);
 
   return 0;
 }

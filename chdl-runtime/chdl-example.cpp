@@ -259,7 +259,7 @@ int main() {
   optimize();
   
   ofstream vcd("chdl-example.vcd");
-  run(vcd, 2000);
+  run(vcd, 10000);
 
   ofstream nand("chdl-example.nand");
   print_netlist(nand);

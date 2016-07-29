@@ -142,6 +142,9 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v) {
   if (!is_void_type(v.t) && v.op != VAL_PHI && v.op != VAL_SPAWN) {
     out << "    " << type_cpp(v.t) << ' ' << val_name.str() << ';' << endl;
   }
+
+  if (v.pred)
+    out << "    if (" << arg_name(&b, v.pred) << ")" << endl << "  ";
   
   if (v.op == VAL_PHI) {
     // Handled in arbiter.
@@ -176,6 +179,23 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v) {
   } else if (v.op == VAL_LD_BCAST_VALID) {
     out << "    val" << v.id << " = s.static_var_" << v.static_arg->name
         << "_valid;" << endl;
+  } else if (v.op == VAL_LD_IDX_STATIC) {
+    if (is_sram_array(v.static_arg->t) && v.args.size() == 1) {
+      out << "    val" << v.id << " = s.static_var_" << v.static_arg->name
+          << '[' << arg_name(&b, v.args[0]) << "];" << endl;
+    } else {
+      out << "    // UNSUPPORTED TYPE FOR LD_IDX_STATIC" << endl;
+    }
+  } else if (v.op == VAL_ST_IDX_STATIC) {
+    if (is_sram_array(v.static_arg->t) && v.args.size() == 2) {
+      out << "    s.static_var_" << v.static_arg->name << '['
+          << arg_name(&b, v.args[0]) << "] = " << arg_name(&b, v.args[1])
+          << ';' << endl;
+    } else {
+      out << "    // UNSUPPORTED TYPE FOR LD_IDX_STATIC" << endl;
+    }
+  } else if (v.op == VAL_ST_IDX) {
+    abort();
   } else if (v.op == VAL_ST_STATIC) {
     out << "    s.";
     if (!v.static_arg->broadcast) out << "next_";
@@ -286,7 +306,13 @@ static
 
     out << "  }" << endl;
   }
+}
 
+static bool has_side_effects(if_op o) {
+  return o == VAL_ST_STATIC ||
+         o == VAL_ST_IDX_STATIC ||
+         o == VAL_CALL ||
+         o == VAL_SPAWN;
 }
 
 static void gen_block(std::ostream &out, std::string fname, if_bb &b) {
@@ -312,11 +338,34 @@ static void gen_block(std::ostream &out, std::string fname, if_bb &b) {
     out << " && !s.bb" << b.id << "_out.valid";
   out << ") {" << endl;
 
-  out << "    std::cout << \"running " << fname << " basic block " << b.id
-      << ", live = \" << s.bb" << b.id << "_in.live << std::endl;" << endl;
+  // Generate all of the vals without side-effects
+  unsigned vals_left = b.vals.size();
+  for (auto &v : b.vals) {
+    if (!has_side_effects(v->op)) {
+      gen_val(out, fname, b, *v);
+      --vals_left;
+    }
+  }
 
-  for (auto &v : b.vals)
-    gen_val(out, fname, b, *v);
+  // Generate a (possibly skippable) set of vals with side effects.
+  if (/*vals_left*/1) { // use vals_left if we stop printing the running message
+    if (b.stall)
+      out << "    if (val" << b.stall->id << ") goto skip_stall_bb"
+          << b.id << ';' << endl;
+
+    out << "    std::cout << \"running " << fname << " basic block " << b.id
+        << ", live = \" << s.bb" << b.id << "_in.live << std::endl;" << endl;
+    
+    for (auto &v : b.vals) {
+      if (has_side_effects(v->op)) {
+        gen_val(out, fname, b, *v);
+        --vals_left;
+      }
+    }
+  
+    if (b.stall)
+      out << "    skip_stall_bb" << b.id << ":;" << endl;
+  }
 
   if (b.branch_pred) {
     out << "    s.bb" << b.id << "_out.sel = " << arg_name(&b, b.branch_pred)
@@ -379,13 +428,11 @@ static void gen_func(std::ostream &out, std::string name, if_func &f) {
   out << "void tick_" << name << "(" << name << "_state_t &s) {" << endl;
 
   for (auto &s : f.static_vars) {
-    if (!s.second.broadcast)
+    if (!s.second.broadcast && !is_sram_array(s.second.t))
       out << "  s.static_var_" << s.second.name << " = s.next_static_var_"
           << s.second.name << ';' << endl;
-    else
+    else if (s.second.broadcast)
       out << "  s.static_var_" << s.second.name << "_valid = false;" << endl;
-    out << "  std::cout << \"" << s.second.name << " = \" << s.static_var_"
-        << s.second.name << " << std::endl;" << endl;
   }
 
   vector<if_bb*> bbs;
@@ -397,8 +444,17 @@ static void gen_func(std::ostream &out, std::string name, if_func &f) {
 
   for (auto &b : bbs)
     gen_block(out, name, *b);
+
+  for (auto &s : f.static_vars) {
+    out << "  std::cout << \"" << s.second.name << " = \" << s.static_var_"
+        << s.second.name << " << std::endl;" << endl;
+    if (s.second.broadcast)
+      out << "  std::cout << \"" << s.second.name
+          << "_valid = \" << s.static_var_" << s.second.name
+          << "_valid << std::endl;" << endl;
+  }
   
-  out << '}' << endl;  
+  out << '}' << endl;
 }
 
 static void gen_func_forward_decls
@@ -471,7 +527,8 @@ static void gen_func_decls(std::ostream &out, std::string name, if_func &f) {
   for (auto &v : f.static_vars) {
     out << "  " << type_cpp(v.second.t)
         << " static_var_" << v.second.name;
-    if (!v.second.broadcast) out << ", next_static_var_" << v.second.name;
+    if (!v.second.broadcast && !is_sram_array(v.second.t))
+      out << ", next_static_var_" << v.second.name;
     out << ';' << endl;
 
     if (v.second.broadcast)
@@ -487,9 +544,6 @@ static void gen_func_decls(std::ostream &out, std::string name, if_func &f) {
           << call->id << ';' << endl;
   }
   out << "};" << endl << endl;
-
-  // Function declaration.
-  out << "void tick_" << name << "(" << name << "_state_t &s);" << endl << endl;
 }
 
 void bscotch::gen_prog_cpp(std::ostream &out, if_prog &p) {

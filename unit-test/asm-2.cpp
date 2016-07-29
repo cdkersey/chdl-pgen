@@ -1,5 +1,5 @@
 #include <iostream>
-
+#include <fstream>
 #include <vector>
 #include <string>
 #include <sstream>
@@ -79,8 +79,10 @@ int main(int argc, char **argv) {
 
   a.assemble_func();
   
-  print(cout, p); 
-  // gen_prog(cout, p);
+  print(cout, p);
+
+  // ofstream chdl_out("asm-2.chdl.cpp");
+  // gen_prog(chdl_out, p);
 
   return 0;
 }
