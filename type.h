@@ -26,10 +26,11 @@ namespace bscotch {
 
     type &add_field(std::string, const type &t);
 
-    void get_field_start_end(int &start, int &end, int idx);
-    std::string get_field_name(int idx);
-    int get_field_idx(std::string name);
-    type get_field_type(int idx);
+    void get_field_start_end(int &start, int &end, int idx) const;
+    std::string get_field_name(int idx) const;
+    int get_field_idx(std::string name) const;
+    type get_field_type(int idx) const;
+    int get_n_fields() const;
     
     std::string str(int start = 0, int &chars = *((int*)NULL));
     unsigned size(int start = 0, int &chars = *((int*)NULL)) const;

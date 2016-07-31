@@ -70,6 +70,54 @@ static if_val *find_ret(if_bb &b) {
   return NULL;
 }
 
+static int insert_type(
+  std::map<bscotch::type, int> &m, int &count, const bscotch::type &t
+)
+{
+  if (!m.count(t)) {
+    m[t] = count++;
+
+    // Recursively add component types for structs and arrays.
+    if (is_struct(t))
+      for (unsigned i = 0; i < t.get_n_fields(); ++i)
+        insert_type(m, count, t.get_field_type(i));
+
+    if (is_static_array(t) || is_sram_array(t))
+      insert_type(m, count, element_type(t));
+  }
+
+  return m[t];
+}
+
+static void catalog_types(std::map<bscotch::type, int> &m, bscotch::if_prog &p) {
+  int count = 0;
+
+  for (auto &s : p.global_vars) {
+    insert_type(m, count, s.second.t);
+  }
+  
+  for (auto &f : p.functions) {
+    insert_type(m, count, f.second.rtype);
+    for (auto &b : f.second.bbs) {
+      for (auto &v : b->vals) {
+        insert_type(m, count, v->t);
+        for (auto &a : v->args)
+          insert_type(m, count, a->t);
+      }
+    }
+  }
+}
+
+static void show_catalog(std::map<bscotch::type, int> &m) {
+  using namespace std;
+  for (auto &t : m) {
+    cout << "Type " << t.second << ": ";
+    bscotch::type u = t.first;
+    print(cout, u);
+    cout << endl;
+  }
+}
+
 template <typename T> static bool is_subset(std::set<T> &a, std::set<T> &b) {
   for (auto &x : a) if (!b.count(x)) return false;
   return true;
@@ -560,6 +608,11 @@ static void gen_func_decls(std::ostream &out, std::string name, if_func &f) {
 }
 
 void bscotch::gen_prog_cpp(std::ostream &out, if_prog &p) {
+  using namespace std;
+  map<bscotch::type, int> m;
+  catalog_types(m, p);
+  show_catalog(m);
+  
   out << "// Forward declarations." << std::endl;
   for (auto &f : p.functions)
     gen_func_forward_decls(out, f.first, f.second);

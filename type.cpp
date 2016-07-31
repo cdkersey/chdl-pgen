@@ -44,7 +44,7 @@ bool bscotch::type::operator<(const type &x) const {  return (compare(x) < 0); }
 bool bscotch::type::operator<=(const type &x) const { return (compare(x) <= 0); }
 bool bscotch::type::operator>=(const type &x) const { return (compare(x) >= 0); }
 
-void bscotch::type::get_field_start_end(int &start, int &end, int idx) {
+void bscotch::type::get_field_start_end(int &start, int &end, int idx) const {
   int l = 0, fields = 0, cur_field = 0;
   bool field_start = false;
   for (unsigned i = 0; i < type_vec.size(); ++i) {
@@ -80,19 +80,19 @@ void bscotch::type::get_field_start_end(int &start, int &end, int idx) {
   end = type_vec.size() - 1;
 }
 
-std::string bscotch::type::get_field_name(int idx) {
+std::string bscotch::type::get_field_name(int idx) const {
   int start, end;
   get_field_start_end(start, end, idx);
 
-  return field_name[start];
+  return field_name.find(start)->second;
 }
 
-int bscotch::type::get_field_idx(std::string name) {
+int bscotch::type::get_field_idx(std::string name) const {
   int l = 0, fields = 0, cur_field = 0;
   bool field_start = false;
   for (unsigned i = 0; i < type_vec.size(); ++i) {
     if (field_start) {
-      if (field_name.count(i) && field_name[i] == name)
+      if (field_name.count(i) && field_name.find(i)->second == name)
         return cur_field;
       field_start = false;
     }
@@ -119,19 +119,22 @@ int bscotch::type::get_field_idx(std::string name) {
   return -1;
 }
 
-bscotch::type bscotch::type::get_field_type(int idx) {
+bscotch::type bscotch::type::get_field_type(int idx) const {
   type r;
   
   int start, end;
   get_field_start_end(start, end, idx);
 
   for (unsigned i = start; i < end; ++i) {
-    if (field_name.count(i)) r.field_name[i - start] = field_name[i];
+    if (field_name.count(i))
+      r.field_name[i - start] = field_name.find(i)->second;
     r.type_vec.push_back(type_vec[i]);
   }
 
   return r;
 }
+
+int bscotch::type::get_n_fields() const { return type_vec[1]; }
 
 bscotch::type &bscotch::type::add_field(std::string n, const bscotch::type &t) {
   if (type_vec[0] != TYPE_STRUCT_BEGIN) {
@@ -254,20 +257,21 @@ unsigned bscotch::array_len(const bscotch::type &t) {
 
 bool bscotch::is_sram_array(const bscotch::type &t) {
   unsigned n = t.type_vec.size();
-  return t.type_vec[n - 2] == TYPE_ARRAY;
+  return t.type_vec.size() >= 2 && t.type_vec[n - 2] == TYPE_ARRAY;
 }
 
 bool bscotch::is_static_array(const type &t) {
   unsigned n = t.type_vec.size();
-  return t.type_vec[n - 2] == TYPE_STATIC_ARRAY;
+  return t.type_vec.size() >= 2 && t.type_vec[n - 2] == TYPE_STATIC_ARRAY;
 }
 
 bool bscotch::is_integer_type(const type &t) {
-  return t.type_vec[0] == TYPE_S || t.type_vec[0] == TYPE_U;
+  return t.type_vec.size() >= 1 &&
+    (t.type_vec[0] == TYPE_S || t.type_vec[0] == TYPE_U);
 }
 
 bool bscotch::is_bit_type(const type &t) {
-  return t.type_vec[0] == TYPE_BIT;
+  return t.type_vec.size() >= 1 && t.type_vec[0] == TYPE_BIT;
 }
 
 bool bscotch::is_struct(const bscotch::type &t) {
