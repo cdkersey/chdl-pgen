@@ -195,7 +195,20 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v) {
       out << "    // UNSUPPORTED TYPE FOR LD_IDX_STATIC" << endl;
     }
   } else if (v.op == VAL_ST_IDX) {
-    abort();
+    if (is_integer_type(v.t)) {
+      out << "    val" << v.id << " = st_idx(" << arg_name(&b, v.args[0])
+          << ", " << arg_name(&b, v.args[1]);
+      if (v.args.size() == 3) out << ", " << arg_name(&b, v.args[2]);
+      out << ");" << endl;
+    } else if (is_struct(v.t) && v.args[1]->op == VAL_CONST) {
+      string field_name(v.t.get_field_name(const_val(*v.args[1])));
+
+      out << "    val" << v.id << " = " << arg_name(&b, v.args[0]) << ';' << endl
+          << "    val" << v.id << '.' << field_name << " = "
+          << arg_name(&b, v.args[2]) << ';' << endl;
+    } else {
+      out << "    // UNSUPPORTED TYPE FOR ST_IDX" << endl;
+    }
   } else if (v.op == VAL_ST_STATIC) {
     out << "    s.";
     if (!v.static_arg->broadcast) out << "next_";

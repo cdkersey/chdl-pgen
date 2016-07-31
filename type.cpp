@@ -7,6 +7,43 @@
 
 #include "type.h"
 
+int bscotch::type::compare(const type &x) const {
+  using std::string;
+  
+  if (x.type_vec.size() < type_vec.size()) return -1;
+  else if (x.type_vec.size() > type_vec.size()) return 1;
+
+  // Type vec lengths are equal.
+  for (unsigned i = 0; i < type_vec.size(); ++i) {
+    if (x.type_vec[i] < type_vec[i]) return -1;
+    else if (x.type_vec[i] > type_vec[i]) return 1;
+    else if (field_name.count(i)) {
+      if (!x.field_name.count(i)) return -1;
+      else {
+        const string &xname(x.field_name.find(i)->second),
+          &name(field_name.find(i)->second);
+        if (xname.length() < name.length()) return -1;
+        else if (xname.length() > name.length()) return 1;
+        else {
+        for (unsigned j = 0; j < name.length(); ++j) {
+          if (xname[j] < name[j]) return -1;
+          else if (xname[j] > name[j]) return 1;
+        }
+        }
+      }
+    }
+  }
+
+  // Types are equal.
+  return 0;
+}
+
+bool bscotch::type::operator==(const type &x) const { return (compare(x) == 0); }
+bool bscotch::type::operator>(const type &x) const {  return (compare(x) > 0); }
+bool bscotch::type::operator<(const type &x) const {  return (compare(x) < 0); }
+bool bscotch::type::operator<=(const type &x) const { return (compare(x) <= 0); }
+bool bscotch::type::operator>=(const type &x) const { return (compare(x) >= 0); }
+
 void bscotch::type::get_field_start_end(int &start, int &end, int idx) {
   int l = 0, fields = 0, cur_field = 0;
   bool field_start = false;
@@ -374,7 +411,7 @@ std::string bscotch::type_cpp(const bscotch::type &t, int s, int &end) {
   if (i == s) oss << "void";
   
   if (&end) end = i;
-  
+
   return oss.str();
 }
 

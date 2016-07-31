@@ -20,12 +20,11 @@ void bmain() {
   static_var("a", a(u(32), 64));
 
   label("entry");
-  //var xyzzy(struct_type().add_field("b", u(8)).add_field("a", u(4))), y(u(32)),
-  //  z(u(16));
-  var y(u(32));
-  // xyzzy = lit(u(12), 0);
+  var xyzzy(struct_type().add_field("b", u(8)).add_field("a", u(4))), y(u(32)),
+    z(u(16));
+   xyzzy = lit(u(12), 0);
   y = lit(u(32), 123);
-  // z = lit(u(16), 0xabcd);
+  z = lit(u(16), 0xabcd);
 
   label("start");
   var x_val(u(32)), x_plus_1(u(32));
@@ -36,9 +35,9 @@ void bmain() {
 
   bool found = false;
   
-  // xyzzy = repl(xyzzy, "b", load(xyzzy, "b") + lit(u(8), 1));
-  // xyzzy = repl(xyzzy, "a", load(xyzzy, "a") - lit(u(4), 1));
-  // z = repl(z, lit(u(32), 0), load(xyzzy, "a"), lit(u(32), 4));
+  xyzzy = repl(xyzzy, "b", load(xyzzy, "b") + lit(u(8), 1));
+  xyzzy = repl(xyzzy, "a", load(xyzzy, "a") - lit(u(4), 1));
+  z = repl(z, lit(u(32), 0), load(xyzzy, "a"), lit(u(32), 4));
 
   store("a", load(x_val, lit(u(32), 0), 6), y);
   var a_val(u(32));

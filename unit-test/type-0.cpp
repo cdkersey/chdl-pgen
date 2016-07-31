@@ -1,8 +1,10 @@
 #include <iostream>
-
+#include <iomanip>
 #include <vector>
 #include <string>
 #include <sstream>
+#include <algorithm>
+#include <random>
 
 #include "../type.h"
 #include "../if.h"
@@ -27,6 +29,14 @@ type fp_type(unsigned e, unsigned m) {
   return t;
 }
 
+type fp2_type(unsigned e, unsigned m) {
+  type t = struct_type().
+           add_field("sign", bit()).
+           add_field("exponent", u(e)).
+           add_field("mantissa", u(m));
+  return t;
+}
+
 type cpx(unsigned e, unsigned m) {
   type t = struct_type().
              add_field("r", fp_type(e, m)).
@@ -36,6 +46,7 @@ type cpx(unsigned e, unsigned m) {
 }
 
 type bsc_float() { return fp_type(8, 23); }
+type bsc_float2() { return fp2_type(8, 23); }
 type cpx_float() { return cpx(8, 23); }
 type cpx_double() { return cpx(11, 52); }
 
@@ -56,36 +67,41 @@ void print_type(type (*f)()) {
 }
 
 int main() {
-  print_type(bit);
-  print_type(u8);
-  print_type(u16);
-  print_type(u32);
-  print_type(s8);
-  print_type(s16);
-  print_type(s32);
-  print_type(bsc_float);
-  print_type(cpx_float);
-  print_type(cpx_double);
-  print_type(cpx_double_1024);
+  vector<type> v;
+  v.push_back(bit());
+  v.push_back(bit());
+  v.push_back(u(8));
+  v.push_back(u(16));
+  v.push_back(u(4));
+  v.push_back(u(12));
+  v.push_back(u(32));
+  v.push_back(s(8));
+  v.push_back(s(16));
+  v.push_back(s(32));
+  v.push_back(bsc_float());
+  v.push_back(bsc_float2());
+  v.push_back(bsc_float2());
+  v.push_back(bsc_float());
+  v.push_back(cpx_float());
+  v.push_back(cpx_double());
+  v.push_back(cpx_double_1024());
 
-  type t = cpx_float();
-  cout << "Field 0 of cpx float: " << t.get_field_name(0) << endl;
-  cout << "Field 1 of cpx float: " << t.get_field_name(1) << endl;
-  cout << "Idx of r of cpx float: " << t.get_field_idx("r") << endl;
-  cout << "Idx of i of cpx float: " << t.get_field_idx("i") << endl;
-  cout << "Idx of s of cpx float: " << t.get_field_idx("s") << endl;
-  type itype = t.get_field_type(t.get_field_idx("i")),
-       rtype = t.get_field_type(t.get_field_idx("r"));
-  cout << "Field i of cpx float type: " << endl;
-  print(cout, itype);
-  cout << endl;
-  cout << "Field r of cpx float type: " << endl;
-  print(cout, rtype);
-  cout << endl;
-  cout << "Field e of that: " << endl;
-  type etype = rtype.get_field_type(rtype.get_field_idx("e"));
-  print(cout, etype);
-  cout << endl;
-  
+  shuffle(v.begin(), v.end(), default_random_engine(0));
+  sort(v.begin(), v.end());
+
+  cout << "Equivalence matrix: ";
+  for (unsigned i = 0; i < v.size(); ++i) {
+    for (unsigned j = 0; j < v.size(); ++j) {
+      cout << ' ' << setw(3) << v[i].compare(v[j]);
+    }
+    cout << endl;
+  }
+
+  cout << endl << "Type strings:" << endl;
+  for (auto &t : v) {
+    cout << "chdl: " << type_chdl(t) << endl
+         << "cpp: " << type_cpp(t) << endl;
+  }
+
   return 0;
 }

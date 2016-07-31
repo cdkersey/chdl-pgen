@@ -33,6 +33,14 @@ namespace bscotch {
     
     std::string str(int start = 0, int &chars = *((int*)NULL));
     unsigned size(int start = 0, int &chars = *((int*)NULL)) const;
+
+    // Full set of comparison operators for sorting, etc.
+    int compare(const type &x) const;
+    bool operator==(const type &x) const;
+    bool operator<(const type &x) const;
+    bool operator>(const type &x) const;
+    bool operator<=(const type &x) const;
+    bool operator>=(const type &x) const;
   };
 
   type element_type(type t);
