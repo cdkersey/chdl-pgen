@@ -89,7 +89,8 @@ static int insert_type(
   return m[t];
 }
 
-static void catalog_types(std::map<bscotch::type, int> &m, bscotch::if_prog &p) {
+static void catalog_types(std::map<bscotch::type, int> &m, bscotch::if_prog &p)
+{
   int count = 0;
 
   for (auto &s : p.global_vars) {
@@ -115,6 +116,101 @@ static void show_catalog(std::map<bscotch::type, int> &m) {
     bscotch::type u = t.first;
     print(cout, u);
     cout << endl;
+  }
+}
+
+static std::string type_cpp(const bscotch::type &t,
+                            std::map<bscotch::type, int> &m)
+{
+  using namespace std;
+
+  ostringstream oss;
+
+  if (is_bit_type(t)) {
+    oss << "bool";
+  } else if (is_integer_type(t)) {
+    if (t.type_vec[0] == TYPE_S) oss << "si<" << t.type_vec[1] << '>';
+    else oss << "ui<" << t.type_vec[1] << '>';
+  } else if (is_static_array(t) || is_sram_array(t)) {
+    oss << "array<" << array_len(t) << ", " << type_cpp(element_type(t), m)
+        << '>';
+  } else if (is_struct(t)) {
+    if (m.count(t)) {
+      oss << "struct" << m[t];
+    } else {
+      oss << "struct {";
+      for (unsigned i = 0; i < t.get_n_fields(); ++i) {
+        oss << type_cpp(t.get_field_type(i), m) << ' '
+            << t.get_field_name(i) << endl;
+      }
+      oss << '}';
+    }
+  }
+
+  return oss.str();
+}
+
+static void gen_printer(std::ostream &out, int id, const bscotch::type &t) {
+  using namespace std;
+
+  out << "std::ostream &operator<<(std::ostream &out, const struct"
+      << id << " &x) {" << endl;
+
+  out << "  out << '{';" << endl;
+  for (unsigned i = 0; i < t.get_n_fields(); ++i) {
+    std::string field = t.get_field_name(i);
+    out << "  out ";
+    if (i != 0) out << "<< \", \"";
+    out << "<< \"" << field << " = \" << x." << field << ';' << endl;
+  }
+  out << "  out << '}';" << endl
+      << "  return out;" << endl
+      << '}' << endl << endl;
+}
+
+static void assignment_body(std::ostream &out, const bscotch::type &t,
+                            std::map<bscotch::type, int> &m)
+{
+  using namespace std;
+  
+  int size = 0;
+  for (unsigned i = 0; i < t.get_n_fields(); ++i) {
+    out << "    " << t.get_field_name(i) << " = x >> " << size << ';' << endl;
+    size += t.get_field_type(i).size();
+  }
+  out << "    return *this;" << endl;
+}
+
+static void gen_struct_decls(std::ostream &out, std::map<bscotch::type, int> &m)
+{
+  using namespace std;
+
+  // TODO: keep track of dependencies to guarantee structs containing struct
+  // fields will be declared in the proper order.
+  
+  for (auto &t : m) {
+    if (is_struct(t.first)) {
+      out << "struct struct" << t.second << '{' << endl;
+
+      for (unsigned i = 0; i < t.first.get_n_fields(); ++i) {
+        out << "  " << type_cpp(t.first.get_field_type(i), m) << ' '
+            << t.first.get_field_name(i) << ';' << endl;
+      }
+
+      // Generate assignment operators
+      out << "  struct" << t.second << " &operator=(int x) {" << endl;
+      assignment_body(out, t.first, m);
+      out << "  }" << endl;
+
+      out << "  struct" << t.second << " &operator=(ui<"
+          << t.first.size() << "> x) {" << endl;
+      assignment_body(out, t.first, m);
+      out << "  }" << endl;
+
+      out << "};" << endl << endl;
+      
+      gen_printer(out, t.second, t.first);
+    }
   }
 }
 
@@ -182,13 +278,13 @@ static void order_blocks(std::vector<if_bb*> &out,
   }
 }
 
-static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v) {
+static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v, std::map<bscotch::type, int> &m) {
   using namespace std;
 
   ostringstream val_name;
   val_name << "val" << v.id;
   if (!is_void_type(v.t) && v.op != VAL_PHI && v.op != VAL_SPAWN) {
-    out << "    " << type_cpp(v.t) << ' ' << val_name.str() << ';' << endl;
+    out << "    " << type_cpp(v.t, m) << ' ' << val_name.str() << ';' << endl;
   }
 
   if (v.pred)
@@ -240,13 +336,13 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v) {
           << arg_name(&b, v.args[0]) << "] = " << arg_name(&b, v.args[1])
           << ';' << endl;
     } else {
-      out << "    // UNSUPPORTED TYPE FOR LD_IDX_STATIC" << endl;
+      out << "    // UNSUPPORTED TYPE FOR ST_IDX_STATIC" << endl;
     }
   } else if (v.op == VAL_ST_IDX) {
     if (is_integer_type(v.t)) {
       out << "    val" << v.id << " = st_idx(" << arg_name(&b, v.args[0])
-          << ", " << arg_name(&b, v.args[1]);
-      if (v.args.size() == 3) out << ", " << arg_name(&b, v.args[2]);
+          << ", " << arg_name(&b, v.args[1]) << ", " << arg_name(&b, v.args[2]);
+      if (v.args.size() == 4) out << ", " << arg_name(&b, v.args[3]);
       out << ");" << endl;
     } else if (is_struct(v.t) && v.args[1]->op == VAL_CONST) {
       string field_name(v.t.get_field_name(const_val(*v.args[1])));
@@ -266,12 +362,19 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v) {
       out << "    s.static_var_" << v.static_arg->name << "_valid = true;"
           << endl;
   } else if (v.op == VAL_LD_IDX) {
-    if (is_integer_type(v.t)) {
+    if (is_integer_type(v.args[0]->t)) {
       out << "    val" << v.id << " = (" << arg_name(&b, v.args[0]) << " >> "
           << arg_name(&b, v.args[1]) << ')';
       if (v.args.size() > 2)
         out << " & ((1<<" << arg_name(&b, v.args[2]) << ")-1)";
       out << ';' << endl;
+    } else if (is_struct(v.args[0]->t) && v.args[1]->op == VAL_CONST) {
+      string field_name(v.t.get_field_name(const_val(*v.args[1])));
+      out << "    val" << v.id << " = " << arg_name(&b, v.args[0]) << '.'
+          << field_name << ';' << endl;
+    } else if (is_static_array(v.args[0]->t)) {
+      out << "    val" << v.id << " = " << arg_name(&b, v.args[0]) << '['
+          << arg_name(&b, v.args[1]) << "];";
     } else {
       out << "    // UNSUPPORTED TYPE FOR LD_IDX" << endl;
     }
@@ -376,7 +479,7 @@ static bool has_side_effects(if_op o) {
          o == VAL_SPAWN;
 }
 
-static void gen_block(std::ostream &out, std::string fname, if_bb &b) {
+static void gen_block(std::ostream &out, std::string fname, if_bb &b, std::map<bscotch::type, int> &m) {
   using namespace std;
 
   if_val *call = find_call_or_spawn(b);
@@ -403,7 +506,7 @@ static void gen_block(std::ostream &out, std::string fname, if_bb &b) {
   unsigned vals_left = b.vals.size();
   for (auto &v : b.vals) {
     if (!has_side_effects(v->op)) {
-      gen_val(out, fname, b, *v);
+      gen_val(out, fname, b, *v, m);
       --vals_left;
     }
   }
@@ -419,7 +522,7 @@ static void gen_block(std::ostream &out, std::string fname, if_bb &b) {
     
     for (auto &v : b.vals) {
       if (has_side_effects(v->op)) {
-        gen_val(out, fname, b, *v);
+        gen_val(out, fname, b, *v, m);
         --vals_left;
       }
     }
@@ -467,7 +570,7 @@ static void gen_block(std::ostream &out, std::string fname, if_bb &b) {
   out << endl;
 }
 
-static void gen_func(std::ostream &out, std::string name, if_func &f) {
+static void gen_func(std::ostream &out, std::string name, if_func &f, std::map<bscotch::type, int> &m) {
   using namespace std;
 
   out << "// " << name << " definitions." << endl
@@ -504,7 +607,7 @@ static void gen_func(std::ostream &out, std::string name, if_func &f) {
     gen_arbiter(out, name, f, *b);
 
   for (auto &b : bbs)
-    gen_block(out, name, *b);
+    gen_block(out, name, *b, m);
 
   for (auto &s : f.static_vars) {
     out << "  std::cout << \"" << s.second.name << " = \" << s.static_var_"
@@ -528,7 +631,7 @@ static void gen_func_forward_decls
       << "void tick_" << name << "(" << name << "_state_t&);" << endl;
 }
 
-static void gen_func_decls(std::ostream &out, std::string name, if_func &f) {
+static void gen_func_decls(std::ostream &out, std::string name, if_func &f, std::map<bscotch::type, int> &m) {
   using namespace std;
 
   out << "// " << name << " declarations." << endl;
@@ -540,7 +643,7 @@ static void gen_func_decls(std::ostream &out, std::string name, if_func &f) {
   for (unsigned i = 0; i < f.args.size(); ++i) {
     ostringstream arg_name;
     arg_name << "arg" << i;
-    out << "  " << type_cpp(f.args[i]) << ' ' << arg_name.str() << ';' << endl;
+    out << "  " << type_cpp(f.args[i], m) << ' ' << arg_name.str() << ';' << endl;
   }
     
   out << "};" << endl << endl
@@ -548,7 +651,7 @@ static void gen_func_decls(std::ostream &out, std::string name, if_func &f) {
       << "  bool valid;" << endl
       << "  void *live;" << endl;
   if (!is_void_type(f.rtype))
-      out << "  " << type_cpp(f.rtype) << " rval;" << endl;
+    out << "  " << type_cpp(f.rtype, m) << " rval;" << endl;
   out << "};" << endl << endl;
   
   // Input and output types for every basic block.
@@ -558,13 +661,13 @@ static void gen_func_decls(std::ostream &out, std::string name, if_func &f) {
         << "  void *live;" << endl;
     if (i == 0)
       for (unsigned j = 0; j < f.args.size(); ++j)
-        out << "  " << type_cpp(f.args[j]) << " arg" << j << ';' << endl;
+        out << "  " << type_cpp(f.args[j], m) << " arg" << j << ';' << endl;
          
     for (unsigned j = 0; j < f.bbs[i]->live_in.size(); ++j) {
       if_val *v = f.bbs[i]->live_in[j];
       ostringstream var_name;
       var_name << "val" << v->id;
-      out << "  " << type_cpp(v->t) << ' ' << var_name.str() << ';' << endl;
+      out << "  " << type_cpp(v->t, m) << ' ' << var_name.str() << ';' << endl;
     }
     out << "};" << endl << endl;
 
@@ -576,7 +679,7 @@ static void gen_func_decls(std::ostream &out, std::string name, if_func &f) {
       if_val *v = f.bbs[i]->live_out[j];
       ostringstream var_name;
       var_name << "val" << v->id;
-      out << "  " << type_cpp(v->t) << ' ' << var_name.str() << ';' << endl;
+      out << "  " << type_cpp(v->t, m) << ' ' << var_name.str() << ';' << endl;
     }
     out << "};" << endl << endl;
   }
@@ -586,7 +689,7 @@ static void gen_func_decls(std::ostream &out, std::string name, if_func &f) {
       << "  " << name << "_call_t call;" << endl
       << "  " << name << "_ret_t ret;" << endl;
   for (auto &v : f.static_vars) {
-    out << "  " << type_cpp(v.second.t)
+    out << "  " << type_cpp(v.second.t, m)
         << " static_var_" << v.second.name;
     if (!v.second.broadcast && !is_sram_array(v.second.t))
       out << ", next_static_var_" << v.second.name;
@@ -611,6 +714,7 @@ void bscotch::gen_prog_cpp(std::ostream &out, if_prog &p) {
   using namespace std;
   map<bscotch::type, int> m;
   catalog_types(m, p);
+  gen_struct_decls(out, m);
   show_catalog(m);
   
   out << "// Forward declarations." << std::endl;
@@ -619,8 +723,8 @@ void bscotch::gen_prog_cpp(std::ostream &out, if_prog &p) {
   out << std::endl;
   
   for (auto &f : p.functions)
-    gen_func_decls(out, f.first, f.second);
+    gen_func_decls(out, f.first, f.second, m);
 
   for (auto &f : p.functions)
-    gen_func(out, f.first, f.second);
+    gen_func(out, f.first, f.second, m);
 }

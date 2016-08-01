@@ -52,7 +52,7 @@ void bscotch::type::get_field_start_end(int &start, int &end, int idx) const {
       if (cur_field == idx) {
         start = i;
       } else if (cur_field == idx + 1) {
-        end = i;
+        end = i - 1;
         return;
       }
       field_start = false;
@@ -266,12 +266,12 @@ bool bscotch::is_static_array(const type &t) {
 }
 
 bool bscotch::is_integer_type(const type &t) {
-  return t.type_vec.size() >= 1 &&
+  return t.type_vec.size() == 2 &&
     (t.type_vec[0] == TYPE_S || t.type_vec[0] == TYPE_U);
 }
 
 bool bscotch::is_bit_type(const type &t) {
-  return t.type_vec.size() >= 1 && t.type_vec[0] == TYPE_BIT;
+  return t.type_vec.size() == 1 && t.type_vec[0] == TYPE_BIT;
 }
 
 bool bscotch::is_struct(const bscotch::type &t) {

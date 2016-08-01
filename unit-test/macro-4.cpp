@@ -13,7 +13,31 @@
 
 using namespace bscotch;
 
+type mem_req(int b, int n, int a, int i) {
+  type t = struct_type().
+    add_field("d", sa(u(b), n)).
+    add_field("a", u(a)).
+    add_field("mask", u(n)).
+    add_field("wr", bit()).
+    add_field("llsc", bit()).
+    add_field("id", u(i));
+
+  return t;
+}
+
+type mem_resp(int b, int n, int i) {
+  type t = struct_type().
+    add_field("q", sa(u(b), n)).
+    add_field("llsc_suc", bit()).
+    add_field("wr", bit()).
+    add_field("id", u(i));
+  return t;
+}
+
 void bmain() {
+  type req(mem_req(B, N, A, I)), resp(mem_req(B, N, I));
+  
+  
   // Function bmain() : spawn 10 threads in tmain instance.
   function("bmain");
   var i(u(32));

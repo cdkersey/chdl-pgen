@@ -23,7 +23,7 @@ template <unsigned N> struct si {
 };
   
 template <unsigned N, typename T> struct array {
-  array() {}
+  array() { for (unsigned i = 0; i < N; ++i) contents[i] = 0; }
 
   array &operator=(const array &r) {
     for (unsigned i = 0; i < N; ++i)
@@ -31,9 +31,23 @@ template <unsigned N, typename T> struct array {
   }
 
   operator T*() { return contents; }
+  operator T const *() const { return contents; }
 
   T contents[N];
 };
+
+template <unsigned N, typename T>
+  std::ostream &operator<<(std::ostream &out, const array<N, T> &a)
+{
+  out << '{';
+  for (unsigned i = 0; i < N; ++i) {
+    if (i != 0) out << ", ";
+    out << a[i];
+  }
+  out << '}';
+
+  return out;
+}
 
 bool or_reduce(const ui<0> &x) { return false; }
 bool and_reduce(const ui<0> &x) { return true; }
@@ -147,6 +161,12 @@ void tick_print_hex(print_hex_state_t &s) {
     }
   }
 
+}
+
+template <typename T> T st_idx(T in, int i, int sz, unsigned x) {
+  unsigned long mask(((1<<sz)-1)<<i);
+
+  return (in & ~mask) | ((x<<i)&mask);
 }
 
 #include "./cgen-out.incl"
