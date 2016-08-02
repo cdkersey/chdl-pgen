@@ -376,6 +376,8 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v, s
           << arg_name(&b, v.args[1]) << ')';
       if (v.args.size() > 2)
         out << " & ((1<<" << arg_name(&b, v.args[2]) << ")-1)";
+      else if (is_bit_type(v.t))
+        out << " & 1";
       out << ';' << endl;
     } else if (is_struct(v.args[0]->t) && v.args[1]->op == VAL_CONST) {
       string field_name(v.t.get_field_name(const_val(*v.args[1])));

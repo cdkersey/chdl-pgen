@@ -36,7 +36,7 @@ tasks/goals in order of planned completion:
         . macro-2.cpp
         . macro-3.cpp
         . cgen-0.cpp
-        - cgen-1.cpp
+        . cgen-1.cpp
         - cgen-2.cpp
         - cgen-3.cpp
         - cgen-4.cpp

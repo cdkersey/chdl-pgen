@@ -1,5 +1,5 @@
 #include <iostream>
-
+#include <fstream>
 #include <vector>
 #include <string>
 #include <sstream>
@@ -8,6 +8,7 @@
 #include "../type.h"
 #include "../if.h"
 #include "../cgen.h"
+#include "../cgen-cpp.h"
 #include "../break_cycles.h"
 
 using namespace bscotch;
@@ -19,8 +20,8 @@ template <unsigned N> void to_vec_bool(vector<bool> &v, unsigned long x) {
     v.push_back(x & (1ul<<i));
 }
 
-type uN(int n) { return u(n); }
 type u32() { return u(32); }
+type s32() { return s(32); }
 
 
 type bit_type() {
@@ -30,14 +31,14 @@ type bit_type() {
   return t;
 }
 
-if_staticvar u32staticvar(string name, unsigned initial = 0) {
+if_staticvar s32staticvar(string name, unsigned initial = 0) {
   if_staticvar s;
 
   s.name = name;
   to_vec_bool<32>(s.initial_val, initial);
 
   s.broadcast = false;
-  s.t = u32();
+  s.t = s32();
 
   return s;
 }
@@ -66,7 +67,7 @@ void test_func(if_func &f) {
   //    %11 = add %1, %10 (u32)
   //    br bb1
 
-  f.static_vars["x"] = u32staticvar("x", 0);
+  f.static_vars["x"] = s32staticvar("x", 0);
   
   f.rtype = void_type();
 
@@ -101,7 +102,7 @@ void test_func(if_func &f) {
   f.bbs[1]->vals[0]->op = VAL_PHI;
 
   f.bbs[1]->vals.push_back(new if_val());
-  f.bbs[1]->vals[1]->t = uN(5);
+  f.bbs[1]->vals[1]->t = u(5);
   f.bbs[1]->vals[1]->op = VAL_CONST;
   to_vec_bool<5>(f.bbs[1]->vals[1]->const_val, 0);
 
@@ -194,9 +195,13 @@ int main() {
 
   test_prog(p);
 
-  // print(cout, p);
+  print(cout, p);
 
-  gen_prog(cout, p);
+  ofstream chdl_out("cgen-1.chdl.cpp");
+  gen_prog(chdl_out, p);
+
+  ofstream cpp_out("cgen-1.sim.cpp");
+  gen_prog_cpp(cpp_out, p);
   
   return 0;
 }
