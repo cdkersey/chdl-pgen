@@ -31,6 +31,7 @@ namespace bscotch {
     asm_prog &val(const type &t, val_id_t id, if_op op);
     asm_prog &val(val_id_t id, if_op op);
     asm_prog &arg(val_id_t id);
+    asm_prog &pred(val_id_t id);
     asm_prog &const_arg(long const_arg);
     asm_prog &static_arg(std::string static_name);
     asm_prog &func_arg(std::string func_name);

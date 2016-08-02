@@ -490,6 +490,10 @@ static bool has_side_effects(if_op o) {
          o == VAL_SPAWN;
 }
 
+static bool in_live_out(if_bb &b, if_val *v) {
+  return find(b.live_out.begin(), b.live_out.end(), v) != b.live_out.end();
+}
+
 static void gen_block(std::ostream &out, std::string fname, if_bb &b, std::map<bscotch::type, int> &m) {
   using namespace std;
 
@@ -558,7 +562,7 @@ static void gen_block(std::ostream &out, std::string fname, if_bb &b, std::map<b
         << endl
         << "    delete (" << fname << "_bb" << b.id << "_out_t*)s.func"
         << call->id << "->ret.live;" << endl;
-    if (!is_void_type(call->t)) {
+    if (!is_void_type(call->t) && in_live_out(b, call)) {
       out << "    s.bb" << b.id << "_out.val" << call->id << " = s.func"
           << call->id << "->ret.rval;" << endl;
       if (b.branch_pred == call)

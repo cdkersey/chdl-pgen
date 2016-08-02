@@ -82,6 +82,9 @@ namespace bscotch {
   var repl(const var &in, const var &idx, const var &d, const var &len);
   var repl(const var &in, const var &idx, const var &d, unsigned len);
   var repl(const var &in, const char *field, const var &d);
+
+  // Add a predicate to preceding store to a static variable.
+  void pred(const var &p);
   
   void function(const char *name);
   void label(const char *name);
@@ -89,6 +92,7 @@ namespace bscotch {
   argcollector<std::string> br(const var &sel);
   argcollector<var> spawn(const char *func);
   argcollector<var> call(const char *func);
+  argcollector<var> call(const char *func, const var &rval);
   argcollector<var> cat(var &r);
   
   void ret();

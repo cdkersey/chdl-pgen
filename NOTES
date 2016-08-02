@@ -5,6 +5,12 @@ tasks/goals in order of planned completion:
       output buffers for pipeline stages.
     - Nested structs are untested and dependency ordering is not enforced for
       struct declaration.
+    - Need 0-initializers for arbitrary types to avoid warnings
+      - Macro support
+      - CHDL code gen support
+      - C++ code gen support
+      - Replace all instances in current test code.
+
   - Language definition
     - <2016-06-06>
     - Function replication? <2016-06-06>
@@ -22,34 +28,7 @@ tasks/goals in order of planned completion:
   - Code gen/back end <2016-07-06-23>
     - Add support for C++ output to code generator (add separate cgen-cpp)
       <2016-07-27>
-      - Full working prototype. (depending on being run after CHDL code gen)
-        . asm-0.cpp
-        . asm-1.cpp
-          . Support for spawn
-          . Correct support for bcast variables, including block reordering.
-          . Proper stall support
-        . macro-0.cpp
-          . Write a C++ version of print_hex
-        . macro-1.cpp
-          . Add support to C++ codegen for static arrays.
-          . Add support to C++ code generator for structs.
-        . macro-2.cpp
-        . macro-3.cpp
-        . cgen-0.cpp
-        . cgen-1.cpp
-        . cgen-2.cpp
-        . cgen-3.cpp
-        . cgen-4.cpp
-        . cgen-5.cpp
-        . cgen-6.cpp
-        . cgen-7.cpp
-        . cgen-8.cpp
-        . cgen-9.cpp
-        . Simple loops and control flow
-        . Stalls
-        . Predicates
-        ~ Structs and struct members.
-        . Calls, arguments, and live value preservation
+      . Full working prototype. (depending on being run after CHDL code gen)
       - Split out phi conversion from CHDL code gen as a separate pass.
       - Split out static access id assignment as a separate pass.
     - Build a basic block level program using (arr/1val) global variables.
@@ -67,13 +46,6 @@ tasks/goals in order of planned completion:
     - Make TAPs run-time optional.
     - Make all of the tests self-report success or failure. <2016-07-10>
     - Decide whether functions need to be predicatable. <2016-07-10>
-  . C++-based Pipeline Construction Macro Assembler <2016-07-10>
-    . Write an assembler back-end.
-    . Write a macro layer.
-      . Basic macros
-        . Vars, types, and operators
-        . Constants
-      . Structs and members
   - Parser/front end <?>
     - Build a skeleton flex/bison parser <?>
     - Get simple static function to parse to AST. <?>

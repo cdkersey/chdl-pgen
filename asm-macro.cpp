@@ -114,9 +114,16 @@ var bscotch::operator/(const var &a, const var &b)
 
 // Basic unary operators
 static var un_op(bscotch::if_op op, const var &a) {
-  var r(op == VAL_OR_REDUCE || op == VAL_AND_REDUCE ? bit() : a.p->t);
+  type t;
+  if (op == VAL_OR_REDUCE || op == VAL_AND_REDUCE)
+    t = bit();
+  else if (op == VAL_RET)
+    t = void_type();
+  else
+    t = a.p->t;
+  var r(t);
 
-  asm_prog_ptr->val(a.p->t, r.p->id, op).arg(a.p->id);
+  asm_prog_ptr->val(t, r.p->id, op).arg(a.p->id);
   r.p->v = asm_prog_ptr->v;
 
   return r;
@@ -194,6 +201,15 @@ argcollector<var> bscotch::call(const char *func) {
   return argcollector<var>([](var v){ asm_prog_ptr->arg(v.p->id); });
 }
 
+argcollector<var> bscotch::call(const char *func, const var &r) {
+  type t(r.p->t);
+
+  asm_prog_ptr->val(t, r.p->id, VAL_CALL).func_arg(func);
+  r.p->v = asm_prog_ptr->v;
+   
+  return argcollector<var>([](var v){ asm_prog_ptr->arg(v.p->id); });
+}
+
 argcollector<var> bscotch::cat(var &r) {
   asm_prog_ptr->val(r.p->t, r.p->id, VAL_CONCATENATE);
   r.p->v = asm_prog_ptr->v;
@@ -245,9 +261,15 @@ var bscotch::load(const char *name, const var &idx) {
   check_static_var_existence(name);
   
   if_staticvar &v(asm_prog_ptr->f->static_vars[name]);
-  type t(is_struct(v.t) ?
-           v.t.get_field_type(var_const_val(idx)) :
-           element_type(v.t));
+  type t;
+
+  if (is_struct(v.t))
+    t = v.t.get_field_type(var_const_val(idx));
+  else if (is_sram_array(v.t) || is_static_array(v.t))
+    t = element_type(v.t);
+  else
+    t = bit();
+ 
   var r(t);
 
   asm_prog_ptr->val(t, r.p->id, VAL_LD_IDX_STATIC).
@@ -257,9 +279,15 @@ var bscotch::load(const char *name, const var &idx) {
 }
 
 var bscotch::load(const var &in, const var &idx) {
-  type t(is_struct(in.p->t) ?
-           in.p->t.get_field_type(var_const_val(idx)) :
-           element_type(in.p->t));
+  type t;
+
+  if (is_struct(in.p->t))
+    t = in.p->t.get_field_type(var_const_val(idx));
+  else if (is_sram_array(in.p->t) || is_static_array(in.p->t))
+    t = element_type(in.p->t);
+  else
+    t = bit();
+
   var r(t);
   
   asm_prog_ptr->val(t, r.p->id, VAL_LD_IDX).arg(in.p->id).arg(idx.p->id);
@@ -378,4 +406,8 @@ var bscotch::repl(const var &in, const char *field, const var &d) {
   }
 
   return repl(in, lit(u(32), field_idx), d);
+}
+
+void bscotch::pred(const var &p) {
+  asm_prog_ptr->pred(p.p->id);
 }

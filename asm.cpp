@@ -86,6 +86,12 @@ asm_prog &bscotch::asm_prog::arg(asm_prog::val_id_t id) {
   return *this;
 }
 
+asm_prog &bscotch::asm_prog::pred(asm_prog::val_id_t id) {
+  predicate[v] = id;
+
+  return *this;
+}
+
 asm_prog &bscotch::asm_prog::const_arg(long const_arg) {
   to_vec_bool(v->const_val, v->t.size(), const_arg);
 

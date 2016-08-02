@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <vector>
 #include <string>
@@ -34,8 +35,68 @@ type mem_resp(int b, int n, int i) {
   return t;
 }
 
+int clog2(unsigned long x) {
+  int add = (x & (x - 1)) ? 1 : 0;
+  
+  for (int i = 63; i != -1; --i)
+    if (x & (1ull << i)) return i + add;
+
+  return 0;
+}
+
+void scratchpad(int B, int N, int A, int I, int SZ) {
+  std::vector<std::string> sram_names;
+  for (unsigned i = 0; i < N; ++i) {
+    using namespace std;
+    ostringstream oss;
+    oss << "sram" << setw(2) << setfill('0') << i;
+    sram_names.push_back(oss.str());
+  }
+
+  function("scratchpad");
+  
+  for (unsigned i = 0; i < N; ++i)
+    static_var(sram_names[i].c_str(), a(u(B), (1<<SZ)));
+  
+  var req(mem_req(B, N, A, I)), resp(mem_resp(B, N, I)),
+      addr(u(SZ)), d(sa(u(B), N)), q(sa(u(B), N)),
+      wr(bit()), mask(u(N)), id(u(I));
+  
+  label("entry");
+  resp = lit(u(mem_resp(B, N, I).size()), 0);
+  req = arg(mem_req(B, N, A, I));
+
+  addr = load(load(req, "a"), lit(u(32), 0), lit(u(32), SZ));
+  d = load(req, "d");
+  wr = load(req, "wr");
+  mask = load(req, "mask");
+  id = load(req, "id");
+
+  q = lit(u(N*B), 0);
+
+  for (unsigned i = 0; i < N; ++i) {
+    var p(bit());
+    p = load(mask, lit(u(32), i)) & wr;
+
+    // Perform store for this byte.
+    store(sram_names[i].c_str(), addr, load(d, lit(u(32), i))); pred(p);
+
+    // Perform load for this byte.
+    q = repl(q, lit(u(clog2(N)), i), load(sram_names[i].c_str(), addr));
+  }
+
+  label("exit");
+  resp = repl(resp, "q", q);
+  resp = repl(resp, "id", id);
+  resp = repl(resp, "wr", wr);
+  
+  ret(resp);
+}
+
+const unsigned B(8), N(4), A(30), I(16), SZ(5);
+
 void bmain() {
-  type req(mem_req(B, N, A, I)), resp(mem_req(B, N, I));
+  type req(mem_req(B, N, A, I)), resp(mem_resp(B, N, I));
   
   
   // Function bmain() : spawn 10 threads in tmain instance.
@@ -51,7 +112,7 @@ void bmain() {
 
   label("loop2");
   i = i + lit(u(32), 1);
-  br(i == lit(u(32), 10))("loop")("exit");
+  br(i == lit(u(32), 100))("loop")("exit");
   
   label("exit");
   ret();
@@ -59,21 +120,51 @@ void bmain() {
 
 void tmain() {
   function("tmain");
-  static_var("x", u(32), 0);
 
-  var x(u(32)), tid(u(32));
-  
-  label("entry");
+  var tid(u(32));
+  var req(mem_req(B, N, A, I)), resp(mem_resp(B, N, I)), d(sa(u(8), 4));
+
+  label("entry");  
   tid = arg(u(32));
-  x = tid;
-  x = x + lit(u(32), 1);
+
+  br(tid < lit(u(32), 50))("do_read")("do_write");
+
+  label("do_read");
   
-  label("foo");
-  x = x - lit(u(32), 1);
-  store("x", tid);
-  br(x == lit(u(32), 0))("foo")("exit");
+  req = lit(u(mem_req(B, N, A, I).size()), 0);
+  req = repl(req, "wr", lit(bit(), 0));
+  req = repl(req, "id", load(tid, lit(u(5), 0), lit(u(6), I)));
+  req = repl(req, "a", load(tid, lit(u(5), 0), lit(u(6), A)));
+
+  br("do_call");
+
+  label("do_write");
+
+  d = lit(u(32), 0);
+  d = repl(d, lit(u(2), 0), load(tid, lit(u(5), 0), lit(u(5), 8)));
   
+  req = lit(u(mem_req(B, N, A, I).size()), 0);
+  req = repl(req, "wr", lit(bit(), 1));
+  req = repl(req, "mask", lit(u(4), 0xf));
+  req = repl(req, "d", d);
+  req = repl(req, "id", load(tid, lit(u(5), 0), lit(u(6), I)));
+  req = repl(req, "a", load(tid, lit(u(5), 0), lit(u(6), A)));
+  
+  label("do_call");
+  call("scratchpad", resp)(req);
+
+  label("after_call");
+  var i(u(8));
+  i = load(load(resp, "q"), lit(u(2), 0));
+
+  label("loop");
+  var j(u(8));
+  j = i;
+  i = i - lit(u(8), 1);
+  br(j == lit(u(8), 0) | tid < lit(u(32), 50))("loop")("exit");
+
   label("exit");
+  
   ret();
 }
 
@@ -86,6 +177,7 @@ int main(int argc, char **argv) {
 
   bmain();
   tmain();
+  scratchpad(B, N, A, I, SZ);
 
   finish_macro_env();
 

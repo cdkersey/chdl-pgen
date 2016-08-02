@@ -144,6 +144,8 @@ static void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, in
     if (is_struct(v.t)) {
       out << type_chdl(v.t) << "(Lit<" << v.t.size() << ">(0x"
           << to_hex(v.const_val) << "))";
+    } else if (is_bit_type(v.t)) {
+      out << "Lit(" << v.const_val[0] << ')';
     } else {
       out << "Lit<" << v.t.size() << ">(0x" << to_hex(v.const_val) << ')';
     }
@@ -160,10 +162,10 @@ static void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, in
     out << type_chdl(v.t) << ' ' << fname << '_' << v.id << ';' << endl
         << "  Flatten(" << fname << '_' << v.id << ") = ";
     if (v.args.size() == 1) {
-      out << aname[0];
+      out << "Flatten(" << aname[0] << ')';
     } else {
       for (unsigned i = 0; i < v.args.size(); ++i) {
-        out << "Cat(" << aname[i] << ')';
+        out << "Cat(Flatten(" << aname[i] << "))";
         if (i != v.args.size() - 1) out << '.';
       }
     }

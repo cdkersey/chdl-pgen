@@ -1,6 +1,7 @@
 CXXFLAGS ?= -std=c++11 -g -Wfatal-errors
 TESTS = cgen-0 cgen-1 cgen-2 cgen-3 cgen-4 cgen-5 cgen-6 cgen-7 cgen-8 \
-        cgen-9 type-0 asm-0 asm-1 asm-2 macro-0 macro-1 macro-2 macro-3 macro-4
+        cgen-9 type-0 asm-0 asm-1 asm-2 macro-0 macro-1 macro-2 macro-3 macro-4\
+	macro-5
 LDLIBS = ../bscotch.a
 
 tests: $(TESTS)
@@ -24,6 +25,7 @@ macro-1: macro-1.cpp
 macro-2: macro-2.cpp
 macro-3: macro-3.cpp
 macro-4: macro-4.cpp
+macro-5: macro-5.cpp
 
 clean:
 	$(RM) $(TESTS) *.sim.cpp *.chdl.cpp *~

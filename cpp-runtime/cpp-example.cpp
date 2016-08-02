@@ -19,6 +19,8 @@ template <unsigned N, typename T> struct array {
   array &operator=(const si<N> &r);
   array &operator=(const ui<N> &r);
 
+  array &operator=(unsigned long r);
+
   operator T*() { return contents; }
   operator T const *() const { return contents; }
   
@@ -67,6 +69,15 @@ template <unsigned N, typename T>
 
 template <unsigned N, typename T>
   array<N, T> &array<N, T>::operator=(const ui<N> &r)
+{
+  for (unsigned i = 0; i < N; ++i)
+    contents[i] = (r & (1ull<<i)) ? 1 : 0;
+
+  return *this;
+}
+
+template <unsigned N, typename T>
+  array<N, T> &array<N, T>::operator=(unsigned long r)
 {
   for (unsigned i = 0; i < N; ++i)
     contents[i] = (r & (1ull<<i)) ? 1 : 0;
