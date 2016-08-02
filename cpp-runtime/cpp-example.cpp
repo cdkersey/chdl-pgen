@@ -207,6 +207,12 @@ template <typename T> T st_idx(T in, int i, int sz, unsigned x) {
   return (in & ~mask) | ((x<<i)&mask);
 }
 
+template <typename T> T st_idx(T in, int i, bool x) {
+  unsigned long mask(1ul<<i);
+
+  return (in & ~mask) | (((x?1:0)<<i)&mask);
+}
+
 #include "./cgen-out.incl"
 
 int main() {

@@ -380,7 +380,7 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v, s
         out << " & 1";
       out << ';' << endl;
     } else if (is_struct(v.args[0]->t) && v.args[1]->op == VAL_CONST) {
-      string field_name(v.t.get_field_name(const_val(*v.args[1])));
+      string field_name(v.args[0]->t.get_field_name(const_val(*v.args[1])));
       out << "    val" << v.id << " = " << arg_name(&b, v.args[0]) << '.'
           << field_name << ';' << endl;
     } else if (is_static_array(v.args[0]->t)) {
@@ -557,8 +557,15 @@ static void gen_block(std::ostream &out, std::string fname, if_bb &b, std::map<b
         << b.id << "_out_t*)s.func" << call->id << "->ret.live);"
         << endl
         << "    delete (" << fname << "_bb" << b.id << "_out_t*)s.func"
-        << call->id << "->ret.live;" << endl
-        << "  }" << endl;
+        << call->id << "->ret.live;" << endl;
+    if (!is_void_type(call->t)) {
+      out << "    s.bb" << b.id << "_out.val" << call->id << " = s.func"
+          << call->id << "->ret.rval;" << endl;
+      if (b.branch_pred == call)
+        out << "    s.bb" << b.id << "_out.sel = s.func"
+            << call->id << "->ret.rval;" << endl;
+    }
+    out << "  }" << endl;
   } else {
     out << "    if (!s.bb" << b.id << "_out.valid && s.bb"
         << b.id << "_in.valid";

@@ -38,10 +38,10 @@ tasks/goals in order of planned completion:
         . cgen-0.cpp
         . cgen-1.cpp
         . cgen-2.cpp
-        - cgen-3.cpp
-        - cgen-4.cpp
-        - cgen-5.cpp
-        - cgen-6.cpp
+        . cgen-3.cpp
+        . cgen-4.cpp
+        . cgen-5.cpp
+        . cgen-6.cpp
         - cgen-7.cpp
         - cgen-8.cpp
         - cgen-9.cpp
