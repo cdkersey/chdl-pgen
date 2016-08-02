@@ -1,5 +1,5 @@
 #include <iostream>
-
+#include <fstream>
 #include <vector>
 #include <string>
 #include <sstream>
@@ -7,6 +7,7 @@
 #include "../type.h"
 #include "../if.h"
 #include "../cgen.h"
+#include "../cgen-cpp.h"
 #include "../break_cycles.h"
 #include "../asm-macro.h"
 
@@ -59,6 +60,8 @@ void tmain() {
 }
 
 int main(int argc, char **argv) {
+  using namespace std;
+  
   if_prog p;
   asm_prog a(p);
   init_macro_env(a);
@@ -68,8 +71,13 @@ int main(int argc, char **argv) {
 
   finish_macro_env();
 
-  // print(std::cout, p); 
-  gen_prog(std::cout, p);
+  print(std::cout, p);
+
+  ofstream out_chdl("macro-2.chdl.cpp");
+  gen_prog(out_chdl, p);
+
+  ofstream out_cpp("macro-2.sim.cpp");
+  gen_prog_cpp(out_cpp, p);
 
   return 0;
 }

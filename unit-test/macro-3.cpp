@@ -45,10 +45,12 @@ int main(int argc, char **argv) {
 
   finish_macro_env();
 
+  print(std::cout, p);
+
+  std::ofstream chdl_out("macro-3.chdl.cpp");
+  gen_prog(chdl_out, p);
+
   std::ofstream cpp_out("macro-3.sim.cpp");
-  
-  print(std::cout, p); 
-  gen_prog(std::cout, p);
   gen_prog_cpp(cpp_out, p);
 
   return 0;

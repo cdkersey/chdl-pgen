@@ -3,11 +3,39 @@
 #include <cstring>
 #include <iomanip>
 
+
+template <unsigned N> struct ui;
+template <unsigned N> struct si;
+
+template <unsigned N, typename T> struct array {
+  array() { for (unsigned i = 0; i < N; ++i) contents[i] = 0; }
+
+  array &operator=(const array &r) {
+    for (unsigned i = 0; i < N; ++i)
+      contents[i] = r.contents[i];
+    return *this;
+  }
+
+  array &operator=(const si<N> &r);
+  array &operator=(const ui<N> &r);
+
+  operator T*() { return contents; }
+  operator T const *() const { return contents; }
+  
+  T contents[N];
+};
+
 template <unsigned N> struct ui {
   ui(): val(0) {}
   ui(unsigned long val): val(val) {}
   operator unsigned long() const { return val; }
   ui &operator=(unsigned long x) { val = x & ((1ull<<N)-1); return *this; }
+  ui &operator=(array<N, bool> &v) {
+    val = 0;
+    for (unsigned i = 0; i < N; ++i)
+      if (v[i]) val |= (1ull<<i);
+    return *this;
+  }
   unsigned long val;
 };
 
@@ -18,23 +46,33 @@ template <unsigned N> struct si {
     if ((val>>(N-1))&1) return val | ~((1ull<<N)-1);
     else return val;
   }
-  si &operator=(long x) { val = (x & ((1ull<<N) - 1)); }
+  si &operator=(long x) { val = (x & ((1ull<<N) - 1)); return *this; }
+  si &operator=(array<N, bool> &v) {
+    val = 0;
+    for (unsigned i = 0; i < N; ++i)
+      if (v[i]) val |= (1ull<<i);
+    return *this;
+  }
   long val;
 };
+
+template <unsigned N, typename T>
+  array<N, T> &array<N, T>::operator=(const si<N> &r)
+{
+  for (unsigned i = 0; i < N; ++i)
+    contents[i] = (r & (1ull<<i)) ? 1 : 0;
   
-template <unsigned N, typename T> struct array {
-  array() { for (unsigned i = 0; i < N; ++i) contents[i] = 0; }
+  return *this;
+}
 
-  array &operator=(const array &r) {
-    for (unsigned i = 0; i < N; ++i)
-      contents[i] = r.contents[i];
-  }
+template <unsigned N, typename T>
+  array<N, T> &array<N, T>::operator=(const ui<N> &r)
+{
+  for (unsigned i = 0; i < N; ++i)
+    contents[i] = (r & (1ull<<i)) ? 1 : 0;
 
-  operator T*() { return contents; }
-  operator T const *() const { return contents; }
-
-  T contents[N];
-};
+  return *this;
+}
 
 template <unsigned N, typename T>
   std::ostream &operator<<(std::ostream &out, const array<N, T> &a)

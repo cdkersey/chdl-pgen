@@ -3,7 +3,8 @@ tasks/goals in order of planned completion:
     - The set of running blocks in the C++ simulator does not exactly match the
       CHDL simulator, presumably due to the availability of both input and
       output buffers for pipeline stages.
-    - Nested structs are untested.
+    - Nested structs are untested and dependency ordering is not enforced for
+      struct declaration.
   - Language definition
     - <2016-06-06>
     - Function replication? <2016-06-06>
@@ -29,11 +30,11 @@ tasks/goals in order of planned completion:
           . Proper stall support
         . macro-0.cpp
           . Write a C++ version of print_hex
-        - macro-1.cpp
+        . macro-1.cpp
           . Add support to C++ codegen for static arrays.
-          - Add support to C++ code generator for structs.
-        - macro-2.cpp
-        - macro-3.cpp
+          . Add support to C++ code generator for structs.
+        . macro-2.cpp
+        . macro-3.cpp
         . cgen-0.cpp
         - cgen-1.cpp
         - cgen-2.cpp

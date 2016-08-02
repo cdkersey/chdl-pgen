@@ -355,6 +355,10 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v, s
       out << "    val" << v.id << " = " << arg_name(&b, v.args[0]) << ';' << endl
           << "    val" << v.id << '.' << field_name << " = "
           << arg_name(&b, v.args[2]) << ';' << endl;
+    } else if (is_static_array(v.t) && v.args.size() == 3) {
+      out << "    val" << v.id << " = " << arg_name(&b, v.args[0]) << ';' << endl
+          << "    val" << v.id << '[' << arg_name(&b, v.args[1]) << "] = "
+          << arg_name(&b, v.args[2]) << ';' << endl;
     } else {
       out << "    // UNSUPPORTED TYPE FOR ST_IDX" << endl;
     }
