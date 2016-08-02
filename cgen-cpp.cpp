@@ -304,10 +304,15 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v, s
     out << "    val" << v.id << " = 0x" << to_hex(v.const_val) << "ull;"
         << endl;
   } else if (v.op == VAL_CONCATENATE) {
-    out << "    cat(val" << v.id << ')';
-    for (unsigned i = 0; i < v.args.size(); ++i)
-      out << '(' << arg_name(&b, v.args[i]) << ')';
-    out << ';' << endl;
+    if (v.args.size() == 1) {
+      out << "    val" << v.id << " = " << arg_name(&b, v.args[0]) << ';'
+          << endl;
+    } else {
+      out << "    cat(val" << v.id << ')';
+      for (unsigned i = 0; i < v.args.size(); ++i)
+        out << '(' << arg_name(&b, v.args[i]) << ')';
+      out << ';' << endl;
+    }
   } else if (v.op == VAL_ARG) {
     out << "    val" << v.id << " = s.bb" << b.id << "_in.arg"
         << v.static_access_id << ';' << endl;
