@@ -1,5 +1,5 @@
 #include <iostream>
-
+#include <fstream>
 #include <vector>
 #include <string>
 #include <sstream>
@@ -8,6 +8,7 @@
 #include "../type.h"
 #include "../if.h"
 #include "../cgen.h"
+#include "../cgen-cpp.h"
 #include "../break_cycles.h"
 
 using namespace bscotch;
@@ -198,9 +199,14 @@ int main() {
 
   test_prog(p);
 
-  // print(cout, p);
+  print(cout, p);
 
-  gen_prog(cout, p);
+  ofstream chdl_out("cgen-8.chdl.cpp");
+  gen_prog(chdl_out, p);
+
+  ofstream cpp_out("cgen-8.sim.cpp");
+  gen_prog_cpp(cpp_out, p);
+  
   
   return 0;
 }

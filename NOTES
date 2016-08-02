@@ -42,14 +42,14 @@ tasks/goals in order of planned completion:
         . cgen-4.cpp
         . cgen-5.cpp
         . cgen-6.cpp
-        - cgen-7.cpp
-        - cgen-8.cpp
-        - cgen-9.cpp
-        - Simple loops and control flow
-        - Stalls
-        - Predicates
-        - Structs and struct members.
-        - Calls, arguments, and live value preservation
+        . cgen-7.cpp
+        . cgen-8.cpp
+        . cgen-9.cpp
+        . Simple loops and control flow
+        . Stalls
+        . Predicates
+        ~ Structs and struct members.
+        . Calls, arguments, and live value preservation
       - Split out phi conversion from CHDL code gen as a separate pass.
       - Split out static access id assignment as a separate pass.
     - Build a basic block level program using (arr/1val) global variables.

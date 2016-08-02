@@ -1,5 +1,5 @@
 #include <iostream>
-
+#include <fstream>
 #include <vector>
 #include <string>
 #include <sstream>
@@ -8,6 +8,7 @@
 #include "../type.h"
 #include "../if.h"
 #include "../cgen.h"
+#include "../cgen-cpp.h"
 #include "../break_cycles.h"
 
 using namespace bscotch;
@@ -224,8 +225,7 @@ void test_func(if_func &f) {
   //  st_static @d2, %4
   // bb3:
   //  st_static @d3, %4
-  //  %34 = const #0 (void)
-  //  %35 = ret %34 (void)
+  //  %34 = ret (void)
   f.static_vars["d1"] = u3bcastvar("d1");
   f.static_vars["d2"] = u3bcastvar("d2");
   f.static_vars["d3"] = u3bcastvar("d3");
@@ -436,12 +436,7 @@ void test_func(if_func &f) {
 
   f.bbs[3]->vals.push_back(new if_val());
   f.bbs[3]->vals[1]->t = void_type();
-  f.bbs[3]->vals[1]->op = VAL_CONST;
-
-  f.bbs[3]->vals.push_back(new if_val());
-  f.bbs[3]->vals[2]->t = void_type();
-  f.bbs[3]->vals[2]->op = VAL_RET;
-  f.bbs[3]->vals[2]->args.push_back(f.bbs[3]->vals[1]);
+  f.bbs[3]->vals[1]->op = VAL_RET;
 
   f.bbs[0]->live_out.push_back(f.bbs[0]->vals[4]);
   f.bbs[1]->live_out.push_back(f.bbs[0]->vals[4]);
@@ -474,9 +469,13 @@ int main() {
 
   test_prog(p);
 
-  // print(cout, p);
+  print(cout, p);
 
-  gen_prog(cout, p);
+  ofstream chdl_out("cgen-9.chdl.cpp");
+  gen_prog(chdl_out, p);
+
+  ofstream cpp_out("cgen-9.sim.cpp");
+  gen_prog_cpp(cpp_out, p);
   
   return 0;
 }
