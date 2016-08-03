@@ -85,7 +85,7 @@ void scratchpad(int B, int N, int A, int I, int SZ) {
     q = repl(q, lit(u(clog2(N)), i), load(sram_names[i].c_str(), addr));
   }
 
-  label("exit");
+  label("exit_scratchpad");
   resp = repl(resp, "q", q);
   resp = repl(resp, "id", id);
   resp = repl(resp, "wr", wr);
@@ -126,7 +126,7 @@ void tmain() {
 
   label("entry");  
   tid = arg(u(32));
-
+  spawn("print_hex")(tid);
   br(tid < lit(u(32), 50))("do_read")("do_write");
 
   label("do_read");

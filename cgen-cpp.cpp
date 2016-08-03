@@ -283,7 +283,9 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v, s
 
   ostringstream val_name;
   val_name << "val" << v.id;
-  if (!is_void_type(v.t) && v.op != VAL_PHI && v.op != VAL_SPAWN) {
+  if (!is_void_type(v.t) && v.op != VAL_PHI &&
+      v.op != VAL_SPAWN && v.op != VAL_CALL)
+  {
     out << "    " << type_cpp(v.t, m) << ' ' << val_name.str() << ';' << endl;
   }
 
@@ -318,10 +320,9 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v, s
         << v.static_access_id << ';' << endl;
   } else if (v.op == VAL_RET) {
     if (v.args.size() && !is_void_type(v.args[0]->t))
-      out << "    s.ret.rval = " << arg_name(&b, v.args[0]) << ';';
+      out << "    s.ret.rval = " << arg_name(&b, v.args[0]) << ';' << endl;
     out << "    s.ret.valid = true;" << endl
-        << "    s.ret.live = s.bb" << b.id << "_in.live;" << endl
-        << "    s.bb" << b.id << "_out.valid = false;" << endl;
+        << "    s.ret.live = s.bb" << b.id << "_in.live;" << endl;
   } else if (v.op == VAL_LD_STATIC) {
     out << "    val" << v.id << " = s.static_var_" << v.static_arg->name << ';'
         << endl;
@@ -385,7 +386,7 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v, s
           << field_name << ';' << endl;
     } else if (is_static_array(v.args[0]->t)) {
       out << "    val" << v.id << " = " << arg_name(&b, v.args[0]) << '['
-          << arg_name(&b, v.args[1]) << "];";
+          << arg_name(&b, v.args[1]) << "];" << endl;
     } else {
       out << "    // UNSUPPORTED TYPE FOR LD_IDX" << endl;
     }
@@ -404,6 +405,8 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v, s
           << "    ((" << fname << "_bb" << b.id << "_out_t*)s.func"
           << v.id << "->call.live)->live = s.bb" << b.id << "_in.live;" << endl;
       for (auto &w : b.live_out) {
+        if (w == &v) continue;
+ 
         out << "    ((" << fname << "_bb" << b.id << "_out_t*)s.func"
             << v.id << "->call.live)->val" << w->id
             << " = " << arg_name(&b, w) << ';' << endl;
@@ -420,7 +423,9 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v, s
     }
   }
 
-  if (!is_void_type(v.t) && v.op != VAL_PHI && v.op != VAL_SPAWN) {
+  if (!is_void_type(v.t) && v.op != VAL_PHI &&
+      v.op != VAL_SPAWN && v.op != VAL_CALL)
+  {
     out << "    std::cout << \"" << fname << v.id << " = \" << "
         << val_name.str() << " << std::endl;" << endl;
   }
@@ -498,6 +503,7 @@ static void gen_block(std::ostream &out, std::string fname, if_bb &b, std::map<b
   using namespace std;
 
   if_val *call = find_call_or_spawn(b);
+  bool ret = (b.suc.size() == 0);
 
   if (call) {
     out << "  tick_" << call->func_arg << "(*s.func"
@@ -512,6 +518,8 @@ static void gen_block(std::ostream &out, std::string fname, if_bb &b, std::map<b
       << "  if (s.bb" << b.id << "_in.valid";
   if (call) {
     out << " && !s.func" << call->id << "->call.valid";
+  } else if (ret) {
+    out << " && !s.ret.valid";
   }
   if (!call || call->op == VAL_SPAWN)
     out << " && !s.bb" << b.id << "_out.valid";
@@ -571,10 +579,9 @@ static void gen_block(std::ostream &out, std::string fname, if_bb &b, std::map<b
     }
     out << "  }" << endl;
   } else {
-    out << "    if (!s.bb" << b.id << "_out.valid && s.bb"
-        << b.id << "_in.valid";
-    if (b.stall) out << " && !" << arg_name(&b, b.stall);
-    out << ") {" << endl;
+    if (b.stall) out << "if (!" << arg_name(&b, b.stall) << ')';
+    out << "    {" << endl;
+    
     if (!find_ret(b))
       out << "      s.bb" << b.id << "_out.valid = true;" << endl;
     out << "      s.bb" << b.id << "_in.valid = false;" << endl
