@@ -303,10 +303,6 @@ static void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, in
           << "_args, \"contents\"), \"live\") = "
           << fname << "_bb" << bbidx << "_live;" << endl;
 
-    bool rval_live = false;
-    for (auto &p : b.live_out)
-      if (p == &v) rval_live = true;
-
     out << "  " << v.func_arg << '(' << fname << "_call_" << v.id << "_ret, "
         << fname << "_call_" << v.id << "_args);" << endl;
 
@@ -509,6 +505,11 @@ static void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb
   using std::endl;
   using std::map;
 
+  // Find call if it exists
+  if_val *call = NULL;
+  for (auto &v : b.vals)
+    if (v->op == VAL_CALL || v->op == VAL_SPAWN) call = v;
+  
   out << "  // " << fname << " BB " << idx << " body" << endl;
   out << "  hierarchy_enter(\"" << fname << "_bb" << idx << "\");" << endl;  
   int n_suc = b.suc.size(), n_pred = b.pred.size();
@@ -588,21 +589,21 @@ static void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb
   out << ';' << endl;
   
   // Connect preubuf outputs
-  if (b.vals.size() >= 1 && (*b.vals.rbegin())->op == VAL_CALL) {
+  if (call && call->op == VAL_CALL) {
     out << "  " << output_signal(fname, idx, "valid") << " = _("
-        << fname << "_call_" << (*b.vals.rbegin())->id << "_ret, \"valid\")";
+        << fname << "_call_" << call->id << "_ret, \"valid\")";
     if (b.stall) out << " && !" << val_name(fname, idx, b, *b.stall);
     out << ';' << endl
-        << "  _(" << fname << "_call_" << (*b.vals.rbegin())->id
+        << "  _(" << fname << "_call_" << call->id
         << "_ret, \"ready\") = " << output_signal(fname, idx, "ready")
         << ';' << endl
         << "  " << input_signal(fname, idx, "ready") << " = _("
-        << fname << "_call_" << (*b.vals.rbegin())->id << "_args, \"ready\")";
+        << fname << "_call_" << call->id << "_args, \"ready\")";
     if (b.stall) out << " && !" << val_name(fname, idx, b, *b.stall);
     print_spawn_readys(out, fname, b);
     out << ';' << endl;
     out << output_signal(fname, idx, "contents") << " = _(_("
-        << fname << "_call_" << (*b.vals.rbegin())->id
+        << fname << "_call_" << call->id
         << "_ret, \"contents\"), \"live\");" << endl;
   } else {
     out << "  " << output_signal(fname, idx, "valid") << " = "
@@ -619,6 +620,8 @@ static void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb
 
   // Connections of live values to output.
   for (auto &x : b.live_out) {
+    if (x == call) continue;
+
     std::ostringstream oss;
     oss << "val" << x->id;
     out << "  " << output_csignal(fname, idx, oss.str()) << " = "
@@ -631,10 +634,17 @@ static void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb
       << endl;
 
   // Instantiate buffer/switch
-  if (b.vals.size() == 0 || (*b.vals.rbegin())->op != VAL_CALL) {
+  if (!call || call->op == VAL_SPAWN) {
     out << "  _(" << fname << "_bb" << idx << "_out_prebuf, \"contents\") = "
         << fname << "_bb" << idx << "_live;" << endl;
-  }
+  } else if (call && call->op == VAL_CALL) {
+    bool call_live(
+      find(b.live_out.begin(), b.live_out.end(), call) != b.live_out.end()
+    );
+
+    if (call_live)
+      out << "  _(_(" << fname << "_bb" << idx << "_out_prebuf, \"contents\"), \"val" << call->id << "\") = " << fname << '_' << call->id << ';' << endl;
+  } 
 
   if (b.suc.size() == 1) {
     out << "  BBOutputBuf(" << fname << "_bb" << idx << "_out, " << fname
