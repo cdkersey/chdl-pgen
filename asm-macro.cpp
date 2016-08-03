@@ -411,3 +411,14 @@ var bscotch::repl(const var &in, const char *field, const var &d) {
 void bscotch::pred(const var &p) {
   asm_prog_ptr->pred(p.p->id);
 }
+
+bscotch::concatenator bscotch::cat(const var &v) {
+  asm_prog_ptr->val(v.p->t, v.p->id, VAL_CONCATENATE);
+  return concatenator(asm_prog_ptr->v);
+}
+
+bscotch::concatenator &bscotch::concatenator::operator()(const var &x) {
+  asm_prog_ptr->arg_ids[v].push_back(x.p->id);
+  
+  return *this;
+}

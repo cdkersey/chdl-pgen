@@ -1,5 +1,6 @@
 tasks/goals in order of planned completion:
   - Bugs!
+    - macro-4.cpp test does not function correctly
     - The set of running blocks in the C++ simulator does not exactly match the
       CHDL simulator, presumably due to the availability of both input and
       output buffers for pipeline stages.

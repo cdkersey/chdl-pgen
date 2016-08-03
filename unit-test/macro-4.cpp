@@ -156,13 +156,22 @@ void tmain() {
   label("after_call");
   var i(u(8));
   i = load(load(resp, "q"), lit(u(2), 0));
+  var printval_1(u(32)), printval_2(u(32));
+  cat(printval_1)(lit(u(32 - I), 0))(load(resp, "id"));
+  cat(printval_2)(lit(u(24), 0))(i);
+  br(tid < lit(u(32), 50))("first_print")("exit");
+  
+  label("first_print");
+  spawn("print_hex2")(printval_1)(printval_2);
 
+  #if 1
   label("loop");
   var j(u(8));
   j = i;
   i = i - lit(u(8), 1);
-  br(j == lit(u(8), 0) | tid < lit(u(32), 50))("loop")("exit");
-
+  br(j == lit(u(8), 0))("loop")("exit");
+  #endif
+  
   label("exit");
   
   ret();

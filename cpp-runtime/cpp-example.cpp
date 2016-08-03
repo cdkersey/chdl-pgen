@@ -209,7 +209,59 @@ void tick_print_hex(print_hex_state_t &s) {
       s.bb0_out.live = s.bb0_in.live;
     }
   }
+}
 
+struct print_hex2_state_t;
+void init_print_hex2(print_hex2_state_t&);
+void tick_print_hex2(print_hex2_state_t&);
+
+struct print_hex2_call_t    { bool valid; void *live;  ui<32> arg0;  ui<32> arg1; };
+struct print_hex2_ret_t     { bool valid; void *live;               };
+struct print_hex2_bb0_in_t  { bool valid; void *live;  ui<32> arg0;  ui<32> arg1; };
+struct print_hex2_bb0_out_t { bool valid; void *live;               };
+
+struct print_hex2_state_t {
+  print_hex2_call_t call;
+  print_hex2_ret_t ret;
+  print_hex2_bb0_in_t bb0_in;
+  print_hex2_bb0_out_t bb0_out;
+};
+
+void init_print_hex2(print_hex2_state_t &s) {
+  s.bb0_in.valid = false;
+  s.bb0_out.valid = false;
+}
+
+void tick_print_hex2(print_hex2_state_t &s) {
+  // arbiter for basic block0
+  // print_hex call input.
+  if (!s.bb0_in.valid && s.call.valid) {
+    s.call.valid = false;
+    s.bb0_in.valid = true;
+    s.bb0_in.live = s.call.live;
+    s.bb0_in.arg0 = s.call.arg0;
+    s.bb0_in.arg1 = s.call.arg1;
+  }
+
+  // basic block 0
+  if (s.bb0_in.valid && !s.bb0_out.valid) {
+    using namespace std;
+
+    ui<32>  val0, val1;
+    val0 = s.bb0_in.arg0;
+    val1 = s.bb0_in.arg1;
+    cout << "printhex> " << hex << setw(8) << setfill('0') << val0 << ' ' << setw(8) << setfill('0') << val1 << dec << endl;
+
+    s.ret.valid = true;
+    s.ret.live = s.bb0_in.live;
+    s.bb0_out.valid = false;
+
+    // output connections
+    if (!s.bb0_out.valid && s.bb0_in.valid) {
+      s.bb0_in.valid = false;
+      s.bb0_out.live = s.bb0_in.live;
+    }
+  }
 }
 
 template <typename T> T st_idx(T in, int i, int sz, unsigned x) {

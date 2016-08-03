@@ -83,6 +83,14 @@ namespace bscotch {
   var repl(const var &in, const var &idx, const var &d, unsigned len);
   var repl(const var &in, const char *field, const var &d);
 
+  struct concatenator {
+    concatenator(if_val *v): v(v) {}
+    concatenator &operator()(const var &v);
+    if_val *v;
+  };
+
+  concatenator cat(const var &dest);
+  
   // Add a predicate to preceding store to a static variable.
   void pred(const var &p);
   
