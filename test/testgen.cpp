@@ -23,14 +23,14 @@ void bscotch::test_registrator::run_tests() {
     if_prog p;
     t->run(&p);
 
-    std::ofstream asm_out(t->name + ".s");
-    print(asm_out, p);
-
     std::ofstream chdl_out(t->name + ".chdl.cpp");
     gen_prog(chdl_out, p);
 
     std::ofstream cpp_out(t->name + ".sim.cpp");
     gen_prog_cpp(cpp_out, p);
+
+    std::ofstream asm_out(t->name + ".s");
+    print(asm_out, p);
   }
 }
 

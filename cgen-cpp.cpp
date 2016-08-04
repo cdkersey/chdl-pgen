@@ -591,7 +591,7 @@ static void gen_block(std::ostream &out, std::string fname, if_bb &b, std::map<b
 
 static void gen_func(std::ostream &out, std::string name, if_func &f, std::map<bscotch::type, int> &m) {
   using namespace std;
-
+  
   out << "// " << name << " definitions." << endl
       << "void init_" << name << '(' << name << "_state_t &s) {" << endl;
   for (auto &b : f.bbs) {
@@ -734,7 +734,7 @@ void bscotch::gen_prog_cpp(std::ostream &out, if_prog &p) {
   map<bscotch::type, int> m;
   catalog_types(m, p);
   gen_struct_decls(out, m);
-  
+
   out << "// Forward declarations." << std::endl;
   for (auto &f : p.functions)
     gen_func_forward_decls(out, f.first, f.second);

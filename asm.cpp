@@ -11,6 +11,7 @@
 #include "asm.h"
 #include "break_cycles.h"
 #include "prevent_deadlock.h"
+#include "convert_phis.h"
 
 using namespace std;
 using namespace bscotch;
@@ -226,6 +227,23 @@ static void ssa_liveness_analysis(if_func *f) {
 }
 
 void bscotch::asm_prog::assemble_func() {
+  // Assign static access IDs
+  for (auto &s : f->static_vars) {
+    unsigned count = 0;
+    for (auto &b : f->bbs)
+      for (auto &v : b->vals)
+        if (v->static_arg == &s.second)
+          if (v->op == VAL_LD_STATIC || v->op == VAL_LD_IDX_STATIC)
+            v->static_access_id = count++;
+  }
+
+  for (auto &b : f->bbs) {
+    unsigned count = 0;
+    for (auto &v : b->vals)
+      if (v->op == VAL_ARG)
+        v->static_access_id = count++;
+  }
+  
   // Reverse id_to_val for quick lookup.
   map<if_val*, val_id_t> val_to_id;
   for (auto &x : id_to_val)
@@ -428,6 +446,9 @@ void bscotch::asm_prog::assemble_func() {
 
   // Re-order block predecessor priorities to avoid deadlocks.
   prevent_deadlock(*f);
+
+  // Make remove phi inputs from live_in and replace with phis themselves.
+  convert_phis(*f);
   
   // Prevent repeat assembly.
   f = NULL;

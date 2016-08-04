@@ -658,19 +658,6 @@ static void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb
   out << "  hierarchy_exit();" << endl << endl;
 }
 
-static void live_in_phi_adj(if_bb &b) {
-  for (auto &v : b.vals) {
-    if (v->op == VAL_PHI) {
-      for (auto &a : v->args) {
-        auto it = find(b.live_in.begin(), b.live_in.end(), a);
-        if (it != b.live_in.end())
-          b.live_in.erase(it);
-      }
-      b.live_in.push_back(v);
-    }
-  }
-}
-
 unsigned count_loads(if_func &f, if_staticvar &s) {
   unsigned count = 0;
 
@@ -683,6 +670,7 @@ unsigned count_loads(if_func &f, if_staticvar &s) {
   return count;
 }
 
+#if 0
 unsigned count_args(if_func &f) {
   unsigned count = 0;
   for (auto &b : f.bbs)
@@ -692,6 +680,7 @@ unsigned count_args(if_func &f) {
 
   return count;
 }
+#endif
 
 unsigned count_stores(if_func &f, if_staticvar &s) {
   unsigned count = 0;
@@ -734,7 +723,7 @@ static void bscotch::gen_func(std::ostream &out, std::string name, if_func &f) {
       << '(' << name << "_ret_t<OPAQUE> &" << name << "_ret, "
       << name << "_call_t<OPAQUE> &" << name << "_call) {" << endl;
 
-  count_args(f);
+  // count_args(f);
   
   for (auto &s : f.static_vars) {
     unsigned loads = count_loads(f, s.second),
@@ -742,11 +731,9 @@ static void bscotch::gen_func(std::ostream &out, std::string name, if_func &f) {
     gen_static_var(out, s.second, name, loads, stores, false);
   }
   out << endl;
-  
-  for (unsigned i = 0; i < f.bbs.size(); ++i) {
-    live_in_phi_adj(*f.bbs[i]);
+
+  for (unsigned i = 0; i < f.bbs.size(); ++i)
     gen_bb_decls(out, name, i, *f.bbs[i], i == 0);
-  }
 
   // Connect args to first basic block's input
   out << "  _(_(" << name << "_bb0_arb_in[0], \"contents\"), \"args\") = _("
