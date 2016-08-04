@@ -109,16 +109,6 @@ static void catalog_types(std::map<bscotch::type, int> &m, bscotch::if_prog &p)
   }
 }
 
-static void show_catalog(std::map<bscotch::type, int> &m) {
-  using namespace std;
-  for (auto &t : m) {
-    cout << "Type " << t.second << ": ";
-    bscotch::type u = t.first;
-    print(cout, u);
-    cout << endl;
-  }
-}
-
 static std::string type_cpp(const bscotch::type &t,
                             std::map<bscotch::type, int> &m)
 {
@@ -744,7 +734,6 @@ void bscotch::gen_prog_cpp(std::ostream &out, if_prog &p) {
   map<bscotch::type, int> m;
   catalog_types(m, p);
   gen_struct_decls(out, m);
-  show_catalog(m);
   
   out << "// Forward declarations." << std::endl;
   for (auto &f : p.functions)
