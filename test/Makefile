@@ -1,8 +1,8 @@
 CXXFLAGS ?= -std=c++11 -g -Wfatal-errors
 TEST_OBJS = asm-0.o asm-1.o asm-2.o macro-0.o macro-1.o macro-2.o macro-3.o \
             macro-4.o macro-5.o
-
-LDLIBS = ../bscotch.a
+LDFLAGS = -L../
+LDLIBS = -lbscotch
 
 testgen: testgen.o $(TEST_OBJS)
 	$(CXX) $(LDFLAGS) -o testgen testgen.o $(TEST_OBJS) $(LDLIBS)
