@@ -5,6 +5,8 @@
 #include <string>
 #include <sstream>
 
+#include "testgen.h"
+
 #include "../type.h"
 #include "../if.h"
 #include "../cgen.h"
@@ -14,9 +16,9 @@
 using namespace bscotch;
 using namespace std;
 
-int main(int argc, char **argv) {
+static void asm0(if_prog *pp) {
   // Initialize the assembler.
-  if_prog p;
+  if_prog &p(*pp);
   asm_prog a(p);
   
   // The assembly program.
@@ -31,11 +33,6 @@ int main(int argc, char **argv) {
   a.br().target("entry");
 
   a.assemble_func();
-  
-  print(cout, p);
-  gen_prog(cout, p);
-  ofstream out("asm-0.sim.cpp");
-  gen_prog_cpp(out, p);
-
-  return 0;
 }
+
+REGISTER_TEST(asm0, asm0);

@@ -12,12 +12,14 @@
 #include "../break_cycles.h"
 #include "../asm.h"
 
+#include "testgen.h"
+
 using namespace bscotch;
 using namespace std;
 
-int main(int argc, char **argv) {
+void asm1(if_prog *pp) {
   // Initialize the assembler.
-  if_prog p;
+  if_prog &p(*pp);
   asm_prog a(p);
   
   // The assembly program.
@@ -96,14 +98,6 @@ int main(int argc, char **argv) {
   a.val(void_type(), 35, VAL_RET);
   
   a.assemble_func();
-  
-  print(cout, p);
-
-  ofstream chdl_out("asm-1.chdl.cpp");
-  gen_prog(chdl_out, p);
-
-  ofstream out("asm-1.sim.cpp");
-  gen_prog_cpp(out, p);
-
-  return 0;
 }
+
+REGISTER_TEST(asm1, asm1);

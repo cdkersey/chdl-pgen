@@ -12,9 +12,11 @@
 #include "../break_cycles.h"
 #include "../asm-macro.h"
 
+#include "testgen.h"
+
 using namespace bscotch;
 
-type mem_req(int b, int n, int a, int i) {
+static type mem_req(int b, int n, int a, int i) {
   type t = struct_type().
     add_field("d", sa(u(b), n)).
     add_field("a", u(a)).
@@ -26,7 +28,7 @@ type mem_req(int b, int n, int a, int i) {
   return t;
 }
 
-type mem_resp(int b, int n, int i) {
+static type mem_resp(int b, int n, int i) {
   type t = struct_type().
     add_field("q", sa(u(b), n)).
     add_field("llsc_suc", bit()).
@@ -35,7 +37,7 @@ type mem_resp(int b, int n, int i) {
   return t;
 }
 
-int clog2(unsigned long x) {
+static int clog2(unsigned long x) {
   int add = (x & (x - 1)) ? 1 : 0;
   
   for (int i = 63; i != -1; --i)
@@ -44,7 +46,7 @@ int clog2(unsigned long x) {
   return 0;
 }
 
-void scratchpad(int B, int N, int A, int I, int SZ) {
+static void scratchpad(int B, int N, int A, int I, int SZ) {
   std::vector<std::string> sram_names;
   for (unsigned i = 0; i < N; ++i) {
     using namespace std;
@@ -95,7 +97,7 @@ void scratchpad(int B, int N, int A, int I, int SZ) {
 
 const unsigned B(8), N(4), A(30), I(16), SZ(5);
 
-void bmain() {
+static void bmain() {
   type req(mem_req(B, N, A, I)), resp(mem_resp(B, N, I));
   
   
@@ -118,7 +120,7 @@ void bmain() {
   ret();
 }
 
-void tmain() {
+static void tmain() {
   function("tmain");
 
   var tid(u(32));
@@ -177,10 +179,10 @@ void tmain() {
   ret();
 }
 
-int main(int argc, char **argv) {
+void macro4(if_prog *pp) {
   using namespace std;
 
-  if_prog p;
+  if_prog &p(*pp);
   asm_prog a(p);
   init_macro_env(a);
 
@@ -189,14 +191,6 @@ int main(int argc, char **argv) {
   scratchpad(B, N, A, I, SZ);
 
   finish_macro_env();
-
-  print(std::cout, p);
-
-  ofstream chdl_out("macro-4.chdl.cpp");
-  gen_prog(chdl_out, p);
-
-  ofstream cpp_out("macro-4.sim.cpp");
-  gen_prog_cpp(cpp_out, p);
-
-  return 0;
 }
+
+REGISTER_TEST(macro4, macro4);

@@ -66,7 +66,7 @@ void bscotch::print(std::ostream &out, bscotch::if_val &v) {
     }
   }
 
-  cout << " (";
+  out << " (";
   print(out, v.t);
   out << ')' << endl;
 }

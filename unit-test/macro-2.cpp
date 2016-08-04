@@ -11,9 +11,11 @@
 #include "../break_cycles.h"
 #include "../asm-macro.h"
 
+#include "testgen.h"
+
 using namespace bscotch;
 
-void bmain() {
+static void bmain() {
   // Function bmain() : spawn 10 threads in tmain instance.
   function("bmain");
   var i(u(32));
@@ -33,7 +35,7 @@ void bmain() {
   ret();
 }
 
-void tmain() {
+static void tmain() {
   function("tmain");
   label("foo");
   var i(u(32)), j(u(32));
@@ -59,10 +61,8 @@ void tmain() {
   ret();
 }
 
-int main(int argc, char **argv) {
-  using namespace std;
-  
-  if_prog p;
+void macro2(if_prog *pp) {
+  if_prog &p(*pp);
   asm_prog a(p);
   init_macro_env(a);
 
@@ -70,14 +70,6 @@ int main(int argc, char **argv) {
   tmain();
 
   finish_macro_env();
-
-  print(std::cout, p);
-
-  ofstream out_chdl("macro-2.chdl.cpp");
-  gen_prog(out_chdl, p);
-
-  ofstream out_cpp("macro-2.sim.cpp");
-  gen_prog_cpp(out_cpp, p);
-
-  return 0;
 }
+
+REGISTER_TEST(macro2, macro2);

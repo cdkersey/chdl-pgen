@@ -11,9 +11,11 @@
 #include "../break_cycles.h"
 #include "../asm-macro.h"
 
+#include "testgen.h"
+
 using namespace bscotch;
 
-void bmain() {
+static void bmain() {
   function("bmain");
 
   static_var("x", u(32), 0);
@@ -47,22 +49,14 @@ void bmain() {
   br("start");
 }
 
-int main(int argc, char **argv) {
-  if_prog p;
+void macro1(if_prog *pp) {
+  if_prog &p(*pp);
   asm_prog a(p);
   init_macro_env(a);
 
   bmain();
   
   finish_macro_env();
-
-  print(std::cout, p);
-
-  std::ofstream out_chdl("macro-1.chdl.cpp");
-  gen_prog(out_chdl, p);
-
-  std::ofstream out_sim("macro-1.sim.cpp");
-  gen_prog_cpp(out_sim, p);
-
-  return 0;
 }
+
+REGISTER_TEST(macro1, macro1);

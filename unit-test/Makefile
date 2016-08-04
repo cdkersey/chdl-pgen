@@ -1,31 +1,22 @@
 CXXFLAGS ?= -std=c++11 -g -Wfatal-errors
-TESTS = cgen-0 cgen-1 cgen-2 cgen-3 cgen-4 cgen-5 cgen-6 cgen-7 cgen-8 \
-        cgen-9 type-0 asm-0 asm-1 asm-2 macro-0 macro-1 macro-2 macro-3 macro-4\
-	macro-5
+TEST_OBJS = asm-0.o asm-1.o asm-2.o macro-0.o macro-1.o macro-2.o macro-3.o \
+            macro-4.o macro-5.o
+
 LDLIBS = ../bscotch.a
 
-tests: $(TESTS)
+testgen: testgen.o $(TEST_OBJS)
+	$(CXX) $(LDFLAGS) -o testgen testgen.o $(TEST_OBJS) $(LDLIBS)
 
-type-0: type-0.cpp
-cgen-0: cgen-0.cpp
-cgen-1: cgen-1.cpp
-cgen-2: cgen-2.cpp
-cgen-3: cgen-3.cpp
-cgen-4: cgen-4.cpp
-cgen-5: cgen-5.cpp
-cgen-6: cgen-6.cpp
-cgen-7: cgen-7.cpp
-cgen-8: cgen-8.cpp
-cgen-9: cgen-9.cpp
-asm-0: asm-0.cpp
-asm-1: asm-1.cpp
-asm-2: asm-2.cpp
-macro-0: macro-0.cpp
-macro-1: macro-1.cpp
-macro-2: macro-2.cpp
-macro-3: macro-3.cpp
-macro-4: macro-4.cpp
-macro-5: macro-5.cpp
+testgen.o : testgen.cpp
+asm-0.o : asm-0.cpp
+asm-1.o : asm-1.cpp
+asm-2.o : asm-2.cpp
+macro-0.o : macro-0.cpp
+macro-1.o : macro-1.cpp
+macro-2.o : macro-2.cpp
+macro-3.o : macro-3.cpp
+macro-4.o : macro-4.cpp
+macro-5.o : macro-5.cpp
 
 clean:
-	$(RM) $(TESTS) *.sim.cpp *.chdl.cpp *~
+	$(RM) $(TEST_OBJS) testgen *.s *.chdl.cpp *.sim.cpp

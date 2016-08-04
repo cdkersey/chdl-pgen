@@ -11,11 +11,13 @@
 #include "../break_cycles.h"
 #include "../asm-macro.h"
 
-int main(int argc, char **argv) {
+#include "testgen.h"
+
+void macro0(bscotch::if_prog *pp) {
   using namespace bscotch;
 
   // Initialize the assembler.
-  if_prog p;
+  if_prog &p(*pp);
   asm_prog a(p);
   init_macro_env(a);
   
@@ -40,13 +42,6 @@ int main(int argc, char **argv) {
   ret();
 
   finish_macro_env();
-
-  print(std::cout, p);
-  std::ofstream out_chdl("macro-0.chdl.cpp");
-  gen_prog(out_chdl, p);
-
-  std::ofstream out_sim("macro-0.sim.cpp");
-  gen_prog_cpp(out_sim, p);
-
-  return 0;
 }
+
+REGISTER_TEST(macro0, macro0);

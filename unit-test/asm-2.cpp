@@ -10,12 +10,14 @@
 #include "../break_cycles.h"
 #include "../asm.h"
 
+#include "testgen.h"
+
 using namespace bscotch;
 using namespace std;
 
-int main(int argc, char **argv) {
+void asm2(if_prog *pp) {
   // Initialize the assembler.
-  if_prog p;
+  if_prog &p(*pp);
   asm_prog a(p);
   
   // The assembly program.
@@ -30,12 +32,12 @@ int main(int argc, char **argv) {
   a.label("a");
   a.val(u(32), 2, VAL_CONST).const_arg(0x11111111);
   a.val(u(32), 2, VAL_XOR).arg(0).arg(2);
-  a.br().target("g1");
+  a.br(2).target("g1");
 
   a.label("b");
   a.val(u(32), 2, VAL_CONST).const_arg(0x22222222);
   a.val(u(32), 2, VAL_XOR).arg(0).arg(2);
-  a.br().target("g1");
+  a.br(2).target("g1");
 
   a.label("c");
   a.val(u(32), 2, VAL_CONST).const_arg(0x22222222);
@@ -45,10 +47,10 @@ int main(int argc, char **argv) {
   a.label("g1");
   a.val(u(32), 3,     VAL_CONST).const_arg(1);
   a.val(u(32), 3,     VAL_ADD).arg(0).arg(3);
-  a.br().target("g2").target("g3");
+  a.br(2).target("g2").target("g3");
 
   a.label("g2");
-  a.br().target("g2").target("g4");
+  a.br(2).target("g2").target("g4");
 
   a.label("g3");
   a.br().target("g4");
@@ -60,7 +62,7 @@ int main(int argc, char **argv) {
   a.br().target("g6");
 
   a.label("g6");
-  a.br().target("g7").target("g8");
+  a.br(2).target("g7").target("g8");
 
   a.label("g7");
   a.br().target("exit");
@@ -69,7 +71,7 @@ int main(int argc, char **argv) {
   a.br().target("g9");
 
   a.label("g9");
-  a.br().target("g9").target("g10");
+  a.br(2).target("g9").target("g10");
   
   a.label("g10");
   a.br().target("exit");
@@ -78,11 +80,6 @@ int main(int argc, char **argv) {
   a.val(void_type(), 10, VAL_RET).arg(2);
 
   a.assemble_func();
-  
-  print(cout, p);
-
-  // ofstream chdl_out("asm-2.chdl.cpp");
-  // gen_prog(chdl_out, p);
-
-  return 0;
 }
+
+REGISTER_TEST(asm2, asm2);
