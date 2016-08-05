@@ -305,6 +305,14 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v, s
         out << '(' << arg_name(&b, v.args[i]) << ')';
       out << ';' << endl;
     }
+  } else if (v.op == VAL_BUILD) {
+    for (unsigned i = 0; i < v.args.size(); ++i) {
+      if (is_struct(v.t))
+        out << "    val" << v.id << '.' << v.t.get_field_name(i);  
+      else
+        out << "    val" << v.id << '[' << i << ']';
+      out << " = " << arg_name(&b, v.args[i]) << ';' ;
+    }
   } else if (v.op == VAL_ARG) {
     out << "    val" << v.id << " = s.bb" << b.id << "_in.arg"
         << v.static_access_id << ';' << endl;

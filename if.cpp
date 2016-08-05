@@ -18,7 +18,7 @@ const char *bscotch::if_op_str[] = {
   "add", "sub", "mul", "div", "and", "or", "xor",
   "eq", "lt",
   "and_reduce", "or_reduce",
-  "cat",
+  "cat", "build",
   "call_static", "call", "spawn", "ret"
 };
 

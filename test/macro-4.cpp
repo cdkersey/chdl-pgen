@@ -65,7 +65,7 @@ static void scratchpad(int B, int N, int A, int I, int SZ) {
       wr(bit()), mask(u(N)), id(u(I));
   
   label("entry");
-  resp = lit(u(mem_resp(B, N, I).size()), 0);
+  // resp = lit(u(mem_resp(B, N, I).size()), 0);
   req = arg(mem_req(B, N, A, I));
 
   addr = load(load(req, "a"), lit(u(32), 0), lit(u(32), SZ));
@@ -88,9 +88,10 @@ static void scratchpad(int B, int N, int A, int I, int SZ) {
   }
 
   label("exit_scratchpad");
-  resp = repl(resp, "q", q);
-  resp = repl(resp, "id", id);
-  resp = repl(resp, "wr", wr);
+  build(resp)(q)(lit(bit(), 0))(wr)(id);
+  // resp = repl(resp, "q", q);
+  // resp = repl(resp, "id", id);
+  // resp = repl(resp, "wr", wr);
   
   ret(resp);
 }
@@ -132,11 +133,18 @@ static void tmain() {
   br(tid < lit(u(32), 50))("do_read")("do_write");
 
   label("do_read");
-  
-  req = lit(u(mem_req(B, N, A, I).size()), 0);
-  req = repl(req, "wr", lit(bit(), 0));
-  req = repl(req, "id", load(tid, lit(u(5), 0), lit(u(6), I)));
-  req = repl(req, "a", load(tid, lit(u(5), 0), lit(u(6), A)));
+
+  build(req)
+    (lit(u(32), 0))
+    (load(tid, lit(u(5), 0),lit(u(6), A)))
+    (lit(u(4), 0))
+    (lit(bit(), 0))
+    (lit(bit(), 0))
+    (load(tid, lit(u(5), 0), lit(u(6), I)));
+  // req = lit(u(mem_req(B, N, A, I).size()), 0);
+  // req = repl(req, "wr", lit(bit(), 0));
+  // req = repl(req, "id", load(tid, lit(u(5), 0), lit(u(6), I)));
+  // req = repl(req, "a", load(tid, lit(u(5), 0), lit(u(6), A)));
 
   br("do_call");
 
@@ -144,13 +152,22 @@ static void tmain() {
 
   d = lit(u(32), 0);
   d = repl(d, lit(u(2), 0), load(tid, lit(u(5), 0), lit(u(5), 8)));
-  
+
+  build(req)
+    (d)
+    (load(tid, lit(u(5), 0), lit(u(6), A)))
+    (lit(u(4), 0xf))
+    (lit(bit(), 1))
+    (lit(bit(), 0))
+    (load(tid, lit(u(5), 0), lit(u(6), I)));
+  #if 0
   req = lit(u(mem_req(B, N, A, I).size()), 0);
   req = repl(req, "wr", lit(bit(), 1));
   req = repl(req, "mask", lit(u(4), 0xf));
   req = repl(req, "d", d);
   req = repl(req, "id", load(tid, lit(u(5), 0), lit(u(6), I)));
   req = repl(req, "a", load(tid, lit(u(5), 0), lit(u(6), A)));
+  #endif
   
   label("do_call");
   call("scratchpad", resp)(req);
@@ -166,13 +183,11 @@ static void tmain() {
   label("first_print");
   spawn("print_hex2")(printval_1)(printval_2);
 
-  #if 1
   label("loop");
   var j(u(8));
   j = i;
   i = i - lit(u(8), 1);
   br(j == lit(u(8), 0))("loop")("exit");
-  #endif
   
   label("exit");
   

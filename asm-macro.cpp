@@ -210,11 +210,24 @@ argcollector<var> bscotch::call(const char *func, const var &r) {
   return argcollector<var>([](var v){ asm_prog_ptr->arg(v.p->id); });
 }
 
-argcollector<var> bscotch::cat(var &r) {
+argcollector<var> bscotch::cat(const var &r) {
   asm_prog_ptr->val(r.p->t, r.p->id, VAL_CONCATENATE);
   r.p->v = asm_prog_ptr->v;
-   
-  return argcollector<var>([](var v){ asm_prog_ptr->arg(v.p->id); });
+
+  if_val *vp = asm_prog_ptr->v;
+  return argcollector<var>(
+    [vp](var v){ asm_prog_ptr->arg_ids[vp].push_back(v.p->id); }
+  );
+}
+
+argcollector<var> bscotch::build(const var &r) {
+  asm_prog_ptr->val(r.p->t, r.p->id, VAL_BUILD);
+  r.p->v = asm_prog_ptr->v;
+
+  if_val *vp = asm_prog_ptr->v;
+  return argcollector<var>(
+    [vp](var v){ asm_prog_ptr->arg_ids[vp].push_back(v.p->id); }
+  );
 }
 
 void bscotch::ret() {
@@ -410,15 +423,4 @@ var bscotch::repl(const var &in, const char *field, const var &d) {
 
 void bscotch::pred(const var &p) {
   asm_prog_ptr->pred(p.p->id);
-}
-
-bscotch::concatenator bscotch::cat(const var &v) {
-  asm_prog_ptr->val(v.p->t, v.p->id, VAL_CONCATENATE);
-  return concatenator(asm_prog_ptr->v);
-}
-
-bscotch::concatenator &bscotch::concatenator::operator()(const var &x) {
-  asm_prog_ptr->arg_ids[v].push_back(x.p->id);
-  
-  return *this;
 }

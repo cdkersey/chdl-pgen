@@ -83,14 +83,6 @@ namespace bscotch {
   var repl(const var &in, const var &idx, const var &d, unsigned len);
   var repl(const var &in, const char *field, const var &d);
 
-  struct concatenator {
-    concatenator(if_val *v): v(v) {}
-    concatenator &operator()(const var &v);
-    if_val *v;
-  };
-
-  concatenator cat(const var &dest);
-  
   // Add a predicate to preceding store to a static variable.
   void pred(const var &p);
   
@@ -101,7 +93,8 @@ namespace bscotch {
   argcollector<var> spawn(const char *func);
   argcollector<var> call(const char *func);
   argcollector<var> call(const char *func, const var &rval);
-  argcollector<var> cat(var &r);
+  argcollector<var> cat(const var &r);
+  argcollector<var> build(const var &r);
   
   void ret();
   void ret(const var &rval);

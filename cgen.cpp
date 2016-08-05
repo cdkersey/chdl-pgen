@@ -130,7 +130,8 @@ static void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, in
   out << "  ";
 
   if (!is_store(v.op) && v.op != VAL_PHI && v.op != VAL_CALL
-      && v.op != VAL_RET && v.op != VAL_SPAWN && v.op != VAL_CONCATENATE)
+      && v.op != VAL_RET && v.op != VAL_SPAWN && v.op != VAL_CONCATENATE
+      && v.op != VAL_BUILD)
   {
     out << type_chdl(v.t) << ' ' << fname << '_' << v.id << " = ";
   }
@@ -167,6 +168,22 @@ static void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, in
       for (unsigned i = 0; i < v.args.size(); ++i) {
         out << "Cat(Flatten(" << aname[i] << "))";
         if (i != v.args.size() - 1) out << '.';
+      }
+    }
+  } else if (v.op == VAL_BUILD) {
+    out << "  " << type_chdl(v.t) << ' ' << fname << '_' << v.id << ';' << endl;
+    
+    if (is_struct(v.t)) {
+      for (unsigned i = 0; i < v.args.size(); ++i) {
+        out << "  Flatten(_(" << fname << '_' << v.id << ", \""
+            << v.t.get_field_name(i) << "\")) = Flatten("
+            << val_name(fname, bbidx, b, *v.args[i]) << ");" << endl;
+      }
+    } else {
+      for (unsigned i = 0; i < v.args.size(); ++i) {
+        out << "  Flatten(" << fname << '_' << v.id << '[' << i << "]) = "
+            << "Flatten(" << val_name(fname, bbidx, b, *v.args[i]) << ");"
+            << endl;
       }
     }
   } else if (v.op == VAL_ARG) {
