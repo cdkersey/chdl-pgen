@@ -2,15 +2,39 @@ tasks/goals in order of planned completion:
   - Bugs!
     - The set of running blocks in the C++ simulator does not exactly match the
       CHDL simulator, presumably due to the availability of both input and
-      output buffers for pipeline stages.
+      output buffers for pipeline stages and general slack in the pipeline.
     - Nested structs are untested and dependency ordering is not enforced for
       struct declaration.
-    - Need 0-initializers for arbitrary types to avoid warnings
-      - Macro support
-      - CHDL code gen support
-      - C++ code gen support
-      - Replace all instances in current test code.
 
+  - Code gen/back end
+    - Global variables
+      - Build a basic block level program using (arr/1val) global variables.
+      - Add support for global variables to IF, assembler, code generator.
+    - Add support for cancelling threads.
+    - Understand, enumerate, and automatically check (or remove) constraints.
+      - Structural constraints:
+        - Calls/spawns must be the final instruction in a basic block.
+          (limit 1/block)
+        - No cycles of basic blocks with st->ld broadcast var dependencies.
+      - Timing constraints: 
+    - Build a basic block level program that uses bypassed SRAM arrays.
+    - Add support for bypass networks to code generator.
+    - Build a basic block level program that uses speculation.
+    - Add support for speculation to code generator.
+    - Make TAPs run-time optional.
+    - Make all of the tests self-report success or failure.
+    - Decide whether functions need to be predicatable.
+  - Parser/front end <?>
+    - Build a skeleton flex/bison parser <?>
+    - Get simple static function to parse to AST. <?>
+    - Get counter to parse to AST. <?>
+    - Get generic function to parse to AST.
+    - Get simple AST to convert to IF.
+    - Get generic function to parse to AST.
+    - Get generic AST to convert to IF.
+    - Get h3.bpi working.
+    - Get risc.bpi working.
+    - Get cache.bpi working.
   - Language definition
     - Function replication?
     - Decide what to do about bit casts.
@@ -24,32 +48,6 @@ tasks/goals in order of planned completion:
     - rsort.bpi
     - binsearch.bpi
     - coalesce.bpi
-  - Code gen/back end
-    - Build a basic block level program using (arr/1val) global variables.
-    - Add support for global variables to code generator. <2016-06-30>
-    - Understand, enumerate, and automatically check (or remove) constraints.
-      - Structural constraints:
-        - Calls/spawns must be the final instruction in a basic block.
-          (limit 1/block)
-        - No cycles of basic blocks with st->ld broadcast var dependencies.
-      - Timing constraints: 
-    - Build a basic block level program that uses bypassed SRAM arrays.
-    - Add support for bypass networks to code generator. <2016-07-10>
-    - Build a basic block level program that uses speculation. <2016-07-10>
-    - Add support for speculation to code generator. <2016-07-10>
-    - Make TAPs run-time optional.
-    - Make all of the tests self-report success or failure. <2016-07-10>
-    - Decide whether functions need to be predicatable. <2016-07-10>
-  - Parser/front end <?>
-    - Build a skeleton flex/bison parser <?>
-    - Get simple static function to parse to AST. <?>
-    - Get counter to parse to AST. <?>
-    - Get generic function to parse to AST.
-    - Get simple AST to convert to IF.
-    - Get generic function to parse to AST.
-    - Get generic AST to convert to IF.
-    - Get h3.bpi working.
-    - Get risc.bpi working.
-    - Get cache.bpi working.
+
   - Demo <2016-07-12>
   - Evaluation <2016-07-15>
