@@ -13,7 +13,7 @@
 #include "if.h"
 #include "cgen-cpp.h"
 
-using namespace bscotch;
+using namespace pgen;
 
 static int which_suc(if_bb *a, if_bb *b) {
   for (unsigned i = 0; i < a->suc.size(); ++i)
@@ -71,7 +71,7 @@ static if_val *find_ret(if_bb &b) {
 }
 
 static int insert_type(
-  std::map<bscotch::type, int> &m, int &count, const bscotch::type &t
+  std::map<pgen::type, int> &m, int &count, const pgen::type &t
 )
 {
   if (!m.count(t)) {
@@ -89,7 +89,7 @@ static int insert_type(
   return m[t];
 }
 
-static void catalog_types(std::map<bscotch::type, int> &m, bscotch::if_prog &p)
+static void catalog_types(std::map<pgen::type, int> &m, pgen::if_prog &p)
 {
   int count = 0;
 
@@ -109,8 +109,8 @@ static void catalog_types(std::map<bscotch::type, int> &m, bscotch::if_prog &p)
   }
 }
 
-static std::string type_cpp(const bscotch::type &t,
-                            std::map<bscotch::type, int> &m)
+static std::string type_cpp(const pgen::type &t,
+                            std::map<pgen::type, int> &m)
 {
   using namespace std;
 
@@ -140,7 +140,7 @@ static std::string type_cpp(const bscotch::type &t,
   return oss.str();
 }
 
-static void gen_printer(std::ostream &out, int id, const bscotch::type &t) {
+static void gen_printer(std::ostream &out, int id, const pgen::type &t) {
   using namespace std;
 
   out << "std::ostream &operator<<(std::ostream &out, const struct"
@@ -158,8 +158,8 @@ static void gen_printer(std::ostream &out, int id, const bscotch::type &t) {
       << '}' << endl << endl;
 }
 
-static void assignment_body(std::ostream &out, const bscotch::type &t,
-                            std::map<bscotch::type, int> &m)
+static void assignment_body(std::ostream &out, const pgen::type &t,
+                            std::map<pgen::type, int> &m)
 {
   using namespace std;
   
@@ -171,7 +171,7 @@ static void assignment_body(std::ostream &out, const bscotch::type &t,
   out << "    return *this;" << endl;
 }
 
-static void gen_struct_decls(std::ostream &out, std::map<bscotch::type, int> &m)
+static void gen_struct_decls(std::ostream &out, std::map<pgen::type, int> &m)
 {
   using namespace std;
 
@@ -268,7 +268,7 @@ static void order_blocks(std::vector<if_bb*> &out,
   }
 }
 
-static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v, std::map<bscotch::type, int> &m) {
+static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v, std::map<pgen::type, int> &m) {
   using namespace std;
 
   ostringstream val_name;
@@ -497,7 +497,7 @@ static bool in_live_out(if_bb &b, if_val *v) {
   return find(b.live_out.begin(), b.live_out.end(), v) != b.live_out.end();
 }
 
-static void gen_block(std::ostream &out, std::string fname, if_bb &b, std::map<bscotch::type, int> &m) {
+static void gen_block(std::ostream &out, std::string fname, if_bb &b, std::map<pgen::type, int> &m) {
   using namespace std;
 
   if_val *call = find_call_or_spawn(b);
@@ -597,7 +597,7 @@ static void gen_block(std::ostream &out, std::string fname, if_bb &b, std::map<b
   out << endl;
 }
 
-static void gen_func(std::ostream &out, std::string name, if_func &f, std::map<bscotch::type, int> &m) {
+static void gen_func(std::ostream &out, std::string name, if_func &f, std::map<pgen::type, int> &m) {
   using namespace std;
   
   out << "// " << name << " definitions." << endl
@@ -658,7 +658,7 @@ static void gen_func_forward_decls
       << "void tick_" << name << "(" << name << "_state_t&);" << endl;
 }
 
-static void gen_func_decls(std::ostream &out, std::string name, if_func &f, std::map<bscotch::type, int> &m) {
+static void gen_func_decls(std::ostream &out, std::string name, if_func &f, std::map<pgen::type, int> &m) {
   using namespace std;
 
   out << "// " << name << " declarations." << endl;
@@ -737,9 +737,9 @@ static void gen_func_decls(std::ostream &out, std::string name, if_func &f, std:
   out << "};" << endl << endl;
 }
 
-void bscotch::gen_prog_cpp(std::ostream &out, if_prog &p) {
+void pgen::gen_prog_cpp(std::ostream &out, if_prog &p) {
   using namespace std;
-  map<bscotch::type, int> m;
+  map<pgen::type, int> m;
   catalog_types(m, p);
   gen_struct_decls(out, m);
 

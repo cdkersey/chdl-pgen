@@ -12,7 +12,7 @@
 
 #include "testgen.h"
 
-using namespace bscotch;
+using namespace pgen;
 using namespace std;
 
 void asm2(if_prog *pp) {

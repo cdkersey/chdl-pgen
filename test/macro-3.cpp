@@ -14,7 +14,7 @@
 
 #include "testgen.h"
 
-using namespace bscotch;
+using namespace pgen;
 
 void macro3(if_prog *pp) {
 

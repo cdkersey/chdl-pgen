@@ -14,11 +14,11 @@
 
 #include "testgen.h"
 
-using namespace bscotch;
+using namespace pgen;
 
-std::vector<bscotch::test_registrator*> test_registrator::tests;
+std::vector<pgen::test_registrator*> test_registrator::tests;
 
-void bscotch::test_registrator::run_tests() {
+void pgen::test_registrator::run_tests() {
   for (auto &t : tests) {
     if_prog p;
     t->run(&p);
@@ -35,7 +35,7 @@ void bscotch::test_registrator::run_tests() {
 }
 
 int main(int argc, char **argv) {
-  bscotch::test_registrator::run_tests();
+  pgen::test_registrator::run_tests();
 
   return 0;
 }

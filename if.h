@@ -1,5 +1,5 @@
-#ifndef BSCOTCH_IF_H
-#define BSCOTCH_IF_H
+#ifndef CHDL_PGEN_IF_H
+#define CHDL_PGEN_IF_H
 
 #include <iostream>
 
@@ -10,7 +10,7 @@
 
 #include "type.h"
 
-namespace bscotch {
+namespace pgen {
   enum if_op {
     VAL_CONST,
     VAL_PHI, VAL_SELECT,
@@ -104,15 +104,15 @@ namespace bscotch {
     std::map<std::string, if_func> functions;
   };
 
-  unsigned long const_val(const bscotch::if_val &v);
+  unsigned long const_val(const pgen::if_val &v);
   
   std::string to_hex(std::vector<bool> &v);
   void print(std::ostream &out, std::vector<bool> &v);
-  void print(std::ostream &out, bscotch::if_val &v);
-  void print(std::ostream &out, bscotch::if_bb &b);
-  void print(std::ostream &out, bscotch::if_staticvar &v);
-  void print(std::ostream &out, bscotch::if_func &f);
-  void print(std::ostream &out, bscotch::if_prog &p);
+  void print(std::ostream &out, pgen::if_val &v);
+  void print(std::ostream &out, pgen::if_bb &b);
+  void print(std::ostream &out, pgen::if_staticvar &v);
+  void print(std::ostream &out, pgen::if_func &f);
+  void print(std::ostream &out, pgen::if_prog &p);
 }
 
 #endif

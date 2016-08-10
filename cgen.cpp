@@ -10,9 +10,9 @@
 #include "if.h"
 #include "cgen.h"
 
-using namespace bscotch;
+using namespace pgen;
 
-namespace bscotch {
+namespace pgen {
   static void gen_val(std::ostream &out, std::string fname, int bbidx, int idx, if_bb &b, if_val &v);
   static void gen_bb_decls(std::ostream &out, std::string fname, int idx, if_bb &b, bool entry);
   static void gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bool entry);
@@ -121,7 +121,7 @@ static std::string val_name(std::string fname, int bbidx, if_bb &b, if_val &v)
   return oss.str();
 }
 
-static void bscotch::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, if_bb &b, if_val &v)
+static void pgen::gen_val(std::ostream &out, std::string fname, int bbidx, int idx, if_bb &b, if_val &v)
 {
   using std::endl;
   using std::string;
@@ -420,7 +420,7 @@ static std::string output_signal(std::string fname, int bbidx, std::string signa
   return oss.str();
 }
 
-static void bscotch::gen_bb_decls(std::ostream &out, std::string fname, int idx, if_bb &b, bool entry) {
+static void pgen::gen_bb_decls(std::ostream &out, std::string fname, int idx, if_bb &b, bool entry) {
   using std::endl;
 
   out << "  // " << fname << " BB " << idx << " declarations" << endl;
@@ -517,7 +517,7 @@ void print_spawn_readys(std::ostream &out, std::string fname, if_bb &b) {
   }
 }
 
-static void bscotch::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bool entry)
+static void pgen::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b, bool entry)
 {
   using std::endl;
   using std::map;
@@ -711,7 +711,7 @@ unsigned count_stores(if_func &f, if_staticvar &s) {
   return count;
 }
 
-static void bscotch::gen_func_decls(std::ostream &out, std::string name, if_func &f) {
+static void pgen::gen_func_decls(std::ostream &out, std::string name, if_func &f) {
   using std::endl;
   
   // Typedef call/ret types
@@ -733,7 +733,7 @@ static void bscotch::gen_func_decls(std::ostream &out, std::string name, if_func
       << name << "_call_t<OPAQUE> &" << name << "_call);" << endl;
 }
 
-static void bscotch::gen_func(std::ostream &out, std::string name, if_func &f) {
+static void pgen::gen_func(std::ostream &out, std::string name, if_func &f) {
   using std::endl;
   
   out << "template <typename OPAQUE> void " << name
@@ -766,7 +766,7 @@ static void bscotch::gen_func(std::ostream &out, std::string name, if_func &f) {
   out << '}' << endl;
 }
 
-void bscotch::gen_prog(std::ostream &out, if_prog &p) {
+void pgen::gen_prog(std::ostream &out, if_prog &p) {
   for (auto &f : p.functions) {
     gen_func_decls(out, f.first, f.second);
   }

@@ -1,5 +1,5 @@
-#ifndef BSCOTCH_TYPE_H
-#define BSCOTCH_TYPE_H
+#ifndef CHDL_PGEN_TYPE_H
+#define CHDL_PGEN_TYPE_H
 
 #include <iostream>
 
@@ -8,7 +8,7 @@
 #include <sstream>
 #include <map>
 
-namespace bscotch {
+namespace pgen {
   // Types are represented by vectors of integers.
   enum type_part {
     TYPE_BIT = -100,
@@ -62,7 +62,7 @@ namespace bscotch {
   type struct_type();
   type void_type();
   
-  void print(std::ostream &out, bscotch::type &t);
+  void print(std::ostream &out, pgen::type &t);
   std::string type_chdl(const type &t, int s = 0, int &end = *(int*)NULL);
   std::string type_cpp(const type &t, int s = 0, int &end = *(int*)NULL);
 }

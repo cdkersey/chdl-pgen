@@ -13,7 +13,7 @@
 
 #include "testgen.h"
 
-using namespace bscotch;
+using namespace pgen;
 
 static void bmain() {
   // Function bmain() : spawn 10 threads in tmain instance.

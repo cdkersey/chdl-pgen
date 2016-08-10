@@ -5,10 +5,10 @@
 #include "if.h"
 
 using namespace std;
-using namespace bscotch;
+using namespace pgen;
 
 // Reorder predecessor blocks to prevent deadlock.
-void bscotch::prevent_deadlock(if_func &f) {
+void pgen::prevent_deadlock(if_func &f) {
   map<if_bb*, int> pos;
   int i = 0;
   for (auto &b : f.bbs) pos[b] = i++;

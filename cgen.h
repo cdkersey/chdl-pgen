@@ -1,5 +1,5 @@
-#ifndef BSCOTCH_CGEN_H
-#define BSCOTCH_CGEN_H
+#ifndef CHDL_PGEN_CGEN_H
+#define CHDL_PGEN_CGEN_H
 
 #include <iostream>
 
@@ -12,7 +12,7 @@
 #include "type.h"
 #include "if.h"
 
-namespace bscotch {
+namespace pgen {
   void gen_prog(std::ostream &out, if_prog &p);
 }
 

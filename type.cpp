@@ -7,7 +7,7 @@
 
 #include "type.h"
 
-int bscotch::type::compare(const type &x) const {
+int pgen::type::compare(const type &x) const {
   using std::string;
   
   if (x.type_vec.size() < type_vec.size()) return -1;
@@ -38,13 +38,13 @@ int bscotch::type::compare(const type &x) const {
   return 0;
 }
 
-bool bscotch::type::operator==(const type &x) const { return (compare(x) == 0); }
-bool bscotch::type::operator>(const type &x) const {  return (compare(x) > 0); }
-bool bscotch::type::operator<(const type &x) const {  return (compare(x) < 0); }
-bool bscotch::type::operator<=(const type &x) const { return (compare(x) <= 0); }
-bool bscotch::type::operator>=(const type &x) const { return (compare(x) >= 0); }
+bool pgen::type::operator==(const type &x) const { return (compare(x) == 0); }
+bool pgen::type::operator>(const type &x) const {  return (compare(x) > 0); }
+bool pgen::type::operator<(const type &x) const {  return (compare(x) < 0); }
+bool pgen::type::operator<=(const type &x) const { return (compare(x) <= 0); }
+bool pgen::type::operator>=(const type &x) const { return (compare(x) >= 0); }
 
-void bscotch::type::get_field_start_end(int &start, int &end, int idx) const {
+void pgen::type::get_field_start_end(int &start, int &end, int idx) const {
   int l = 0, fields = 0, cur_field = 0;
   bool field_start = false;
   for (unsigned i = 0; i < type_vec.size(); ++i) {
@@ -80,14 +80,14 @@ void bscotch::type::get_field_start_end(int &start, int &end, int idx) const {
   end = type_vec.size() - 1;
 }
 
-std::string bscotch::type::get_field_name(int idx) const {
+std::string pgen::type::get_field_name(int idx) const {
   int start, end;
   get_field_start_end(start, end, idx);
 
   return field_name.find(start)->second;
 }
 
-int bscotch::type::get_field_idx(std::string name) const {
+int pgen::type::get_field_idx(std::string name) const {
   int l = 0, fields = 0, cur_field = 0;
   bool field_start = false;
   for (unsigned i = 0; i < type_vec.size(); ++i) {
@@ -119,7 +119,7 @@ int bscotch::type::get_field_idx(std::string name) const {
   return -1;
 }
 
-bscotch::type bscotch::type::get_field_type(int idx) const {
+pgen::type pgen::type::get_field_type(int idx) const {
   type r;
   
   int start, end;
@@ -134,9 +134,9 @@ bscotch::type bscotch::type::get_field_type(int idx) const {
   return r;
 }
 
-int bscotch::type::get_n_fields() const { return type_vec[1]; }
+int pgen::type::get_n_fields() const { return type_vec[1]; }
 
-bscotch::type &bscotch::type::add_field(std::string n, const bscotch::type &t) {
+pgen::type &pgen::type::add_field(std::string n, const pgen::type &t) {
   if (type_vec[0] != TYPE_STRUCT_BEGIN) {
     std::cerr << "Attempt to add field \"" << n << "\" to non-struct type."
               << std::endl;
@@ -162,8 +162,8 @@ bscotch::type &bscotch::type::add_field(std::string n, const bscotch::type &t) {
   return *this;
 }
 
-unsigned bscotch::type::size(int s, int &end) const {
-  using namespace bscotch;
+unsigned pgen::type::size(int s, int &end) const {
+  using namespace pgen;
   using namespace std;
 
   unsigned sz = 0, i;
@@ -193,18 +193,18 @@ unsigned bscotch::type::size(int s, int &end) const {
   return sz;
 }
 
-bscotch::type bscotch::void_type() {
+pgen::type pgen::void_type() {
   type t;
   return t;
 }
 
-bscotch::type bscotch::bit() {
+pgen::type pgen::bit() {
   type t;
   t.type_vec.push_back(TYPE_BIT);
   return t;
 }
 
-bscotch::type bscotch::u(unsigned nbits) {
+pgen::type pgen::u(unsigned nbits) {
   type t;
   t.type_vec.push_back(TYPE_U);
   t.type_vec.push_back(nbits);
@@ -212,7 +212,7 @@ bscotch::type bscotch::u(unsigned nbits) {
   return t;
 }
 
-bscotch::type bscotch::s(unsigned nbits) {
+pgen::type pgen::s(unsigned nbits) {
   type t;
   t.type_vec.push_back(TYPE_S);
   t.type_vec.push_back(nbits);
@@ -220,7 +220,7 @@ bscotch::type bscotch::s(unsigned nbits) {
   return t;
 }
 
-bscotch::type bscotch::struct_type() {
+pgen::type pgen::struct_type() {
   type t;
   t.type_vec.push_back(TYPE_STRUCT_BEGIN);
   t.type_vec.push_back(0);
@@ -229,59 +229,59 @@ bscotch::type bscotch::struct_type() {
   return t;
 }
 
-bscotch::type bscotch::a(bscotch::type t, unsigned len) {
+pgen::type pgen::a(pgen::type t, unsigned len) {
   t.type_vec.push_back(TYPE_ARRAY);
   t.type_vec.push_back(len);
   
   return t;
 }
 
-bscotch::type bscotch::sa(bscotch::type t, unsigned len) {
+pgen::type pgen::sa(pgen::type t, unsigned len) {
   t.type_vec.push_back(TYPE_STATIC_ARRAY);
   t.type_vec.push_back(len);
   
   return t;
 }
 
-bscotch::type bscotch::element_type(bscotch::type t) {
+pgen::type pgen::element_type(pgen::type t) {
   unsigned n = t.type_vec.size();
   t.type_vec.resize(n - 2);
 
   return t;
 }
 
-unsigned bscotch::array_len(const bscotch::type &t) {
+unsigned pgen::array_len(const pgen::type &t) {
   unsigned n = t.type_vec.size();
   return t.type_vec[n - 1];
 }
 
-bool bscotch::is_sram_array(const bscotch::type &t) {
+bool pgen::is_sram_array(const pgen::type &t) {
   unsigned n = t.type_vec.size();
   return t.type_vec.size() >= 2 && t.type_vec[n - 2] == TYPE_ARRAY;
 }
 
-bool bscotch::is_static_array(const type &t) {
+bool pgen::is_static_array(const type &t) {
   unsigned n = t.type_vec.size();
   return t.type_vec.size() >= 2 && t.type_vec[n - 2] == TYPE_STATIC_ARRAY;
 }
 
-bool bscotch::is_integer_type(const type &t) {
+bool pgen::is_integer_type(const type &t) {
   return t.type_vec.size() == 2 &&
     (t.type_vec[0] == TYPE_S || t.type_vec[0] == TYPE_U);
 }
 
-bool bscotch::is_bit_type(const type &t) {
+bool pgen::is_bit_type(const type &t) {
   return t.type_vec.size() == 1 && t.type_vec[0] == TYPE_BIT;
 }
 
-bool bscotch::is_struct(const bscotch::type &t) {
+bool pgen::is_struct(const pgen::type &t) {
   return t.type_vec.size() >= 1 && t.type_vec[0] == TYPE_STRUCT_BEGIN;
 }
 
-bool bscotch::is_void_type(const type &t) { return t.type_vec.size() == 0; }
+bool pgen::is_void_type(const type &t) { return t.type_vec.size() == 0; }
 
-std::string bscotch::type::str(int s, int &end) {
-  using namespace bscotch;
+std::string pgen::type::str(int s, int &end) {
+  using namespace pgen;
   using namespace std;
 
   ostringstream oss;
@@ -320,9 +320,9 @@ std::string bscotch::type::str(int s, int &end) {
   return oss.str();
 }
 
-std::string bscotch::type_chdl(const bscotch::type &t, int s, int &end)
+std::string pgen::type_chdl(const pgen::type &t, int s, int &end)
 {
-  using namespace bscotch;
+  using namespace pgen;
   using namespace std;
 
   ostringstream oss;
@@ -371,8 +371,8 @@ std::string bscotch::type_chdl(const bscotch::type &t, int s, int &end)
   return oss.str();
 }
 
-std::string bscotch::type_cpp(const bscotch::type &t, int s, int &end) {
-  using namespace bscotch;
+std::string pgen::type_cpp(const pgen::type &t, int s, int &end) {
+  using namespace pgen;
   using namespace std;
 
   ostringstream oss;
@@ -419,7 +419,7 @@ std::string bscotch::type_cpp(const bscotch::type &t, int s, int &end) {
   return oss.str();
 }
 
-void bscotch::print(std::ostream &out, bscotch::type &t) {
+void pgen::print(std::ostream &out, pgen::type &t) {
   using namespace std;
 
   if (t.type_vec.size() == 0)

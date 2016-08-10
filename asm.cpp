@@ -14,9 +14,9 @@
 #include "convert_phis.h"
 
 using namespace std;
-using namespace bscotch;
+using namespace pgen;
 
-void bscotch::asm_prog::function(string name) {
+void pgen::asm_prog::function(string name) {
   if (f) assemble_func();
   labels.clear();
   id_to_val.clear();
@@ -33,7 +33,7 @@ void bscotch::asm_prog::function(string name) {
   func_name = name;
 }
 
-void bscotch::asm_prog::label(string name) {
+void pgen::asm_prog::label(string name) {
   if_bb *bb = new if_bb();
 
   if (b && !br_targets[b].size()) br_targets[b].push_back(name);
@@ -44,18 +44,18 @@ void bscotch::asm_prog::label(string name) {
   f->bbs.push_back(bb);
 }
 
-void bscotch::asm_prog::static_var(const type &t, string name) {
+void pgen::asm_prog::static_var(const type &t, string name) {
   f->static_vars[name].name = name;
   f->static_vars[name].t = t;
   f->static_vars[name].broadcast = false;
 }
 
-void bscotch::asm_prog::bcast_var(const type &t, string name) {
+void pgen::asm_prog::bcast_var(const type &t, string name) {
   static_var(t, name);
   f->static_vars[name].broadcast = true;
 }
 
-asm_prog &bscotch::asm_prog::val(const type &t, asm_prog::val_id_t id, if_op op)
+asm_prog &pgen::asm_prog::val(const type &t, asm_prog::val_id_t id, if_op op)
 {
   // If this is an argument, add it to function argument types.
   // (TODO: only in first basic block)
@@ -75,61 +75,61 @@ asm_prog &bscotch::asm_prog::val(const type &t, asm_prog::val_id_t id, if_op op)
   return *this;
 }
 
-asm_prog &bscotch::asm_prog::val(asm_prog::val_id_t id, if_op op) {
+asm_prog &pgen::asm_prog::val(asm_prog::val_id_t id, if_op op) {
   val(void_type(), id, op);
 
   return *this;
 }
 
-asm_prog &bscotch::asm_prog::arg(asm_prog::val_id_t id) {
+asm_prog &pgen::asm_prog::arg(asm_prog::val_id_t id) {
   arg_ids[v].push_back(id);
 
   return *this;
 }
 
-asm_prog &bscotch::asm_prog::pred(asm_prog::val_id_t id) {
+asm_prog &pgen::asm_prog::pred(asm_prog::val_id_t id) {
   predicate[v] = id;
 
   return *this;
 }
 
-asm_prog &bscotch::asm_prog::const_arg(long const_arg) {
+asm_prog &pgen::asm_prog::const_arg(long const_arg) {
   to_vec_bool(v->const_val, v->t.size(), const_arg);
 
   return *this;
 }
 
-asm_prog &bscotch::asm_prog::static_arg(std::string static_name) {
+asm_prog &pgen::asm_prog::static_arg(std::string static_name) {
   v->static_arg = &f->static_vars[static_name];
 
   return *this;
 }
 
-asm_prog &bscotch::asm_prog::func_arg(std::string func_name) {
+asm_prog &pgen::asm_prog::func_arg(std::string func_name) {
   v->func_arg = func_name;
 
   return *this;
 }
 
-asm_prog &bscotch::asm_prog::br(asm_prog::val_id_t sel) {
+asm_prog &pgen::asm_prog::br(asm_prog::val_id_t sel) {
   br_id[b] = sel;
 
   return *this;
 }
 
-asm_prog &bscotch::asm_prog::br() {
+asm_prog &pgen::asm_prog::br() {
   b->branch_pred = NULL;
 
   return *this;
 }
 
-asm_prog &bscotch::asm_prog::stall(asm_prog::val_id_t in) {
+asm_prog &pgen::asm_prog::stall(asm_prog::val_id_t in) {
   stall_id[b] = in;
 
   return *this;
 }
 
-asm_prog &bscotch::asm_prog::target(std::string label) {
+asm_prog &pgen::asm_prog::target(std::string label) {
   br_targets[b].push_back(label);
 
   return *this;
@@ -137,7 +137,7 @@ asm_prog &bscotch::asm_prog::target(std::string label) {
 
 // Fill in basic block successor/predecessor information for most
 // recent function.
-void bscotch::asm_prog::bb_resolveptrs() {
+void pgen::asm_prog::bb_resolveptrs() {
   // Find successors.
   for (auto &b : br_targets) {
     for (unsigned i = 0; i < b.second.size(); ++i) {
@@ -226,7 +226,7 @@ static void ssa_liveness_analysis(if_func *f) {
   }
 }
 
-void bscotch::asm_prog::assemble_func() {
+void pgen::asm_prog::assemble_func() {
   // Assign static access IDs
   for (auto &s : f->static_vars) {
     unsigned count = 0;

@@ -1,5 +1,5 @@
-#ifndef BSCOTCH_ASM_MACRO_H
-#define BSCOTCH_ASM_MACRO_H
+#ifndef CHDL_PGEN_ASM_MACRO_H
+#define CHDL_PGEN_ASM_MACRO_H
 
 #include <iostream>
 
@@ -13,7 +13,7 @@
 #include "asm.h"
 #include "type.h"
 
-namespace bscotch {
+namespace pgen {
   // Initialize the macro API. This is a thread-unsafe, stateful API designed as
   // a stop-gap solution between the assembler and a language front-end/parser.
   void init_macro_env(asm_prog &a);

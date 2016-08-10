@@ -1,9 +1,9 @@
-#ifndef BSCOTCH_PREVENT_DEADLOCK
-#define BSCOTCH_PREVENT_DEADLOCK
+#ifndef CHDL_PGEN_PREVENT_DEADLOCK
+#define CHDL_PGEN_PREVENT_DEADLOCK
 
 #include "if.h"
 
-namespace bscotch {
+namespace pgen {
   // Reorder predecessor blocks to prevent deadlock.
   void prevent_deadlock(if_func &f);
 };

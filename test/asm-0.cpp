@@ -13,7 +13,7 @@
 #include "../cgen-cpp.h"
 #include "../asm.h"
 
-using namespace bscotch;
+using namespace pgen;
 using namespace std;
 
 static void asm0(if_prog *pp) {

@@ -8,7 +8,7 @@
 #include "if.h"
 #include "type.h"
 
-const char *bscotch::if_op_str[] = {
+const char *pgen::if_op_str[] = {
   "const", "phi", "select", "arg",
   "ld_global", "st_global",
   "ld_static", "st_static",
@@ -23,7 +23,7 @@ const char *bscotch::if_op_str[] = {
 };
 
 // Print vector of bools as hex. TODO: move to separate utility library?
-std::string bscotch::to_hex(std::vector<bool> &v) {
+std::string pgen::to_hex(std::vector<bool> &v) {
   std::ostringstream out;
 
   if (v.size() == 0) out << '0';
@@ -40,13 +40,13 @@ std::string bscotch::to_hex(std::vector<bool> &v) {
   return out.str();
 }
 
-void bscotch::print(std::ostream &out, std::vector<bool> &v) {
+void pgen::print(std::ostream &out, std::vector<bool> &v) {
   out << to_hex(v);
 }
 
-void bscotch::print(std::ostream &out, bscotch::if_val &v) {
+void pgen::print(std::ostream &out, pgen::if_val &v) {
   using namespace std;
-  using namespace bscotch;
+  using namespace pgen;
 
   out << "    ";
   if (v.pred) out << '<' << v.pred->id << "> ? ";
@@ -71,9 +71,9 @@ void bscotch::print(std::ostream &out, bscotch::if_val &v) {
   out << ')' << endl;
 }
 
-void bscotch::print(std::ostream &out, bscotch::if_bb &b) {
+void pgen::print(std::ostream &out, pgen::if_bb &b) {
   using namespace std;
-  using namespace bscotch;
+  using namespace pgen;
 
   out << "    Live in:";
   for (auto &v : b.live_in) out << ' ' << v->id;
@@ -95,15 +95,15 @@ void bscotch::print(std::ostream &out, bscotch::if_bb &b) {
   out << endl;
 }
 
-void bscotch::print(std::ostream &out, bscotch::if_staticvar &v) {
+void pgen::print(std::ostream &out, pgen::if_staticvar &v) {
     print(out, v.t);
     out << " = 0x";
     print(out, v.initial_val);
 }
 
-void bscotch::print(std::ostream &out, bscotch::if_func &f) {
+void pgen::print(std::ostream &out, pgen::if_func &f) {
   using namespace std;
-  using namespace bscotch;
+  using namespace pgen;
 
   for (auto &v : f.static_vars) {
     out << "  " << v.first << " : ";
@@ -117,9 +117,9 @@ void bscotch::print(std::ostream &out, bscotch::if_func &f) {
   }
 }
 
-void bscotch::print(std::ostream &out, bscotch::if_prog &p) {
+void pgen::print(std::ostream &out, pgen::if_prog &p) {
   using namespace std;
-  using namespace bscotch;
+  using namespace pgen;
 
   for (auto &v : p.global_vars) {
     out << v.first << " : ";
@@ -133,7 +133,7 @@ void bscotch::print(std::ostream &out, bscotch::if_prog &p) {
   }
 }
 
-unsigned long bscotch::const_val(const bscotch::if_val &v) {
+unsigned long pgen::const_val(const pgen::if_val &v) {
   unsigned long r = 0;
 
   for (unsigned i = 0; i < v.const_val.size(); ++i)

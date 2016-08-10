@@ -14,7 +14,7 @@
 
 #include "testgen.h"
 
-using namespace bscotch;
+using namespace pgen;
 using namespace std;
 
 void asm1(if_prog *pp) {

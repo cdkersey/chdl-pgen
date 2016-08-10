@@ -1,5 +1,5 @@
-#ifndef BSCOTCH_TESTGEN_H
-#define BSCOTCH_TESTGEN_H
+#ifndef CHDL_PGEN_TESTGEN_H
+#define CHDL_PGEN_TESTGEN_H
 
 #include <vector>
 #include <string>
@@ -7,7 +7,7 @@
 
 #include "../if.h"
 
-namespace bscotch {
+namespace pgen {
   class test_registrator {
   public:
     test_registrator(const char *name, void (*f)(if_prog *p)) :
@@ -27,6 +27,6 @@ namespace bscotch {
 };
 
 #define REGISTER_TEST(name, func) \
-  bscotch::test_registrator test_reg_##name(#name, (func));
+  pgen::test_registrator test_reg_##name(#name, (func));
 
 #endif

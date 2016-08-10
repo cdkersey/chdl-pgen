@@ -6,12 +6,12 @@ OBJS = if.o type.o cgen.o find_back_edges.o break_cycles.o asm.o asm-macro.o \
 HEADERS = cgen.h type.h if.h find_back_edges.h break_cycles.h asm.h asm-macro.h\
        prevent_deadlock.h cgen-cpp.h convert_phis.h
 
-all : libbscotch.a libbscotch.so
+all : libchdl-pgen.a libchdl-pgen.so
 
-libbscotch.so : $(OBJS)
-	$(CXX) -o libbscotch.so $(LDFLAGS) -shared $(OBJS) $(LDLIBS)
+libchdl-pgen.so : $(OBJS)
+	$(CXX) -o libchdl-pgen.so $(LDFLAGS) -shared $(OBJS) $(LDLIBS)
 
-libbscotch.a : $(OBJS)
+libchdl-pgen.a : $(OBJS)
 	$(AR) q $@ $(OBJS)
 
 asm.o : asm.cpp $(HEADERS)
@@ -26,4 +26,4 @@ break_cycles.o : break_cycles.cpp $(HEADERS)
 prevent_deadlock.o : prevent_deadlock.cpp $(HEADERS)
 
 clean:
-	$(RM) $(OBJS) libbscotch.a libbscotch.so
+	$(RM) $(OBJS) libchdl-pgen.a libchdl-pgen.so

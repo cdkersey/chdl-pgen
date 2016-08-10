@@ -14,7 +14,7 @@
 
 #include "testgen.h"
 
-using namespace bscotch;
+using namespace pgen;
 
 static type mem_req(int b, int n, int a, int i) {
   type t = struct_type().

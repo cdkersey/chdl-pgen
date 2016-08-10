@@ -9,7 +9,7 @@
 #include "../type.h"
 #include "../if.h"
 
-using namespace bscotch;
+using namespace pgen;
 using namespace std;
 
 type u8() { return u(8); }

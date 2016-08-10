@@ -3,7 +3,7 @@
 #include <iostream>
 
 using namespace std;
-using namespace bscotch;
+using namespace pgen;
 
 // This is probably exponential in the number of branches in the worst case; its
 // performance may be an issue in the future.
@@ -20,7 +20,7 @@ void fbe_dfs(if_bb *b, set<cfg_edge_t> &e, set<if_bb *> &a) {
 }
 
 // Use depth-first search to find back edges.
-void bscotch::find_back_edges(set<cfg_edge_t> &e, if_func &f) {
+void pgen::find_back_edges(set<cfg_edge_t> &e, if_func &f) {
   set<if_bb *> a; // Ancenstor blocks
   fbe_dfs(f.bbs[0], e, a);
 }

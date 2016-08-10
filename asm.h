@@ -1,5 +1,5 @@
-#ifndef BSCOTCH_ASM_H
-#define BSCOTCH_ASM_H
+#ifndef CHDL_PGEN_ASM_H
+#define CHDL_PGEN_ASM_H
 
 #include <iostream>
 
@@ -12,7 +12,7 @@
 #include "type.h"
 #include "if.h"
 
-namespace bscotch {
+namespace pgen {
   struct asm_prog {
     typedef unsigned val_id_t;
     
@@ -62,14 +62,14 @@ namespace bscotch {
 }
 
 template <typename T>
-  void bscotch::to_vec_bool(std::vector<bool> &v, unsigned size, T val)
+  void pgen::to_vec_bool(std::vector<bool> &v, unsigned size, T val)
 {
   for (unsigned i = 0; i < size; ++i)
     v.push_back((val & (1ul<<i)) ? true : false);
 }
 
 template <typename T>
-  void bscotch::asm_prog::static_var(
+  void pgen::asm_prog::static_var(
     const type &t, std::string name, const T &initial_val
   )
 {

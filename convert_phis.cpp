@@ -4,7 +4,7 @@
 #include "convert_phis.h"
 
 using namespace std;
-using namespace bscotch;
+using namespace pgen;
 
 static void live_in_phi_adj(if_bb &b) {
   for (auto &v : b.vals) {
@@ -19,7 +19,7 @@ static void live_in_phi_adj(if_bb &b) {
   }
 }
 
-void bscotch::convert_phis(if_func &f) {
+void pgen::convert_phis(if_func &f) {
   for (auto &b : f.bbs)
     live_in_phi_adj(*b);
 }

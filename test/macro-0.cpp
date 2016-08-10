@@ -13,8 +13,8 @@
 
 #include "testgen.h"
 
-void macro0(bscotch::if_prog *pp) {
-  using namespace bscotch;
+void macro0(pgen::if_prog *pp) {
+  using namespace pgen;
 
   // Initialize the assembler.
   if_prog &p(*pp);

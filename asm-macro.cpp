@@ -2,13 +2,13 @@
 
 #include <cstdlib>
 
-using namespace bscotch;
+using namespace pgen;
 using namespace std;
 
 static asm_prog *asm_prog_ptr;
-vector<bscotch::varimpl *> vars;
+vector<pgen::varimpl *> vars;
 
-struct bscotch::varimpl {
+struct pgen::varimpl {
   varimpl(): v(NULL), id(next_id++), generic(true) {
     vars.push_back(this);
   }
@@ -17,26 +17,26 @@ struct bscotch::varimpl {
     vars.push_back(this);
   }
 
-  bscotch::asm_prog::val_id_t id;
+  pgen::asm_prog::val_id_t id;
   if_val *v; // Most recently assigned value. 
   type t; // Type.
   bool generic; // Type not yet assigned.
 
-  static bscotch::asm_prog::val_id_t next_id;
+  static pgen::asm_prog::val_id_t next_id;
 };
 
-bscotch::asm_prog::val_id_t bscotch::varimpl::next_id;
+pgen::asm_prog::val_id_t pgen::varimpl::next_id;
 
 // Initialize the macro API. This is a thread-unsafe, stateful API designed as
 // a stop-gap solution between the assembler and a language front-end/parser.
-void bscotch::init_macro_env(asm_prog &a) {
+void pgen::init_macro_env(asm_prog &a) {
   asm_prog_ptr = &a;
-  bscotch::varimpl::next_id = 0;
+  pgen::varimpl::next_id = 0;
   for (auto &p : vars) delete p;
   vars.clear();
 }
 
-void bscotch::finish_macro_env() {
+void pgen::finish_macro_env() {
   asm_prog_ptr->assemble_func();
 
   for (auto &p : vars) delete p;
@@ -45,15 +45,15 @@ void bscotch::finish_macro_env() {
   asm_prog_ptr = NULL;
 }
 
-bscotch::var::var(const type &t) {
+pgen::var::var(const type &t) {
   p = new varimpl(t);
 }
 
-bscotch::var::var() {
+pgen::var::var() {
   p = new varimpl();
 }
 
-var &bscotch::var::operator=(const var &r) {
+var &pgen::var::operator=(const var &r) {
   // This should cost nothing in the final output.
   asm_prog_ptr->val(p->t, p->id, VAL_CONCATENATE).arg(r.p->id);
   p->v = asm_prog_ptr->v;
@@ -61,7 +61,7 @@ var &bscotch::var::operator=(const var &r) {
   return *this;
 }
 
-var bscotch::lit(const type &t, unsigned long val) {
+var pgen::lit(const type &t, unsigned long val) {
   var r;
 
   asm_prog_ptr->val(u(64), r.p->id, VAL_CONST).const_arg(val);
@@ -71,7 +71,7 @@ var bscotch::lit(const type &t, unsigned long val) {
   return r;
 }
 
-var bscotch::arg(const type &t) {
+var pgen::arg(const type &t) {
   var r;
 
   asm_prog_ptr->val(t, r.p->id, VAL_ARG);
@@ -82,7 +82,7 @@ var bscotch::arg(const type &t) {
 }
 
 // Basic arithmetic/logic operators
-static var bin_op(bscotch::if_op op, const var &a, const var &b) {
+static var bin_op(pgen::if_op op, const var &a, const var &b) {
   var r(op == VAL_EQ || op == VAL_LT ? bit() : a.p->t);
 
   asm_prog_ptr->val(r.p->t, r.p->id, op).arg(a.p->id).arg(b.p->id);
@@ -91,29 +91,29 @@ static var bin_op(bscotch::if_op op, const var &a, const var &b) {
   return r;
 }
 
-var bscotch::operator&(const var &a, const var &b)
+var pgen::operator&(const var &a, const var &b)
   { return bin_op(VAL_AND, a, b); }
 
-var bscotch::operator|(const var &a, const var &b)
+var pgen::operator|(const var &a, const var &b)
   { return bin_op(VAL_OR, a, b); }
 
-var bscotch::operator^(const var &a, const var &b)
+var pgen::operator^(const var &a, const var &b)
   { return bin_op(VAL_XOR, a, b); }
 
-var bscotch::operator+(const var &a, const var &b)
+var pgen::operator+(const var &a, const var &b)
   { return bin_op(VAL_ADD, a, b); }
 
-var bscotch::operator-(const var &a, const var &b)
+var pgen::operator-(const var &a, const var &b)
   { return bin_op(VAL_SUB, a, b); }
 
-var bscotch::operator*(const var &a, const var &b)
+var pgen::operator*(const var &a, const var &b)
   { return bin_op(VAL_MUL, a, b); }
 
-var bscotch::operator/(const var &a, const var &b)
+var pgen::operator/(const var &a, const var &b)
   { return bin_op(VAL_DIV, a, b); }
 
 // Basic unary operators
-static var un_op(bscotch::if_op op, const var &a) {
+static var un_op(pgen::if_op op, const var &a) {
   type t;
   if (op == VAL_OR_REDUCE || op == VAL_AND_REDUCE)
     t = bit();
@@ -129,50 +129,50 @@ static var un_op(bscotch::if_op op, const var &a) {
   return r;
 }
 
-var bscotch::operator!(const var &x) { return un_op(VAL_NOT, x); }
-var bscotch::operator-(const var &x) { return un_op(VAL_NEG, x); }
-var bscotch::operator~(const var &x) { return un_op(VAL_NOT, x); }
-var bscotch::OrReduce(const var &x)  { return un_op(VAL_OR_REDUCE, x); }
-var bscotch::AndReduce(const var &x) { return un_op(VAL_AND_REDUCE, x); }
+var pgen::operator!(const var &x) { return un_op(VAL_NOT, x); }
+var pgen::operator-(const var &x) { return un_op(VAL_NEG, x); }
+var pgen::operator~(const var &x) { return un_op(VAL_NOT, x); }
+var pgen::OrReduce(const var &x)  { return un_op(VAL_OR_REDUCE, x); }
+var pgen::AndReduce(const var &x) { return un_op(VAL_AND_REDUCE, x); }
 
 // Basic comparison operators
-var bscotch::operator==(const var &a, const var &b) {
+var pgen::operator==(const var &a, const var &b) {
   return bin_op(VAL_EQ, a, b);
 }
 
-var bscotch::operator!=(const var &a, const var &b) {
+var pgen::operator!=(const var &a, const var &b) {
   return !bin_op(VAL_EQ, a, b);
 }
 
-var bscotch::operator<(const var &a, const var &b) {
+var pgen::operator<(const var &a, const var &b) {
   return bin_op(VAL_LT, a, b);
 }
 
-var bscotch::operator>=(const var &a, const var &b) {
+var pgen::operator>=(const var &a, const var &b) {
   return !bin_op(VAL_LT, a, b);
 }
 
-var bscotch::operator>(const var &a, const var &b) {
+var pgen::operator>(const var &a, const var &b) {
   return bin_op(VAL_LT, b, a);
 }
 
-var bscotch::operator<=(const var &a, const var &b) {
+var pgen::operator<=(const var &a, const var &b) {
   return !bin_op(VAL_LT, b, a);
 }
 
-void bscotch::function(const char *name) {
+void pgen::function(const char *name) {
   asm_prog_ptr->function(name);
 }
 
-void bscotch::label(const char *name) {
+void pgen::label(const char *name) {
   asm_prog_ptr->label(name);
 }
 
-void bscotch::br(const char *dest) {
+void pgen::br(const char *dest) {
   asm_prog_ptr->br().target(dest);
 }
 
-argcollector<std::string> bscotch::br(const var &sel) {
+argcollector<std::string> pgen::br(const var &sel) {
   asm_prog_ptr->br(sel.p->id);
   return argcollector<string>(
     [](std::string x){
@@ -181,7 +181,7 @@ argcollector<std::string> bscotch::br(const var &sel) {
   );
 }
 
-argcollector<var> bscotch::spawn(const char *func) {
+argcollector<var> pgen::spawn(const char *func) {
   type t(void_type());
 
   var r;
@@ -191,7 +191,7 @@ argcollector<var> bscotch::spawn(const char *func) {
   return argcollector<var>([](var v){ asm_prog_ptr->arg(v.p->id); });
 }
 
-argcollector<var> bscotch::call(const char *func) {
+argcollector<var> pgen::call(const char *func) {
   type t(void_type());
 
   var r;
@@ -201,7 +201,7 @@ argcollector<var> bscotch::call(const char *func) {
   return argcollector<var>([](var v){ asm_prog_ptr->arg(v.p->id); });
 }
 
-argcollector<var> bscotch::call(const char *func, const var &r) {
+argcollector<var> pgen::call(const char *func, const var &r) {
   type t(r.p->t);
 
   asm_prog_ptr->val(t, r.p->id, VAL_CALL).func_arg(func);
@@ -210,7 +210,7 @@ argcollector<var> bscotch::call(const char *func, const var &r) {
   return argcollector<var>([](var v){ asm_prog_ptr->arg(v.p->id); });
 }
 
-argcollector<var> bscotch::cat(const var &r) {
+argcollector<var> pgen::cat(const var &r) {
   asm_prog_ptr->val(r.p->t, r.p->id, VAL_CONCATENATE);
   r.p->v = asm_prog_ptr->v;
 
@@ -220,7 +220,7 @@ argcollector<var> bscotch::cat(const var &r) {
   );
 }
 
-argcollector<var> bscotch::build(const var &r) {
+argcollector<var> pgen::build(const var &r) {
   asm_prog_ptr->val(r.p->t, r.p->id, VAL_BUILD);
   r.p->v = asm_prog_ptr->v;
 
@@ -230,20 +230,20 @@ argcollector<var> bscotch::build(const var &r) {
   );
 }
 
-void bscotch::ret() {
+void pgen::ret() {
   asm_prog_ptr->val(void_type(), varimpl::next_id++, VAL_RET);
 }
 
-void bscotch::ret(const var &rval) {
+void pgen::ret(const var &rval) {
   un_op(VAL_RET, rval);
   asm_prog_ptr->f->rtype = rval.p->t;
 }
 
-void bscotch::static_var(const char *name, const type &t) {
+void pgen::static_var(const char *name, const type &t) {
   asm_prog_ptr->static_var(t, name);
 }
 
-void bscotch::static_var(const char *name, const type &t, long initialval) {
+void pgen::static_var(const char *name, const type &t, long initialval) {
   asm_prog_ptr->static_var(t, name, initialval);
 }
 
@@ -258,7 +258,7 @@ unsigned var_const_val(const var &v) {
   return const_val(*v.p->v);
 }
 
-var bscotch::load(const char *name) {
+var pgen::load(const char *name) {
   check_static_var_existence(name);
   
   if_staticvar &v(asm_prog_ptr->f->static_vars[name]);
@@ -270,7 +270,7 @@ var bscotch::load(const char *name) {
   return r;
 }
 
-var bscotch::load(const char *name, const var &idx) {
+var pgen::load(const char *name, const var &idx) {
   check_static_var_existence(name);
   
   if_staticvar &v(asm_prog_ptr->f->static_vars[name]);
@@ -291,7 +291,7 @@ var bscotch::load(const char *name, const var &idx) {
   return r;
 }
 
-var bscotch::load(const var &in, const var &idx) {
+var pgen::load(const var &in, const var &idx) {
   type t;
 
   if (is_struct(in.p->t))
@@ -308,7 +308,7 @@ var bscotch::load(const var &in, const var &idx) {
   return r;
 }
 
-var bscotch::load(const var &in, const var &idx, const var &len) {
+var pgen::load(const var &in, const var &idx, const var &len) {
   type t(in.p->t);
   *(t.type_vec.rbegin()) = var_const_val(len);
   var r(t);
@@ -319,11 +319,11 @@ var bscotch::load(const var &in, const var &idx, const var &len) {
   return r;
 }
 
-var bscotch::load(const var &in, const var &idx, unsigned len) {
+var pgen::load(const var &in, const var &idx, unsigned len) {
   return load(in, idx, lit(u(32), len));
 }
 
-var bscotch::load(const var &in, const char *field) {
+var pgen::load(const var &in, const char *field) {
   type &t(in.p->t);
   unsigned field_idx = t.get_field_idx(field);
   type field_type = t.get_field_type(field_idx);
@@ -340,7 +340,7 @@ var bscotch::load(const var &in, const char *field) {
   return r;
 }
 
-void bscotch::store(const char *name, const var &d) {
+void pgen::store(const char *name, const var &d) {
   check_static_var_existence(name);
 
   if_staticvar &v(asm_prog_ptr->f->static_vars[name]);
@@ -350,7 +350,7 @@ void bscotch::store(const char *name, const var &d) {
     .static_arg(name).arg(d.p->id);
 }
 
-void bscotch::store(const char *name, const var &idx, const var &d) {
+void pgen::store(const char *name, const var &idx, const var &d) {
   check_static_var_existence(name);
 
   if_staticvar &v(asm_prog_ptr->f->static_vars[name]);
@@ -361,7 +361,7 @@ void bscotch::store(const char *name, const var &idx, const var &d) {
     static_arg(name).arg(idx.p->id).arg(d.p->id);
 }
 
-void bscotch::store(const char *name, const char *field, const var &d) {
+void pgen::store(const char *name, const char *field, const var &d) {
   check_static_var_existence(name);
 
   if_staticvar &v(asm_prog_ptr->f->static_vars[name]);
@@ -377,7 +377,7 @@ void bscotch::store(const char *name, const char *field, const var &d) {
   store(name, lit(u(32), field_idx), d);
 }
 
-var bscotch::repl(const var &in, const var &idx, const var &d) {
+var pgen::repl(const var &in, const var &idx, const var &d) {
   type &t(in.p->t);
   var r(t);
   
@@ -387,7 +387,7 @@ var bscotch::repl(const var &in, const var &idx, const var &d) {
   return r;
 }
 
-var bscotch::repl(const var &in, const var &idx, const var &d, const var &len) {
+var pgen::repl(const var &in, const var &idx, const var &d, const var &len) {
   type &t(in.p->t);
   var r(t);
 
@@ -397,11 +397,11 @@ var bscotch::repl(const var &in, const var &idx, const var &d, const var &len) {
   return r;
 }
 
-var bscotch::repl(const var &in, const var &idx, const var &d, unsigned len) {
+var pgen::repl(const var &in, const var &idx, const var &d, unsigned len) {
   return repl(in, idx, d, lit(u(32), len));
 }
 
-var bscotch::repl(const var &in, const char *field, const var &d) {
+var pgen::repl(const var &in, const char *field, const var &d) {
   type &t(in.p->t);
   unsigned field_idx, i;
   bool found = false;
@@ -421,6 +421,6 @@ var bscotch::repl(const var &in, const char *field, const var &d) {
   return repl(in, lit(u(32), field_idx), d);
 }
 
-void bscotch::pred(const var &p) {
+void pgen::pred(const var &p) {
   asm_prog_ptr->pred(p.p->id);
 }
