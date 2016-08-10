@@ -24,10 +24,10 @@ tasks/goals in order of planned completion:
     - Make TAPs run-time optional.
     - Make all of the tests self-report success or failure.
     - Decide whether functions need to be predicatable.
-  - Parser/front end <?>
-    - Build a skeleton flex/bison parser <?>
-    - Get simple static function to parse to AST. <?>
-    - Get counter to parse to AST. <?>
+  - Parser/front end
+    - Build a skeleton flex/bison parser
+    - Get simple static function to parse to AST.
+    - Get counter to parse to AST.
     - Get generic function to parse to AST.
     - Get simple AST to convert to IF.
     - Get generic function to parse to AST.
@@ -49,5 +49,5 @@ tasks/goals in order of planned completion:
     - binsearch.bpi
     - coalesce.bpi
 
-  - Demo <2016-07-12>
-  - Evaluation <2016-07-15>
+  - Demo
+  - Evaluation
