@@ -1,3 +1,48 @@
 CHDL Pipeline Generator
 =======================
 
+The CHDL pipeline generator provides a way to construct pipelined digital logic
+using what is effectively an assembly language providing a multi-threaded
+execution model.
+
+Instructions
+------------
+
+The instruction set provided by the CHDL pipeline generator contains the
+following instructions:
+
+  "const",
+  "phi",
+  "select",
+  "arg",
+  "ld_global",
+  "st_global",
+  "ld_static",
+  "st_static",
+  "ld_idx",
+  "st_idx",
+  "ld_idx_static",
+  "st_idx_static",
+  "ld_bcast_valid",
+  "neg",
+  "not",
+  "add", "sub", "mul", "div", "and", "or", "xor",
+  
+  "eq", "lt",
+  
+  "and_reduce", "or_reduce",
+
+  "cat",
+  "build",
+
+  "call_static",
+  "call",
+  "spawn",
+
+  "ret"
+
+Branches
+--------
+
+Examples
+--------
