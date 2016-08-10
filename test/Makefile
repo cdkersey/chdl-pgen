@@ -19,4 +19,4 @@ macro-4.o : macro-4.cpp
 macro-5.o : macro-5.cpp
 
 clean:
-	$(RM) $(TEST_OBJS) testgen *.s *.chdl.cpp *.sim.cpp
+	$(RM) $(TEST_OBJS) testgen.o testgen *.s *.chdl.cpp *.sim.cpp
