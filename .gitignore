@@ -1,0 +1,9 @@
+chdl-runtime/cgen-out.incl
+chdl-runtime/*.vcd
+chdl-runtime/OUTPUT.*
+cpp-runtime/cgen-out.incl
+cpp-runtime/OUTPUT.*
+test/*.chdl.cpp
+test/*.sim.cpp
+test/*.s
+*.o
