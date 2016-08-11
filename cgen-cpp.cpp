@@ -326,8 +326,11 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v, s
         << endl;
   } else if (v.op == VAL_LD_GLOBAL) {
     out << "    val" << v.id << " = g." << v.static_arg->name << ';' << endl;
-  } else if (v.op == VAL_LD_BCAST_VALID) {
+  } else if (v.op == VAL_BCAST_VALID_STATIC) {
     out << "    val" << v.id << " = s.static_var_" << v.static_arg->name
+        << "_valid;" << endl;
+  } else if (v.op == VAL_BCAST_VALID_GLOBAL) {
+    out << "    val" << v.id << " = g." << v.static_arg->name
         << "_valid;" << endl;
   } else if (v.op == VAL_LD_IDX_STATIC) {
     if (is_sram_array(v.static_arg->t) && v.args.size() == 1) {

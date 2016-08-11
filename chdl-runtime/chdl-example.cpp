@@ -289,6 +289,23 @@ struct globals_t {
   g.get_var<staticarray<type, CLOG2(len), stores> >(#name).gen(); \
 } while (0)
 
+#define GLOBAL_BCAST_VAR(g, name, type, ival, stores) do { \
+  g.add_var<bcastvar<type> >(#name); \
+} while (0)
+
+#define GLOBAL_BCAST_VAR_GEN(g, name, type, stores) do { \
+  g.get_var<bcastvar<type> >(#name).gen(); \
+} while (0)
+
+#define LD_BCAST_GLOBAL(g, name, type, stores) \
+  (g.get_var<bcastvar<type> >(#name).value())
+
+#define ST_BCAST_GLOBAL(g, name, type, stores, val, wr, idx) \
+  (g.get_var<bcastvar<type> >(#name).add_input<idx>((wr), (val)))
+
+#define LD_BCAST_VALID_GLOBAL(type, name) \
+  (g.get_var<bcastvar<type> >(#name).valid())
+
 #include "cgen-out.incl"
 
 int main() {

@@ -247,12 +247,20 @@ void pgen::static_var(const char *name, const type &t, long initialval) {
   asm_prog_ptr->static_var(t, name, initialval);
 }
 
+void pgen::bcast_var(const char *name, const type &t) {
+  asm_prog_ptr->bcast_var(t, name);
+}
+
 void pgen::global_var(const char *name, const type &t) {
   asm_prog_ptr->global_var(t, name);
 }
 
 void pgen::global_var(const char *name, const type &t, long initialval) {
   asm_prog_ptr->global_var(t, name, initialval);
+}
+
+void pgen::global_bcast_var(const char *name, const type &t) {
+  asm_prog_ptr->global_bcast_var(t, name);
 }
 
 static void check_static_var_existence(const char *name) {
@@ -282,6 +290,24 @@ var pgen::load(const char *name) {
 
   asm_prog_ptr->val(t, r.p->id, global?VAL_LD_GLOBAL:VAL_LD_STATIC)
     .static_arg(name);
+
+  return r;
+}
+
+var pgen::bcast_valid(const char *name) {
+  check_static_var_existence(name);
+
+  bool global(!(asm_prog_ptr->f->static_vars.count(name)));
+  
+  if_staticvar &v(
+    global ?
+      asm_prog_ptr->p.global_vars[name] : asm_prog_ptr->f->static_vars[name]
+  );
+  type &t(v.t);
+  var r(t);
+
+  if_op op = global ? VAL_BCAST_VALID_GLOBAL : VAL_BCAST_VALID_STATIC;
+  asm_prog_ptr->val(t, r.p->id, op).static_arg(name);
 
   return r;
 }

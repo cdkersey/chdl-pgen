@@ -134,7 +134,8 @@ static void pgen::gen_val(std::ostream &out, std::string fname, int bbidx, int i
   if (!is_store(v.op) && v.op != VAL_PHI && v.op != VAL_CALL
       && v.op != VAL_RET && v.op != VAL_SPAWN && v.op != VAL_CONCATENATE
       && v.op != VAL_BUILD && v.op != VAL_LD_GLOBAL &&
-      v.op != VAL_LD_IDX_GLOBAL)
+      v.op != VAL_LD_IDX_GLOBAL && v.op != VAL_LD_GLOBAL &&
+      v.op != VAL_BCAST_VALID_GLOBAL)
   {
     out << type_chdl(v.t) << ' ' << fname << '_' << v.id << " = ";
   }
@@ -160,7 +161,9 @@ static void pgen::gen_val(std::ostream &out, std::string fname, int bbidx, int i
       out << "  typedef " << type_chdl(v.static_arg->t) << " val"
           << v.id << "_globalarg_t;" << endl
           << "  " << type_chdl(v.t) << ' ' << fname << '_' << v.id
-          << " = LD_GLOBAL(g, " << v.static_arg->name << ", "
+          << " = LD_";
+      if (v.static_arg->broadcast) out << "BCAST_";
+      out << "GLOBAL(g, " << v.static_arg->name << ", "
           << "val" << v.id << "_globalarg_t, " << v.static_arg->store_count
           << ')' << endl;
     }
@@ -213,7 +216,9 @@ static void pgen::gen_val(std::ostream &out, std::string fname, int bbidx, int i
     if (global) {
       out << "typedef " << type_chdl(v.static_arg->t) << " val" << v.id
           << "_globalarg_t;" << endl;
-      out << "  ST_GLOBAL(g, "
+      out << "  ST_";
+      if (v.static_arg->broadcast) out << "BCAST_";
+      out << "GLOBAL(g, "
           << v.static_arg->name << ", "
           << "val" << v.id << "_globalarg_t, "
           << v.static_arg->store_count << ", "
@@ -313,7 +318,7 @@ static void pgen::gen_val(std::ostream &out, std::string fname, int bbidx, int i
   } else if (v.op == VAL_ST_IDX_GLOBAL) {
     ostringstream preds;
     if (v.pred) preds << " && " << val_name(fname, bbidx, b, *v.pred);
-    out << "  typedef " << type_chdl(element_type(v.static_arg->t)) << " val"
+    out << "typedef " << type_chdl(element_type(v.static_arg->t)) << " val"
         << v.id << "_globalarg_t;" << endl;
     out << "  ST_GLOBAL_ARRAY(g, "
         << v.static_arg->name << ", "
@@ -324,8 +329,13 @@ static void pgen::gen_val(std::ostream &out, std::string fname, int bbidx, int i
         << aname[1] << ", "
         << fname << "_bb" << bbidx << "_run" << preds.str() << ", "
         << v.static_access_id << ')';
-  } else if (v.op == VAL_LD_BCAST_VALID) {
+  } else if (v.op == VAL_BCAST_VALID_STATIC) {
     out << "LD_BCAST_VALID(" << fname << ", " << v.static_arg->name << ')';
+  } else if (v.op == VAL_BCAST_VALID_GLOBAL) {
+    out << "  typedef " << type_chdl(element_type(v.static_arg->t)) << " val"
+        << v.id << "_globalarg_t;" << endl;
+    out << "    node " << fname << '_' << v.id << " = LD_BCAST_VALID_GLOBAL(val"
+        << v.id << "_globalarg_t, " << v.static_arg->name << ')';
   } else if (v.op == VAL_CALL || v.op == VAL_SPAWN) {
     ostringstream ctype_oss, rtype_oss, live_oss;
 
@@ -799,7 +809,9 @@ static void gen_global_decls(std::ostream &out, if_prog &p) {
           << array_len(g.second.t) << ", "
           << g.second.store_count << ");" << endl;
     } else {
-      out << "  GLOBAL_VAR(g, " << g.second.name << ", "
+      out << "  GLOBAL";
+      if (g.second.broadcast) out << "_BCAST";
+      out << "_VAR(g, " << g.second.name << ", "
           << g.first << "_decltype_t, 0x"
           << to_hex(g.second.initial_val) << ", "
           << g.second.store_count << ");" << endl;
@@ -812,7 +824,9 @@ static void gen_global_decls(std::ostream &out, if_prog &p) {
     type t(array ? element_type(g.second.t) : g.second.t);
     out << "  typedef " << type_chdl(t) << ' ' << g.first
         << "_decltype_t;" << endl
-        << "  GLOBAL_VAR_GEN";
+        << "  GLOBAL";
+    if (g.second.broadcast) out << "_BCAST";
+    out << "_VAR_GEN";
     if (is_sram_array(g.second.t)) out << "_ARRAY";
     out << "(g, " << g.second.name << ", "
         << g.first << "_decltype_t, ";
@@ -820,9 +834,19 @@ static void gen_global_decls(std::ostream &out, if_prog &p) {
     out << g.second.store_count << ");" << endl;
 
     if (!is_sram_array(g.second.t)) {
-      out << "  tap(\"global_" << g.first << "\", g.get_var<staticvar<"
-          << g.first << "_decltype_t, " << g.second.store_count
-          << "> >(\"" << g.first << "\").value());" << endl;
+      out << "  tap(\"global_" << g.first << "\", g.get_var<";
+      if (g.second.broadcast) out << "bcastvar";
+      else out << "staticvar";
+      out << "<" << g.first << "_decltype_t";
+      if (!g.second.broadcast) out << ", " << g.second.store_count;
+      out << "> >(\"" << g.first << "\").value());" << endl;
+
+      if (g.second.broadcast) {
+        out << "  tap(\"global_" << g.first << "_valid\", g.get_var<bcastvar<"
+            << g.first << "_decltype_t> >(\"" << g.first << "\").valid());"
+            << endl;
+   
+      }
     }
   }
   out << '}' << endl << endl;

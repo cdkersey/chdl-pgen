@@ -1,4 +1,4 @@
-CXXFLAGS += -std=c++11 -fmax-errors=1
+CXXFLAGS += -std=c++11 -g -fmax-errors=1
 LDLIBS += -lchdl
 
 chdl-example: chdl-example.cpp cgen-out.incl print_hex.h

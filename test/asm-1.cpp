@@ -77,9 +77,9 @@ void asm1(if_prog *pp) {
   a.val(bit(), 21, VAL_OR_REDUCE).arg(15);
   a.val(u(6), 22, VAL_CONCATENATE);
   for (unsigned i = 16; i <= 21; ++i) a.arg(i);
-  a.val(bit(), 23, VAL_LD_BCAST_VALID).static_arg("d1");
-  a.val(bit(), 24, VAL_LD_BCAST_VALID).static_arg("d2");
-  a.val(bit(), 25, VAL_LD_BCAST_VALID).static_arg("d3");
+  a.val(bit(), 23, VAL_BCAST_VALID_STATIC).static_arg("d1");
+  a.val(bit(), 24, VAL_BCAST_VALID_STATIC).static_arg("d2");
+  a.val(bit(), 25, VAL_BCAST_VALID_STATIC).static_arg("d3");
   a.val(u(6), 26, VAL_CONCATENATE).
     arg(23).arg(24).arg(25).arg(23).arg(24).arg(25);
   a.val(u(6), 27, VAL_NOT).arg(22);

@@ -67,8 +67,10 @@ namespace pgen {
   
   void static_var(const char *name, const type &t);
   void static_var(const char *name, const type &t, long initialval);
+  void bcast_var(const char *name, const type &t);
   void global_var(const char *name, const type &t);
   void global_var(const char *name, const type &t, long initialval);
+  void global_bcast_var(const char *name, const type &t);
 
   var load(const char *name);
   var load(const char *name, const var &idx);
@@ -85,6 +87,8 @@ namespace pgen {
   var repl(const var &in, const var &idx, const var &d, unsigned len);
   var repl(const var &in, const char *field, const var &d);
 
+  var bcast_valid(const char *name);
+  
   // Add a predicate to preceding store to a static variable.
   void pred(const var &p);
   
