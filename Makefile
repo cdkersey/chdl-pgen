@@ -1,12 +1,18 @@
-CXXFLAGS = -std=c++11 -g -Wfatal-errors -fPIC
-LDFLAGS =
-LDLIBS = 
+CXXFLAGS ?= -std=c++11 -g -Wfatal-errors -fPIC
+LDFLAGS ?=
+LDLIBS ?=
+PREFIX ?= /usr/local
 OBJS = if.o type.o cgen.o find_back_edges.o break_cycles.o asm.o asm-macro.o \
        prevent_deadlock.o cgen-cpp.o convert_phis.o
 HEADERS = cgen.h type.h if.h find_back_edges.h break_cycles.h asm.h asm-macro.h\
        prevent_deadlock.h cgen-cpp.h convert_phis.h
 
 all : libchdl-pgen.a libchdl-pgen.so
+
+install:
+	cp libchdl-pgen.so $(PREFIX)/lib
+	mkdir -p $(PREFIX)/include/chdl/pgen
+	cp *.h $(PREFIX)/include/chdl/pgen
 
 libchdl-pgen.so : $(OBJS)
 	$(CXX) -o libchdl-pgen.so $(LDFLAGS) -shared $(OBJS) $(LDLIBS)
