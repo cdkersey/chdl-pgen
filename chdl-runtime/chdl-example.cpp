@@ -236,6 +236,7 @@ template <typename T>
 
 struct generic_global {};
 template <typename T> struct specific_global : public generic_global {
+  specific_global(): contents() {}
   template <typename U> specific_global(const U &x): contents(x) {}
   T &get() { return contents; }
 
@@ -265,12 +266,19 @@ struct globals_t {
 #define ST_GLOBAL(g, name, type, stores, val, wr, idx) \
   (g.get_var<staticvar<type, stores> >(#name).add_input<idx>((wr), (val)))
 
+#define LD_GLOBAL_ARRAY(g, name, idx, type, len, stores, ld_idx) \
+  (g.get_var<staticarray<type, CLOG2(len), stores> >(#name).ld<ld_idx>(idx))
+
+#define ST_GLOBAL_ARRAY(g, name, idx, type, len, stores, val, wr, st_idx) \
+  (g.get_var<staticarray<type, CLOG2(len), stores> >(#name). \
+    add_input((wr), (idx), (val)))
+
 #define GLOBAL_VAR(g, name, type, ival, stores) do { \
   g.add_var<staticvar<type, stores> >(#name, ival); \
 } while (0)
 
 #define GLOBAL_ARRAY(g, name, type, len, stores) do { \
-  g.add_var<staticarray<type, len, stores> >(#name); \
+  g.add_var<staticarray<type, CLOG2(len), stores> >(#name); \
 } while (0)
 
 #define GLOBAL_VAR_GEN(g, name, type, stores) do { \
@@ -278,7 +286,7 @@ struct globals_t {
 } while (0)
 
 #define GLOBAL_VAR_GEN_ARRAY(g, name, type, len, stores) do { \
-  g.get_var<staticarray<type, len, stores> >(#name).gen(); \
+  g.get_var<staticarray<type, CLOG2(len), stores> >(#name).gen(); \
 } while (0)
 
 #include "cgen-out.incl"
