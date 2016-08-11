@@ -234,6 +234,53 @@ template <typename T>
   HIERARCHY_EXIT();
 }
 
+struct generic_global {};
+template <typename T> struct specific_global : public generic_global {
+  template <typename U> specific_global(const U &x): contents(x) {}
+  T &get() { return contents; }
+
+  T contents;
+};
+
+struct globals_t {
+  map<std::string, generic_global*> vars;
+
+  template <typename T> T& get_var(std::string name) {
+    return ((specific_global<T>*)vars[name])->get();
+  }
+
+  template <typename T> void add_var(std::string name) {
+    vars[name] = new specific_global<T>();
+  }
+
+  template <typename T, typename U> void add_var(std::string name, const U &arg)
+  {
+    vars[name] = new specific_global<T>(arg);
+  }
+};
+
+#define LD_GLOBAL(g, name, type, stores) \
+  (g.get_var<staticvar<type, stores> >(#name).value())
+
+#define ST_GLOBAL(g, name, type, stores, val, wr, idx) \
+  (g.get_var<staticvar<type, stores> >(#name).add_input<idx>((wr), (val)))
+
+#define GLOBAL_VAR(g, name, type, ival, stores) do { \
+  g.add_var<staticvar<type, stores> >(#name, ival); \
+} while (0)
+
+#define GLOBAL_ARRAY(g, name, type, len, stores) do { \
+  g.add_var<staticarray<type, len, stores> >(#name); \
+} while (0)
+
+#define GLOBAL_VAR_GEN(g, name, type, stores) do { \
+  g.get_var<staticvar<type, stores> >(#name).gen(); \
+} while (0)
+
+#define GLOBAL_VAR_GEN_ARRAY(g, name, type, len, stores) do { \
+  g.get_var<staticarray<type, len, stores> >(#name).gen(); \
+} while (0)
+
 #include "cgen-out.incl"
 
 int main() {
@@ -252,7 +299,11 @@ int main() {
   TAP(bmain_call);
   TAP(bmain_ret);
 
-  bmain(bmain_ret, bmain_call);
+  globals_t g;
+  
+  init_global_vars(g);
+  bmain(bmain_ret, bmain_call, g);
+  finalize_global_vars(g);
   
   if (cycdet()) return 1;
 

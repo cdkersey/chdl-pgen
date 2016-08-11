@@ -1,6 +1,6 @@
 CXXFLAGS ?= -std=c++11 -g -Wfatal-errors
 TEST_OBJS = asm-0.o asm-1.o asm-2.o macro-0.o macro-1.o macro-2.o macro-3.o \
-            macro-4.o macro-5.o
+            macro-4.o macro-5.o global.o
 LDFLAGS = -L../
 LDLIBS = -lchdl-pgen
 
@@ -17,6 +17,7 @@ macro-2.o : macro-2.cpp
 macro-3.o : macro-3.cpp
 macro-4.o : macro-4.cpp
 macro-5.o : macro-5.cpp
+global.o : global.cpp
 
 clean:
 	$(RM) $(TEST_OBJS) testgen.o testgen *.s *.chdl.cpp *.sim.cpp

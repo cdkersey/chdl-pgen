@@ -19,6 +19,7 @@ namespace pgen {
     VAL_LD_STATIC, VAL_ST_STATIC,
     VAL_LD_IDX, VAL_ST_IDX,
     VAL_LD_IDX_STATIC, VAL_ST_IDX_STATIC,
+    VAL_LD_IDX_GLOBAL, VAL_ST_IDX_GLOBAL,
     VAL_LD_BCAST_VALID,
     VAL_NEG, VAL_NOT,
     VAL_ADD, VAL_SUB, VAL_MUL, VAL_DIV, VAL_AND, VAL_OR, VAL_XOR,
@@ -35,6 +36,10 @@ namespace pgen {
     type t;
     std::vector<bool> initial_val;
 
+    // The code generators need to know how many loads and stores have each
+    // static/global variable as a destination.
+    unsigned store_count, load_count;
+    
     // Broadcast variables are non-persistent intra-cycle communication between
     // pipeline stages.
     bool broadcast;

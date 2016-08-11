@@ -22,12 +22,14 @@ namespace pgen {
 
 static bool is_store(if_op op) {
   return op == VAL_ST_GLOBAL || op == VAL_ST_STATIC ||
-         op == VAL_ST_IDX || op == VAL_ST_IDX_STATIC;
+         op == VAL_ST_IDX || op == VAL_ST_IDX_STATIC ||
+         op == VAL_ST_IDX_GLOBAL || op == VAL_ST_IDX_STATIC;
 }
 
 static bool is_load(if_op op) {
   return op == VAL_LD_GLOBAL || op == VAL_LD_STATIC ||
-         op == VAL_LD_IDX || op == VAL_LD_IDX_STATIC;
+         op == VAL_LD_IDX || op == VAL_LD_IDX_STATIC ||
+         op == VAL_LD_IDX_GLOBAL || op == VAL_ST_IDX_GLOBAL;
 }
 
 static void gen_static_var(
@@ -151,8 +153,16 @@ static void pgen::gen_val(std::ostream &out, std::string fname, int bbidx, int i
       out << "Lit<" << v.t.size() << ">(0x" << to_hex(v.const_val) << ')';
     }
   } else if (v.op == VAL_LD_STATIC || v.op == VAL_LD_GLOBAL) {
+    if (v.op == VAL_LD_STATIC) {
+      out << "  LD_STATIC(" << fname << ", " << v.static_arg->name << ')';
+    } else {
+      out << "  LD_GLOBAL(g, " << v.static_arg->name << ", "
+          << type_chdl(v.static_arg->t) << ", " << v.static_arg->store_count
+          << ')' << endl;
+    }
+    
+      
     string macro_name(v.op == VAL_LD_GLOBAL ? "LD_GLOBAL" : "LD_STATIC");
-    out << macro_name << '(' << fname << ", " << v.static_arg->name << ')';
   } else if (is_binary(v.op)) {
     out << aname[0] << op_str(v.op, v.args[0]->t, v.args[1]->t) << aname[1];
   } else if (is_unary(v.op)) {
@@ -191,15 +201,25 @@ static void pgen::gen_val(std::ostream &out, std::string fname, int bbidx, int i
         << v.static_access_id << "\")";
   } else if (v.op == VAL_ST_STATIC || v.op == VAL_ST_GLOBAL) {
     bool global(v.op == VAL_ST_GLOBAL);
-    string macro_name(global ? "ST_GLOBAL":"ST_STATIC");
     ostringstream preds;
     if (v.pred) {
       preds << " && " << val_name(fname, bbidx, b, *v.pred);
     }
-    out << macro_name << '(' << fname << ", " << v.static_arg->name << ", "
-        << aname[0] << ", "
-        << fname << "_bb" << bbidx << "_run" << preds.str() << ", "
-        << v.static_access_id << ')';
+
+    if (global) {
+      out << "ST_GLOBAL(g, "
+          << v.static_arg->name << ", "
+          << type_chdl(v.static_arg->t) << ", "
+          << v.static_arg->store_count << ", "
+          << val_name(fname, bbidx, b, *v.args[0]) << ", "
+          << fname << "_bb" << bbidx << "_run" << preds.str() << ", "
+          << v.static_access_id << ')';
+    } else {
+      out << "ST_STATIC(" << fname << ", " << v.static_arg->name << ", "
+          << aname[0] << ", "
+          << fname << "_bb" << bbidx << "_run" << preds.str() << ", "
+          << v.static_access_id << ')';
+    }
   } else if (v.op == VAL_PHI) {
     // Do nothing; phis are handled entirely in the inputs to the block.
   } else if (v.op == VAL_LD_IDX) {
@@ -321,7 +341,7 @@ static void pgen::gen_val(std::ostream &out, std::string fname, int bbidx, int i
           << fname << "_bb" << bbidx << "_live;" << endl;
 
     out << "  " << v.func_arg << '(' << fname << "_call_" << v.id << "_ret, "
-        << fname << "_call_" << v.id << "_args);" << endl;
+        << fname << "_call_" << v.id << "_args, g);" << endl;
 
     if (v.op == VAL_CALL)
       out << "  " << type_chdl(v.t) << ' ' << fname << '_' << v.id << " = "
@@ -675,42 +695,6 @@ static void pgen::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b
   out << "  hierarchy_exit();" << endl << endl;
 }
 
-unsigned count_loads(if_func &f, if_staticvar &s) {
-  unsigned count = 0;
-
-  for (auto &b : f.bbs)
-    for (auto &v : b->vals)
-      if (v->static_arg == &s)
-	if (is_load(v->op))
-	  v->static_access_id = count++;
-
-  return count;
-}
-
-#if 0
-unsigned count_args(if_func &f) {
-  unsigned count = 0;
-  for (auto &b : f.bbs)
-    for (auto &v : b->vals)
-      if (v->op == VAL_ARG)
-        v->static_access_id = count++;
-
-  return count;
-}
-#endif
-
-unsigned count_stores(if_func &f, if_staticvar &s) {
-  unsigned count = 0;
-
-  for (auto &b : f.bbs)
-    for (auto &v : b->vals)
-      if (v->static_arg == &s)
-	if (is_store(v->op))
-	  v->static_access_id = count++;
-
-  return count;
-}
-
 static void pgen::gen_func_decls(std::ostream &out, std::string name, if_func &f) {
   using std::endl;
   
@@ -730,7 +714,8 @@ static void pgen::gen_func_decls(std::ostream &out, std::string name, if_func &f
   // Prototype the function.
   out << "template <typename OPAQUE> void " << name
       << '(' << name << "_ret_t<OPAQUE> &" << name << "_ret, "
-      << name << "_call_t<OPAQUE> &" << name << "_call);" << endl;
+      << name << "_call_t<OPAQUE> &" << name << "_call, globals_t &g);"
+      << endl;
 }
 
 static void pgen::gen_func(std::ostream &out, std::string name, if_func &f) {
@@ -738,13 +723,14 @@ static void pgen::gen_func(std::ostream &out, std::string name, if_func &f) {
   
   out << "template <typename OPAQUE> void " << name
       << '(' << name << "_ret_t<OPAQUE> &" << name << "_ret, "
-      << name << "_call_t<OPAQUE> &" << name << "_call) {" << endl;
+      << name << "_call_t<OPAQUE> &" << name << "_call, globals_t &g) {"
+      << endl;
 
   // count_args(f);
   
   for (auto &s : f.static_vars) {
-    unsigned loads = count_loads(f, s.second),
-             stores = count_stores(f, s.second);
+    unsigned loads = s.second.load_count,
+             stores = s.second.store_count;
     gen_static_var(out, s.second, name, loads, stores, false);
   }
   out << endl;
@@ -766,7 +752,45 @@ static void pgen::gen_func(std::ostream &out, std::string name, if_func &f) {
   out << '}' << endl;
 }
 
+static void gen_global_decls(std::ostream &out, if_prog &p) {
+  using std::endl;
+
+  out << "void init_global_vars(globals_t &g) {" << endl;
+  for (auto &g : p.global_vars) {
+    if (is_sram_array(g.second.t)) {
+      out << "  GLOBAL_ARRAY(g, " << g.second.name << ", "
+          << type_chdl(element_type(g.second.t)) << ", "
+          << array_len(g.second.t) << ", "
+          << g.second.store_count << ");" << endl;
+    } else {
+      out << "  GLOBAL_VAR(g, " << g.second.name << ", "
+          << type_chdl(g.second.t) << ", 0x"
+          << to_hex(g.second.initial_val) << ", "
+          << g.second.store_count << ");" << endl;
+    }
+  }
+  out << '}' << endl << endl
+      << "void finalize_global_vars(globals_t &g) {" << endl;
+  for (auto &g : p.global_vars) {
+    out << "  GLOBAL_VAR_GEN";
+    if (is_sram_array(g.second.t)) out << "_ARRAY";
+    out << "(g, " << g.second.name << ", "
+        << type_chdl(g.second.t) << ", ";
+    if (is_sram_array(g.second.t)) out << array_len(g.second.t) << ", ";
+    out << g.second.store_count << ");" << endl;
+
+    if (!is_sram_array(g.second.t)) {
+      out << "  tap(\"global_" << g.first << "\", g.get_var<staticvar<"
+          << type_chdl(g.second.t) << ", " << g.second.store_count
+          << "> >(\"" << g.first << "\").value());" << endl;
+    }
+  }
+  out << '}' << endl << endl;
+}
+
 void pgen::gen_prog(std::ostream &out, if_prog &p) {
+  gen_global_decls(out, p);
+  
   for (auto &f : p.functions) {
     gen_func_decls(out, f.first, f.second);
   }
