@@ -29,7 +29,7 @@ static void bmain() {
   function("bmain");
 
   global_var("g", u(32), 0);
-  global_var("a", a(u(32), 8));
+  global_var("a", a(s(32), 8));
   static_var("x", u(32), 0);
 
   var i(u(32));

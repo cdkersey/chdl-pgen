@@ -324,6 +324,8 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v, s
   } else if (v.op == VAL_LD_STATIC) {
     out << "    val" << v.id << " = s.static_var_" << v.static_arg->name << ';'
         << endl;
+  } else if (v.op == VAL_LD_GLOBAL) {
+    out << "    val" << v.id << " = g." << v.static_arg->name << ';' << endl;
   } else if (v.op == VAL_LD_BCAST_VALID) {
     out << "    val" << v.id << " = s.static_var_" << v.static_arg->name
         << "_valid;" << endl;
@@ -334,6 +336,13 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v, s
     } else {
       out << "    // UNSUPPORTED TYPE FOR LD_IDX_STATIC" << endl;
     }
+  } else if (v.op == VAL_LD_IDX_GLOBAL) {
+    if (is_sram_array(v.static_arg->t) && v.args.size() == 1) {
+      out << "    val" << v.id << " = g." << v.static_arg->name << '['
+          << arg_name(&b, v.args[0]) << "];" << endl;
+    } else {
+      out << "    // UNSUPPORTED TYPE FOR LD_IDX_GLOBAL" << endl;
+    }
   } else if (v.op == VAL_ST_IDX_STATIC) {
     if (is_sram_array(v.static_arg->t) && v.args.size() == 2) {
       out << "    s.static_var_" << v.static_arg->name << '['
@@ -341,6 +350,14 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v, s
           << ';' << endl;
     } else {
       out << "    // UNSUPPORTED TYPE FOR ST_IDX_STATIC" << endl;
+    }
+  } else if (v.op == VAL_ST_IDX_GLOBAL) {
+    if (is_sram_array(v.static_arg->t) && v.args.size() == 2) {
+      out << "    g." << v.static_arg->name << '['
+          << arg_name(&b, v.args[0]) << "] = " << arg_name(&b, v.args[1])
+          << ';' << endl;
+    } else {
+      out << "    // UNSUPPORTED TYPE FOR LD_IDX_STATIC" << endl;
     }
   } else if (v.op == VAL_ST_IDX) {
     if (is_integer_type(v.t)) {
@@ -369,6 +386,13 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v, s
     if (v.static_arg->broadcast)
       out << "    s.static_var_" << v.static_arg->name << "_valid = true;"
           << endl;
+  } else if (v.op == VAL_ST_GLOBAL) {
+    out << "    g.";
+    if (!v.static_arg->broadcast) out << "next_";
+    out << v.static_arg->name << " = " << arg_name(&b, v.args[0]) << ';'
+        << endl;
+    if (v.static_arg->broadcast)
+      out << "    g." << v.static_arg->name << "_valid = true;" << endl;
   } else if (v.op == VAL_LD_IDX) {
     if (is_integer_type(v.args[0]->t)) {
       out << "    val" << v.id << " = (" << arg_name(&b, v.args[0]) << " >> "
@@ -489,6 +513,8 @@ static
 static bool has_side_effects(if_op o) {
   return o == VAL_ST_STATIC ||
          o == VAL_ST_IDX_STATIC ||
+         o == VAL_ST_GLOBAL ||
+         o == VAL_ST_IDX_GLOBAL ||
          o == VAL_CALL ||
          o == VAL_SPAWN;
 }
@@ -504,7 +530,7 @@ static void gen_block(std::ostream &out, std::string fname, if_bb &b, std::map<p
   bool ret = (b.suc.size() == 0);
 
   if (call) {
-    out << "  tick_" << call->func_arg << "(*s.func"
+    out << "  tick_" << call->func_arg << "(g, *s.func"
         << call->id << ");" << endl;
 
     // Always ready for return from spawn.
@@ -616,7 +642,8 @@ static void gen_func(std::ostream &out, std::string name, if_func &f, std::map<p
   }
   out << '}' << endl << endl;
   
-  out << "void tick_" << name << "(" << name << "_state_t &s) {" << endl;
+  out << "void tick_" << name << "(global_state_t &g, "
+      << name << "_state_t &s) {" << endl;
 
   for (auto &s : f.static_vars) {
     if (!s.second.broadcast && !is_sram_array(s.second.t))
@@ -655,7 +682,8 @@ static void gen_func_forward_decls
 
   out << "struct " << name << "_state_t;" << endl
       << "void init_" << name << "(" << name << "_state_t&);" << endl
-      << "void tick_" << name << "(" << name << "_state_t&);" << endl;
+      << "void tick_" << name << "(global_state_t &g, "
+      << name << "_state_t&);" << endl;
 }
 
 static void gen_func_decls(std::ostream &out, std::string name, if_func &f, std::map<pgen::type, int> &m) {
@@ -737,20 +765,75 @@ static void gen_func_decls(std::ostream &out, std::string name, if_func &f, std:
   out << "};" << endl << endl;
 }
 
+static void gen_global_decls(std::ostream &out, if_prog &p) {
+  using namespace std;
+  out << "struct global_state_t {" << endl;
+  for (auto &g : p.global_vars) {
+    out << "  " << type_cpp(g.second.t) << ' ' << g.first;
+    if (!g.second.broadcast && !is_sram_array(g.second.t))
+      out << ", next_" << g.first;
+    out << ';' << endl;
+
+    if (g.second.broadcast) out << "  bool " << g.first << "_valid;" << endl;
+  }
+  out << "};" << endl;
+}
+
+static void gen_tick_globals(std::ostream &out, if_prog &p) {
+  using namespace std;
+
+  out << "void tick_globals(global_state_t &g) {" << endl;
+
+  for (auto &g : p.global_vars) {
+    out << "  std::cout << \"Global var " << g.first << " = \" << g." << g.first
+        << " << std::endl;" << endl;
+  }
+  
+  for (auto &g : p.global_vars) {
+    if (!g.second.broadcast && !is_sram_array(g.second.t))
+      out << "  g." << g.first << " = g.next_" << g.first << ';' << endl;
+    else if (g.second.broadcast)
+      out << "  g." << g.first << "_valid = false;" << endl;
+  }
+  
+  out << '}' << endl << endl
+      << "void init_globals(global_state_t &g) {" << endl;
+
+  for (auto &g : p.global_vars) {
+    if (!g.second.broadcast && !is_sram_array(g.second.t)
+        && g.second.initial_val.size() > 0)
+    {
+      out << "  g." << g.first << " = " << to_hex(g.second.initial_val)
+          << "ull;" << endl;
+    } else if (g.second.broadcast) {
+      out << "  g." << g.first << "_valid = false;" << endl;
+    }
+  }
+  
+  out << '}' << endl;
+}
+
 void pgen::gen_prog_cpp(std::ostream &out, if_prog &p) {
   using namespace std;
   map<pgen::type, int> m;
   catalog_types(m, p);
   gen_struct_decls(out, m);
 
-  out << "// Forward declarations." << std::endl;
+  out << "// Forward declarations." << endl
+      << "struct global_state_t;" << endl
+      << "void tick_globals(global_state_t &g);" << endl
+      << "void init_globals(global_state_t &g);" << endl;
   for (auto &f : p.functions)
     gen_func_forward_decls(out, f.first, f.second);
   out << std::endl;
+
+  gen_global_decls(out, p);
   
   for (auto &f : p.functions)
     gen_func_decls(out, f.first, f.second, m);
 
+  gen_tick_globals(out, p);
+  
   for (auto &f : p.functions)
     gen_func(out, f.first, f.second, m);
 }
