@@ -1,8 +1,14 @@
+libchdl-pgen.a
+libchdl-pgen.so
+chdl-runtime/chdl-example
 chdl-runtime/cgen-out.incl
 chdl-runtime/*.vcd
+chdl-runtime/*.nand
 chdl-runtime/OUTPUT.*
+cpp-runtime/cpp-example
 cpp-runtime/cgen-out.incl
 cpp-runtime/OUTPUT.*
+test/testgen
 test/*.chdl.cpp
 test/*.sim.cpp
 test/*.s
