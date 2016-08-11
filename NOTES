@@ -18,7 +18,9 @@ tasks/goals in order of planned completion:
         - Calls/spawns must be the final instruction in a basic block.
           (limit 1/block)
         - No cycles of basic blocks with st->ld broadcast var dependencies.
-      - Timing constraints: 
+      - Timing constraints:
+    - Add "__" prefix to any internal names that may conflict with user names in
+      generated code.
     - Build a basic block level program that uses bypassed SRAM arrays.
     - Add support for bypass networks to code generator.
     - Build a basic block level program that uses speculation.
