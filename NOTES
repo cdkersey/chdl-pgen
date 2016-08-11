@@ -8,8 +8,10 @@ tasks/goals in order of planned completion:
 
   - Code gen/back end
     - Global variables
-      - Build a basic block level program using (arr/1val) global variables.
+      . Build a basic block level program using (arr/1val) global variables.
       - Add support for global variables to IF, assembler, code generator.
+        . CHDL code generator
+        - C++ code generator
     - Add support for cancelling threads.
     - Understand, enumerate, and automatically check (or remove) constraints.
       - Structural constraints:
