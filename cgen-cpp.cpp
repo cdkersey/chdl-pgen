@@ -209,7 +209,7 @@ template <typename T> static bool is_subset(std::set<T> &a, std::set<T> &b) {
   return true;
 }
 
-// Reorder blocks so broadcast variables are
+// Reorder blocks so broadcast variables are propagated
 static void order_blocks(std::vector<if_bb*> &out,
                          const std::vector<if_bb*> &in)
 {
@@ -280,7 +280,7 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v, s
   }
 
   if (v.pred)
-    out << "    if (" << arg_name(&b, v.pred) << ")" << endl << "  ";
+    out << "    if (" << arg_name(&b, v.pred) << ')' << endl << "  ";
   
   if (v.op == VAL_PHI) {
     // Handled in arbiter.
@@ -390,12 +390,14 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v, s
       out << "    s.static_var_" << v.static_arg->name << "_valid = true;"
           << endl;
   } else if (v.op == VAL_ST_GLOBAL) {
+    if (v.static_arg->broadcast && v.pred) out << '{' << endl;
     out << "    g.";
     if (!v.static_arg->broadcast) out << "next_";
     out << v.static_arg->name << " = " << arg_name(&b, v.args[0]) << ';'
         << endl;
     if (v.static_arg->broadcast)
       out << "    g." << v.static_arg->name << "_valid = true;" << endl;
+      if (v.static_arg->broadcast && v.pred) out << "  }" << endl;
   } else if (v.op == VAL_LD_IDX) {
     if (is_integer_type(v.args[0]->t)) {
       out << "    val" << v.id << " = (" << arg_name(&b, v.args[0]) << " >> "

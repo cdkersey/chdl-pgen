@@ -8,9 +8,10 @@ tasks/goals in order of planned completion:
 
   - Code gen/back end
     - Global broadcast variables
-      - Test
-      - CHDL code generator
+      . Test
+      . CHDL code generator
       - C++ code generator
+        - Need to run stores before loads. Is this possible?
     - Add support for cancelling threads.
     - Understand, enumerate, and automatically check (or remove) constraints.
       - Structural constraints:
