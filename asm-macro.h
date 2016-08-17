@@ -96,6 +96,7 @@ namespace pgen {
   void label(const char *name);
   void br(const char *dest);
   argcollector<std::string> br(const var &sel);
+  argcollector<std::string> br_spawn();
   argcollector<var> spawn(const char *func);
   argcollector<var> call(const char *func);
   argcollector<var> call(const char *func, const var &rval);

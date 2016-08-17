@@ -181,6 +181,15 @@ argcollector<std::string> pgen::br(const var &sel) {
   );
 }
 
+argcollector<std::string> pgen::br_spawn() {
+  asm_prog_ptr->br();
+  return argcollector<string>(
+    [](std::string x){
+      asm_prog_ptr->br_targets[asm_prog_ptr->b].push_back(x);
+    }
+  );
+}
+
 argcollector<var> pgen::spawn(const char *func) {
   type t(void_type());
 

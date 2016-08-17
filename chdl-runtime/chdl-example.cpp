@@ -130,6 +130,26 @@ template <typename T> void BBOutputBuf(flit<T> &out, flit<T> &in) {
 }
 
 template <unsigned S, typename T>
+  void BBOutputSpawnBuf(vec<S, flit<T> > &out, flit<T> &in)
+{
+  bvec<S> ready_signals;
+  for (unsigned i = 0; i < S; ++i)
+    ready_signals[i] = _(out[i], "ready");
+
+  _(in, "ready") = AndN(ready_signals);
+  for (unsigned i = 0; i < S; ++i) {
+    bvec<S - 1> other_readys;
+    for (unsigned j = 0; j < S; ++j) {
+      unsigned idx = (j >= i) ? j - 1 : j;
+      if (j != i) other_readys[idx] = ready_signals[j];
+    }
+    _(out[i], "valid") = _(in, "valid") && AndN(other_readys);;
+    _(out[i], "contents") = _(in, "contents");
+  }
+
+}
+
+template <unsigned S, typename T>
   void BBOutputBuf(bvec<CLOG2(S)> sel, vec<S, flit<T> > &out, flit<T> &in)
 {
   HIERARCHY_ENTER();

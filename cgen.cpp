@@ -727,10 +727,13 @@ static void pgen::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b
   if (b.suc.size() == 1) {
     out << "  BBOutputBuf(" << fname << "_bb" << idx << "_out, " << fname
         << "_bb" << idx << "_out_prebuf);" << endl;
-  } else if (b.suc.size() >= 2) {
+  } else if (b.suc.size() >= 2 && b.branch_pred) {
     out << "  BBOutputBuf(" << val_name(fname, idx, b, *b.branch_pred) << ", "
         << fname << "_bb" << idx << "_out, " << fname << "_bb" << idx
         << "_out_prebuf);" << endl;
+  } else if (b.suc.size() >= 2) {
+    out << "  BBOutputSpawnBuf(" << fname << "_bb" << idx << "_out, " << fname
+        << "_bb" << idx << "_out_prebuf);" << endl;
   }
 
   out << "  hierarchy_exit();" << endl << endl;

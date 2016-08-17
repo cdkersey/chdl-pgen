@@ -28,7 +28,7 @@ void pgen::test_registrator::run_tests() {
 
     std::ofstream cpp_out(t->name + ".sim.cpp");
     gen_prog_cpp(cpp_out, p);
-
+    
     std::ofstream asm_out(t->name + ".s");
     print(asm_out, p);
   }

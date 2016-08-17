@@ -36,7 +36,12 @@ void pgen::asm_prog::function(string name) {
 void pgen::asm_prog::label(string name) {
   if_bb *bb = new if_bb();
 
-  if (b && !br_targets[b].size()) br_targets[b].push_back(name);
+  bool prev_block_returns(
+    b && b->vals.size() && (*b->vals.rbegin())->op == VAL_RET
+  );
+
+  if (b && !br_targets[b].size() && !prev_block_returns)
+    br_targets[b].push_back(name);
   b = bb;
   
   labels[name] = bb;

@@ -87,13 +87,12 @@ namespace pgen {
     // generation chain.
     bool cycle_breaker;
 
-
     // Stall predicate; a currently live val
     if_val *stall;
     
     // Branch predicate; a currently live val (if needed)
     if_val *branch_pred;
-    
+
     // Successor and predecessor blocks.
     std::vector<if_bb *> suc, pred;
   };

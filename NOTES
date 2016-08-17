@@ -10,9 +10,14 @@ tasks/goals in order of planned completion:
     - Global broadcast variables
       . Test
       . CHDL code generator
+      - Nevermind! Eventually remove support for these; not necessary.
+    - Add support for intra-function spawn
+      . Macro assembler
+      . Test
+      . CHDL code generator
       - C++ code generator
-        - Need to run stores before loads. Is this possible?
     - Add support for cancelling threads.
+      - Predicated return should work as expected
     - Understand, enumerate, and automatically check (or remove) constraints.
       - Structural constraints:
         - Calls/spawns must be the final instruction in a basic block.

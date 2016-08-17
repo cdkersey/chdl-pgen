@@ -11,10 +11,11 @@ namespace chdl {
   template <typename T> using print_hex_call_t =
     flit<ag<STP("live"), T, ag<STP("arg0"), ui<32> > > >;
 
-  template <typename OPAQUE>
+  template <typename OPAQUE, typename G>
     void print_hex(
       print_hex_ret_t <OPAQUE> &ret,
-      print_hex_call_t<OPAQUE> &call
+      print_hex_call_t<OPAQUE> &call,
+      G &globals
     )
   {
     using namespace std;
@@ -36,10 +37,11 @@ namespace chdl {
   template <typename T> using print_hex2_call_t =
     flit<ag<STP("live"), T, ag<STP("arg0"), ui<32>, ag<STP("arg1"), ui<32> > > > >;
 
-  template <typename OPAQUE>
+  template <typename OPAQUE, typename G>
     void print_hex2(
       print_hex2_ret_t <OPAQUE> &ret,
-      print_hex2_call_t<OPAQUE> &call
+      print_hex2_call_t<OPAQUE> &call,
+      G &globals
     )
   {
     using namespace std;
