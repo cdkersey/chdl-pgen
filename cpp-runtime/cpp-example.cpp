@@ -162,7 +162,7 @@ template <typename T> concatenator<T> cat(T &out) {
 // print_hex declarations.
 struct print_hex_state_t;
 void init_print_hex(print_hex_state_t&);
-template <typename G> void tick_print_hex(G &, print_hex_state_t&);
+void tick_print_hex(print_hex_state_t&);
 
 struct print_hex_call_t    { bool valid; void *live;  ui<32> arg0; };
 struct print_hex_ret_t     { bool valid; void *live;               };
@@ -181,7 +181,7 @@ void init_print_hex(print_hex_state_t &s) {
   s.bb0_out.valid = false;
 }
 
-template <typename G> void tick_print_hex(G &g, print_hex_state_t &s) {
+void tick_print_hex(print_hex_state_t &s) {
   // arbiter for basic block0
   // print_hex call input.
   if (!s.bb0_in.valid && s.call.valid) {
@@ -214,7 +214,7 @@ template <typename G> void tick_print_hex(G &g, print_hex_state_t &s) {
 
 struct print_hex2_state_t;
 void init_print_hex2(print_hex2_state_t&);
-template <typename G> void tick_print_hex2(G&, print_hex2_state_t&);
+void tick_print_hex2(print_hex2_state_t&);
 
 struct print_hex2_call_t    { bool valid; void *live;  ui<32> arg0;  ui<32> arg1; };
 struct print_hex2_ret_t     { bool valid; void *live;               };
@@ -233,7 +233,7 @@ void init_print_hex2(print_hex2_state_t &s) {
   s.bb0_out.valid = false;
 }
 
-template <typename G> void tick_print_hex2(G &g, print_hex2_state_t &s) {
+void tick_print_hex2(print_hex2_state_t &s) {
   // arbiter for basic block0
   // print_hex call input.
   if (!s.bb0_in.valid && s.call.valid) {
@@ -282,9 +282,7 @@ template <typename T> T st_idx(T in, int i, bool x) {
 int main() {
   using namespace std;
 
-  global_state_t g;
   bmain_state_t s;
-  init_globals(g);
   init_bmain(s);
   s.call.valid = true;
   s.call.live = NULL;
@@ -294,8 +292,7 @@ int main() {
     s.ret.valid = false;
     
     cout << "=== cycle " << i << " ===" << endl;
-    tick_bmain(g, s);
-    tick_globals(g);
+    tick_bmain(s);
   }
   
   return 0;

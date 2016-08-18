@@ -10,13 +10,10 @@
 
 const char *pgen::if_op_str[] = {
   "const", "phi", "select", "arg",
-  "ld_global", "st_global",
   "ld_static", "st_static",
   "ld_idx", "st_idx",
   "ld_idx_static", "st_idx_static",
-  "ld_idx_global", "st_idx_global",
   "bcast_valid_static",
-  "bcast_valid_global",
   "neg", "not",
   "add", "sub", "mul", "div", "and", "or", "xor",
   "eq", "lt",
@@ -124,12 +121,6 @@ void pgen::print(std::ostream &out, pgen::if_prog &p) {
   using namespace std;
   using namespace pgen;
 
-  for (auto &v : p.global_vars) {
-    out << v.first << " : ";
-    print(out, v.second);
-    out << endl;
-  }
-  
   for (auto &f : p.functions) {
     out << f.first << ": " << endl;
     print(out, f.second);

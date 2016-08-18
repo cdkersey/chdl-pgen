@@ -260,22 +260,8 @@ void pgen::bcast_var(const char *name, const type &t) {
   asm_prog_ptr->bcast_var(t, name);
 }
 
-void pgen::global_var(const char *name, const type &t) {
-  asm_prog_ptr->global_var(t, name);
-}
-
-void pgen::global_var(const char *name, const type &t, long initialval) {
-  asm_prog_ptr->global_var(t, name, initialval);
-}
-
-void pgen::global_bcast_var(const char *name, const type &t) {
-  asm_prog_ptr->global_bcast_var(t, name);
-}
-
 static void check_static_var_existence(const char *name) {
-  if (!asm_prog_ptr->f->static_vars.count(name) &&
-      !asm_prog_ptr->p.global_vars.count(name) )
-  {
+  if (!asm_prog_ptr->f->static_vars.count(name)) {
     std::cerr << "Static var \"" << name << "\" not found." << endl;
     abort();
   }
@@ -288,17 +274,11 @@ unsigned var_const_val(const var &v) {
 var pgen::load(const char *name) {
   check_static_var_existence(name);
 
-  bool global(!(asm_prog_ptr->f->static_vars.count(name)));
-  
-  if_staticvar &v(
-    global ?
-      asm_prog_ptr->p.global_vars[name] : asm_prog_ptr->f->static_vars[name]
-  );
+  if_staticvar &v(asm_prog_ptr->f->static_vars[name]);
   type &t(v.t);
   var r(t);
 
-  asm_prog_ptr->val(t, r.p->id, global?VAL_LD_GLOBAL:VAL_LD_STATIC)
-    .static_arg(name);
+  asm_prog_ptr->val(t, r.p->id, VAL_LD_STATIC).static_arg(name);
 
   return r;
 }
@@ -306,16 +286,11 @@ var pgen::load(const char *name) {
 var pgen::bcast_valid(const char *name) {
   check_static_var_existence(name);
 
-  bool global(!(asm_prog_ptr->f->static_vars.count(name)));
-  
-  if_staticvar &v(
-    global ?
-      asm_prog_ptr->p.global_vars[name] : asm_prog_ptr->f->static_vars[name]
-  );
+  if_staticvar &v(asm_prog_ptr->f->static_vars[name]);
   type &t(v.t);
   var r(t);
 
-  if_op op = global ? VAL_BCAST_VALID_GLOBAL : VAL_BCAST_VALID_STATIC;
+  if_op op = VAL_BCAST_VALID_STATIC;
   asm_prog_ptr->val(t, r.p->id, op).static_arg(name);
 
   return r;
@@ -324,12 +299,7 @@ var pgen::bcast_valid(const char *name) {
 var pgen::load(const char *name, const var &idx) {
   check_static_var_existence(name);
 
-  bool global(!(asm_prog_ptr->f->static_vars.count(name)));
-  
-  if_staticvar &v(
-    global ?
-      asm_prog_ptr->p.global_vars[name] : asm_prog_ptr->f->static_vars[name]
-  );
+  if_staticvar &v(asm_prog_ptr->f->static_vars[name]);
   type t;
 
   if (is_struct(v.t))
@@ -341,7 +311,7 @@ var pgen::load(const char *name, const var &idx) {
  
   var r(t);
 
-  asm_prog_ptr->val(t, r.p->id, global?VAL_LD_IDX_GLOBAL:VAL_LD_IDX_STATIC).
+  asm_prog_ptr->val(t, r.p->id, VAL_LD_IDX_STATIC).
     static_arg(name).arg(idx.p->id);
 
   return r;
@@ -399,45 +369,29 @@ var pgen::load(const var &in, const char *field) {
 void pgen::store(const char *name, const var &d) {
   check_static_var_existence(name);
 
-  bool global(!(asm_prog_ptr->f->static_vars.count(name)));
-  
-  if_staticvar &v(
-    global ?
-      asm_prog_ptr->p.global_vars[name] : asm_prog_ptr->f->static_vars[name]
-  );
+  if_staticvar &v(asm_prog_ptr->f->static_vars[name]);
   type &t(v.t);
 
-  asm_prog_ptr->val(varimpl::next_id++, global?VAL_ST_GLOBAL:VAL_ST_STATIC)
+  asm_prog_ptr->val(varimpl::next_id++, VAL_ST_STATIC)
     .static_arg(name).arg(d.p->id);
 }
 
 void pgen::store(const char *name, const var &idx, const var &d) {
   check_static_var_existence(name);
 
-  bool global(!(asm_prog_ptr->f->static_vars.count(name)));
-  
-  if_staticvar &v(
-    global ?
-      asm_prog_ptr->p.global_vars[name] : asm_prog_ptr->f->static_vars[name]
-  );
+  if_staticvar &v(asm_prog_ptr->f->static_vars[name]);
   
   unsigned array_len(*(v.t.type_vec.rbegin())), l2_array_len;
   for (l2_array_len = 0; (1u<<l2_array_len) < array_len; ++l2_array_len);
 
-  asm_prog_ptr->val(
-    void_type(), varimpl::next_id++, global?VAL_ST_IDX_GLOBAL:VAL_ST_IDX_STATIC
-  ).static_arg(name).arg(idx.p->id).arg(d.p->id);
+  asm_prog_ptr->val(void_type(), varimpl::next_id++, VAL_ST_IDX_STATIC)
+    .static_arg(name).arg(idx.p->id).arg(d.p->id);
 }
 
 void pgen::store(const char *name, const char *field, const var &d) {
   check_static_var_existence(name);
 
-  bool global(!(asm_prog_ptr->f->static_vars.count(name)));
-  
-  if_staticvar &v(
-    global ?
-      asm_prog_ptr->p.global_vars[name] : asm_prog_ptr->f->static_vars[name]
-  );
+  if_staticvar &v(asm_prog_ptr->f->static_vars[name]);
   
   type &t(v.t);
   unsigned field_idx = t.get_field_idx(field);

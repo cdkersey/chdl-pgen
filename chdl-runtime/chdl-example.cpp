@@ -263,69 +263,6 @@ template <typename T> struct specific_global : public generic_global {
   T contents;
 };
 
-struct globals_t {
-  map<std::string, generic_global*> vars;
-
-  template <typename T> T& get_var(std::string name) {
-    return ((specific_global<T>*)vars[name])->get();
-  }
-
-  template <typename T> void add_var(std::string name) {
-    vars[name] = new specific_global<T>();
-  }
-
-  template <typename T, typename U> void add_var(std::string name, const U &arg)
-  {
-    vars[name] = new specific_global<T>(arg);
-  }
-};
-
-#define LD_GLOBAL(g, name, type, stores) \
-  (g.get_var<staticvar<type, stores> >(#name).value())
-
-#define ST_GLOBAL(g, name, type, stores, val, wr, idx) \
-  (g.get_var<staticvar<type, stores> >(#name).add_input<idx>((wr), (val)))
-
-#define LD_GLOBAL_ARRAY(g, name, idx, type, len, stores, ld_idx) \
-  (g.get_var<staticarray<type, CLOG2(len), stores> >(#name).ld<ld_idx>(idx))
-
-#define ST_GLOBAL_ARRAY(g, name, idx, type, len, stores, val, wr, st_idx) \
-  (g.get_var<staticarray<type, CLOG2(len), stores> >(#name). \
-    add_input((wr), (idx), (val)))
-
-#define GLOBAL_VAR(g, name, type, ival, stores) do { \
-  g.add_var<staticvar<type, stores> >(#name, ival); \
-} while (0)
-
-#define GLOBAL_ARRAY(g, name, type, len, stores) do { \
-  g.add_var<staticarray<type, CLOG2(len), stores> >(#name); \
-} while (0)
-
-#define GLOBAL_VAR_GEN(g, name, type, stores) do { \
-  g.get_var<staticvar<type, stores> >(#name).gen(); \
-} while (0)
-
-#define GLOBAL_VAR_GEN_ARRAY(g, name, type, len, stores) do { \
-  g.get_var<staticarray<type, CLOG2(len), stores> >(#name).gen(); \
-} while (0)
-
-#define GLOBAL_BCAST_VAR(g, name, type, ival, stores) do { \
-  g.add_var<bcastvar<type> >(#name); \
-} while (0)
-
-#define GLOBAL_BCAST_VAR_GEN(g, name, type, stores) do { \
-  g.get_var<bcastvar<type> >(#name).gen(); \
-} while (0)
-
-#define LD_BCAST_GLOBAL(g, name, type, stores) \
-  (g.get_var<bcastvar<type> >(#name).value())
-
-#define ST_BCAST_GLOBAL(g, name, type, stores, val, wr, idx) \
-  (g.get_var<bcastvar<type> >(#name).add_input<idx>((wr), (val)))
-
-#define LD_BCAST_VALID_GLOBAL(type, name) \
-  (g.get_var<bcastvar<type> >(#name).valid())
-
 #include "cgen-out.incl"
 
 int main() {
@@ -344,11 +281,7 @@ int main() {
   TAP(bmain_call);
   TAP(bmain_ret);
 
-  globals_t g;
-  
-  init_global_vars(g);
-  bmain(bmain_ret, bmain_call, g);
-  finalize_global_vars(g);
+  bmain(bmain_ret, bmain_call);
   
   if (cycdet()) return 1;
 

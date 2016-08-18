@@ -1,6 +1,6 @@
 CXXFLAGS ?= -std=c++11 -g -Wfatal-errors
 TEST_OBJS = asm-0.o asm-1.o asm-2.o macro-0.o macro-1.o macro-2.o macro-3.o \
-            macro-4.o macro-5.o global.o global-bcast.o localspawn.o
+            macro-4.o macro-5.o localspawn.o
 LDFLAGS = -L../
 LDLIBS = -lchdl-pgen
 
@@ -18,8 +18,6 @@ macro-3.o : macro-3.cpp
 macro-4.o : macro-4.cpp
 macro-5.o : macro-5.cpp
 localspawn.o : localspawn.cpp
-global.o : global.cpp
-global-bcast.o : global-bcast.cpp
 
 clean:
 	$(RM) $(TEST_OBJS) testgen.o testgen *.s *.chdl.cpp *.sim.cpp

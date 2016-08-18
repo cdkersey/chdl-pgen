@@ -68,9 +68,6 @@ namespace pgen {
   void static_var(const char *name, const type &t);
   void static_var(const char *name, const type &t, long initialval);
   void bcast_var(const char *name, const type &t);
-  void global_var(const char *name, const type &t);
-  void global_var(const char *name, const type &t, long initialval);
-  void global_bcast_var(const char *name, const type &t);
 
   var load(const char *name);
   var load(const char *name, const var &idx);

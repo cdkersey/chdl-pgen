@@ -55,19 +55,6 @@ void pgen::asm_prog::static_var(const type &t, string name) {
   f->static_vars[name].broadcast = false;
 }
 
-void pgen::asm_prog::global_var(const type &t, string name) {
-  p.global_vars[name].name = name;
-  p.global_vars[name].t = t;
-  p.global_vars[name].broadcast = false;
-  p.global_vars[name].load_count = 0;
-  p.global_vars[name].store_count = 0;
-}
-
-void pgen::asm_prog::global_bcast_var(const type &t, string name) {
-  global_var(t, name);
-  p.global_vars[name].broadcast = true;
-}
-
 void pgen::asm_prog::bcast_var(const type &t, string name) {
   static_var(t, name);
   f->static_vars[name].broadcast = true;
@@ -120,14 +107,7 @@ asm_prog &pgen::asm_prog::const_arg(long const_arg) {
 asm_prog &pgen::asm_prog::static_arg(std::string static_name) {
   if (f->static_vars.count(static_name)) {
     v->static_arg = &f->static_vars[static_name];
-  } else {
-    v->static_arg = &p.global_vars[static_name];
-    if (v->op == VAL_ST_GLOBAL || v->op == VAL_ST_IDX_GLOBAL)
-      v->static_arg->store_count++;
-    else if (v->op == VAL_LD_GLOBAL || v->op == VAL_LD_IDX_GLOBAL)
-      v->static_arg->load_count++;
   }
-  
   return *this;
 }
 
@@ -260,8 +240,7 @@ void pgen::asm_prog::assemble_func() {
     for (auto &b : f->bbs)
       for (auto &v : b->vals)
         if (v->static_arg == &s.second)
-          if (v->op == VAL_ST_STATIC || v->op == VAL_ST_IDX_STATIC ||
-              v->op == VAL_ST_GLOBAL || v->op == VAL_ST_IDX_GLOBAL)
+          if (v->op == VAL_ST_STATIC || v->op == VAL_ST_IDX_STATIC)
             v->static_access_id = count++;
   }
 
@@ -271,8 +250,7 @@ void pgen::asm_prog::assemble_func() {
     for (auto &b : f->bbs)
       for (auto &v : b->vals)
         if (v->static_arg == &s.second)
-          if (v->op == VAL_LD_STATIC || v->op == VAL_LD_IDX_STATIC ||
-              v->op == VAL_ST_GLOBAL || v->op == VAL_ST_IDX_GLOBAL)
+          if (v->op == VAL_LD_STATIC || v->op == VAL_LD_IDX_STATIC)
             v->static_access_id = count++;
   }
 

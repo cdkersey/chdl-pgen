@@ -15,13 +15,10 @@ namespace pgen {
     VAL_CONST,
     VAL_PHI, VAL_SELECT,
     VAL_ARG,
-    VAL_LD_GLOBAL, VAL_ST_GLOBAL,
     VAL_LD_STATIC, VAL_ST_STATIC,
     VAL_LD_IDX, VAL_ST_IDX,
     VAL_LD_IDX_STATIC, VAL_ST_IDX_STATIC,
-    VAL_LD_IDX_GLOBAL, VAL_ST_IDX_GLOBAL,
     VAL_BCAST_VALID_STATIC,
-    VAL_BCAST_VALID_GLOBAL,
     VAL_NEG, VAL_NOT,
     VAL_ADD, VAL_SUB, VAL_MUL, VAL_DIV, VAL_AND, VAL_OR, VAL_XOR,
     VAL_EQ, VAL_LT,
@@ -38,7 +35,7 @@ namespace pgen {
     std::vector<bool> initial_val;
 
     // The code generators need to know how many loads and stores have each
-    // static/global variable as a destination.
+    // static variable as a destination.
     unsigned store_count, load_count;
     
     // Broadcast variables are non-persistent intra-cycle communication between
@@ -105,7 +102,6 @@ namespace pgen {
   };
 
   struct if_prog {
-    std::map<std::string, if_staticvar> global_vars;
     std::map<std::string, if_func> functions;
   };
 

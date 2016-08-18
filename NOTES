@@ -7,15 +7,6 @@ tasks/goals in order of planned completion:
       struct declaration.
 
   - Code gen/back end
-    - Global broadcast variables
-      . Test
-      . CHDL code generator
-      - Nevermind! Eventually remove support for these; not necessary.
-    - Add support for intra-function spawn
-      . Macro assembler
-      . Test
-      . CHDL code generator
-      - C++ code generator
     - Add support for cancelling threads.
       - Predicated return should work as expected
     - Understand, enumerate, and automatically check (or remove) constraints.

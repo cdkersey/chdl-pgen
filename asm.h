@@ -23,14 +23,10 @@ namespace pgen {
     
     void function(std::string name); // New function; assembler current one.
     void label(std::string name);
-    void global_var(const type &t, std::string name);
     void static_var(const type &t, std::string name);
-    void global_bcast_var(const type &t, std::string name);
     void bcast_var(const type &t, std::string name);
     template <typename T>
       void static_var(const type &t, std::string name, const T &initial_val);
-    template <typename T>
-      void global_var(const type &t, std::string name, const T &initial_val);
 
     asm_prog &val(const type &t, val_id_t id, if_op op);
     asm_prog &val(val_id_t id, if_op op);
@@ -79,15 +75,6 @@ template <typename T>
 {
   static_var(t, name);
   to_vec_bool(f->static_vars[name].initial_val, t.size(), initial_val);
-}
-
-template <typename T>
-  void pgen::asm_prog::global_var(
-    const type &t, std::string name, const T &initial_val
-  )
-{
-  global_var(t, name);
-  to_vec_bool(p.global_vars[name].initial_val, t.size(), initial_val);
 }
 
 #endif
