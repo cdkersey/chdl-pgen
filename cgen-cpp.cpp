@@ -458,12 +458,18 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v, s
   }
 }
 
+static bool last_successor(if_bb *b, if_bb *s) {
+  for (auto &x : b->suc)
+    if (x->id > s->id) return false;
+  return true;
+}
+
 static
   void gen_arbiter(std::ostream &out, std::string fname, if_func &f, if_bb &b)
 {
   using namespace std;
 
-  out << "  // arbiter for basic block" << b.id << endl;
+  out << "  // arbiter for basic block " << b.id << endl;
 
   unsigned phi_arg_idx = 0;
   for (auto &p : b.pred) {
@@ -476,8 +482,16 @@ static
     
     out << "  if (!s.bb" << b.id <<  "_in.valid && s.bb" << p->id
         << "_out.valid";
-    if (p->suc.size() > 1)
+    if (p->suc.size() > 1 && p->branch_pred) {
       out << " && s.bb" << p->id << "_out.sel == " << which_suc(p, &b);
+    } else if (p->suc.size() > 1) {
+      // If this is an intra-block spawn, all of the other blocks have to be
+      // ready.
+      for (auto &s : p->suc) {
+        if (s != &b)
+          out << " && !s.bb" << s->id << "_in.valid";
+      }
+    }
     out << ") {" << endl;
 
     // copy caller live values pointer
@@ -492,8 +506,15 @@ static
       else
         out << "s.bb" << p->id << "_out.val" << v->id << ';' << endl;
     }
-    out << "    s.bb" << b.id << "_in.valid = true;" << endl
-        << "    s.bb" << p->id << "_out.valid = false;" << endl;
+    if (p->branch_pred || p->suc.size() == 1) {
+      out << "    s.bb" << b.id << "_in.valid = true;" << endl;
+      out << "    s.bb" << p->id << "_out.valid = false;" << endl;
+    } else if (last_successor(p, &b)) {
+      for (auto &s : p->suc) {
+        out << "    s.bb" << s->id << "_in.valid = true;" << endl;
+      }
+      out << "    s.bb" << p->id << "_out.valid = false;" << endl;
+    }
     
     out << "  }" << endl;
 
@@ -661,7 +682,7 @@ static void gen_func(std::ostream &out, std::string name, if_func &f, std::map<p
   vector<if_bb*> bbs;
   
   order_blocks(bbs, f.bbs);
-  
+
   for (auto &b : bbs)
     gen_arbiter(out, name, f, *b);
 

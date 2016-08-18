@@ -290,6 +290,9 @@ int main() {
   s.call.live = NULL;
   
   for (unsigned i = 0; i < 10000; ++i) {
+    // Should always be ready for the main function to return.
+    s.ret.valid = false;
+    
     cout << "=== cycle " << i << " ===" << endl;
     tick_bmain(g, s);
     tick_globals(g);
