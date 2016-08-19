@@ -384,6 +384,14 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v, s
     } else {
       out << "    // UNSUPPORTED TYPE FOR LD_IDX" << endl;
     }
+  } else if (v.op == VAL_SELECT) {
+    for (unsigned i = 1; i < v.args.size(); ++i) {
+      out << "    ";
+      if (i > 1) out << "else ";
+      out << "if (" << arg_name(&b, v.args[0]) << " == " << i - 1
+          << ')' << endl << "      val" << v.id << " = "
+          << arg_name(&b, v.args[i]) << ';' << endl;
+    }
   } else if (v.op == VAL_SPAWN || v.op == VAL_CALL) {
     out << "    s.func" << v.id << "->call.valid = true;" << endl;
     for (unsigned i = 0; i < v.args.size(); ++i)

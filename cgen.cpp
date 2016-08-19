@@ -129,7 +129,7 @@ static void pgen::gen_val(std::ostream &out, std::string fname, int bbidx, int i
 
   if (!is_store(v.op) && v.op != VAL_PHI && v.op != VAL_CALL
       && v.op != VAL_RET && v.op != VAL_SPAWN && v.op != VAL_CONCATENATE
-      && v.op != VAL_BUILD)
+      && v.op != VAL_BUILD && v.op != VAL_SELECT)
   {
     out << type_chdl(v.t) << ' ' << fname << '_' << v.id << " = ";
   }
@@ -182,6 +182,18 @@ static void pgen::gen_val(std::ostream &out, std::string fname, int bbidx, int i
             << "Flatten(" << val_name(fname, bbidx, b, *v.args[i]) << ");"
             << endl;
       }
+    }
+  } else if (v.op == VAL_SELECT) {
+    out << "vec<" << v.args.size() - 1 << ", " << type_chdl(v.t) << " > sel"
+        << v.id << "_inputs;" << endl
+        << "  " << type_chdl(v.t) << ' ' << fname << '_' << v.id
+        << " = Mux(" << val_name(fname, bbidx, b, *v.args[0])
+        << ", sel" << v.id << "_inputs);" << endl;
+
+    for (unsigned i = 1; i < v.args.size(); ++i) {
+      out << "  sel" << v.id << "_inputs[" << i - 1 << "] = "
+          << val_name(fname, bbidx, b, *v.args[i]);
+      if (i != v.args.size() - 1) out << ';' << endl;
     }
   } else if (v.op == VAL_ARG) {
     out << "_(_(_(" << fname << "_bb0_in, \"contents\"), \"args\"), \"arg"

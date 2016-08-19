@@ -99,6 +99,7 @@ namespace pgen {
   argcollector<var> call(const char *func, const var &rval);
   argcollector<var> cat(const var &r);
   argcollector<var> build(const var &r);
+  argcollector<var> sel(const var &out, const var &s);
   
   void ret();
   void ret(const var &rval);

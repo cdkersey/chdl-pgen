@@ -219,6 +219,21 @@ argcollector<var> pgen::call(const char *func, const var &r) {
   return argcollector<var>([](var v){ asm_prog_ptr->arg(v.p->id); });
 }
 
+argcollector<var> pgen::sel(const var &out, const var &s) {
+  
+  asm_prog_ptr->val(out.p->t, out.p->id, VAL_SELECT);
+  out.p->v = asm_prog_ptr->v;
+
+  
+  if_val *vp = asm_prog_ptr->v;
+
+  asm_prog_ptr->arg_ids[vp].push_back(s.p->id);
+  
+  return argcollector<var>(
+    [vp](var v){ asm_prog_ptr->arg_ids[vp].push_back(v.p->id); }
+  );
+}
+
 argcollector<var> pgen::cat(const var &r) {
   asm_prog_ptr->val(r.p->t, r.p->id, VAL_CONCATENATE);
   r.p->v = asm_prog_ptr->v;
