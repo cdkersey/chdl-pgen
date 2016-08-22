@@ -7,6 +7,9 @@ tasks/goals in order of planned completion:
       struct declaration.
 
   - Code gen/back end
+    - Based on a branch value, it should be possible to spawn or not spawn.
+      - what about a vector<vector<if_bb*> > of branch targets? This way, all spawns
+        are just a natural consequence of branching.
     - Add support for cancelling threads.
       - Predicated return should work as expected
     - Understand, enumerate, and automatically check (or remove) constraints.
