@@ -12,6 +12,7 @@
 #include "break_cycles.h"
 #include "prevent_deadlock.h"
 #include "convert_phis.h"
+#include "remove_copies.h"
 
 using namespace std;
 using namespace pgen;
@@ -466,8 +467,12 @@ void pgen::asm_prog::assemble_func() {
   // Re-order block predecessor priorities to avoid deadlocks.
   prevent_deadlock(*f);
 
-  // Make remove phi inputs from live_in and replace with phis themselves.
+  // Remove phi inputs from live_in and replace with phis themselves.
   convert_phis(*f);
+
+  // Optimize out any useless cat instructions that may have been added by
+  // previous passes.
+  remove_copies(*f);
   
   // Prevent repeat assembly.
   f = NULL;
