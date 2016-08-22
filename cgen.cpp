@@ -38,9 +38,9 @@ static void gen_static_var(
     out << "  BCAST_VAR(" << fname << ", " << s.name << ", " << type_chdl(s.t)
         << ");" << endl;
   } else if (is_sram_array(s.t)) {
-    out << "  STATIC_ARRAY(" << fname << ", " << s.name << ", "
-        << type_chdl(element_type(s.t)) << ", " << array_len(s.t) << ", "
-        << loads << ");" << endl;
+    out << "  staticarray<" << type_chdl(element_type(s.t)) << ", CLOG2("
+        << array_len(s.t) << "), " << loads << "> " << fname << "_" << s.name
+        <<';' << endl;
   } else {
     out << "  STATIC_VAR(" << fname << ", " << s.name << ", " << type_chdl(s.t)
         << ", 0x" << to_hex(s.initial_val) << ", " << stores << ");" << endl;

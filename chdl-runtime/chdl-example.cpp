@@ -56,7 +56,9 @@ template <typename T, unsigned N, unsigned P> struct staticarray {
   }
 
   void gen() {
-    q = Syncmem(rd_a, d, wr_a, wr);
+    vec<P, bvec<sz<T>::value> > q_raw = Syncmem(rd_a, Flatten(d), wr_a, wr);
+    for (unsigned i = 0; i < P; ++i)
+      Flatten(q[i]) = q_raw[i];
   }
 
   vec<P, bvec<N> > rd_a;
@@ -76,9 +78,6 @@ template <typename T, unsigned N, unsigned P> struct staticarray {
 #define STATIC_VAR(func, var, type, initialval, writers) \
   staticvar<type, writers> func##_##var(initialval); \
   tap(#func "_" #var, func##_##var.value());
-
-#define STATIC_ARRAY(func, var, type, size, ports) \
-  staticarray<type, CLOG2(size), ports> func##_##var;
 
 #define LD_STATIC(func, var) \
   (func##_##var.value())
@@ -286,6 +285,8 @@ int main() {
   if (cycdet()) return 1;
 
   optimize();
+
+  std::cout << "Critical path: " << critpath() << " gates" << endl;
   
   ofstream vcd("chdl-example.vcd");
   run(vcd, 10000);
