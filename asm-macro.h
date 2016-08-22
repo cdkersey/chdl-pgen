@@ -88,6 +88,9 @@ namespace pgen {
   
   // Add a predicate to preceding store to a static variable.
   void pred(const var &p);
+
+  // Add a stall signal to the current basic block.
+  void stall(const var &r);
   
   void function(const char *name);
   void label(const char *name);

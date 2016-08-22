@@ -200,6 +200,8 @@ argcollector<var> pgen::spawn(const char *func) {
   return argcollector<var>([](var v){ asm_prog_ptr->arg(v.p->id); });
 }
 
+void pgen::stall(const var &v) { asm_prog_ptr->stall(v.p->id); }
+
 argcollector<var> pgen::call(const char *func) {
   type t(void_type());
 
@@ -302,11 +304,10 @@ var pgen::bcast_valid(const char *name) {
   check_static_var_existence(name);
 
   if_staticvar &v(asm_prog_ptr->f->static_vars[name]);
-  type &t(v.t);
-  var r(t);
 
+  var r(bit());
   if_op op = VAL_BCAST_VALID_STATIC;
-  asm_prog_ptr->val(t, r.p->id, op).static_arg(name);
+  asm_prog_ptr->val(bit(), r.p->id, op).static_arg(name);
 
   return r;
 }
