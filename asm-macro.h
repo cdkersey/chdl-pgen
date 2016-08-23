@@ -48,8 +48,8 @@ namespace pgen {
   var operator-(const var &x);
   var operator~(const var &x);
 
-  var OrReduce(const var &x);
-  var AndReduce(const var &x);
+  var or_reduce(const var &x);
+  var and_reduce(const var &x);
   
   // Basic comparison operators
   var operator==(const var &a, const var &b);

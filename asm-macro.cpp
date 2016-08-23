@@ -132,8 +132,8 @@ static var un_op(pgen::if_op op, const var &a) {
 var pgen::operator!(const var &x) { return un_op(VAL_NOT, x); }
 var pgen::operator-(const var &x) { return un_op(VAL_NEG, x); }
 var pgen::operator~(const var &x) { return un_op(VAL_NOT, x); }
-var pgen::OrReduce(const var &x)  { return un_op(VAL_OR_REDUCE, x); }
-var pgen::AndReduce(const var &x) { return un_op(VAL_AND_REDUCE, x); }
+var pgen::or_reduce(const var &x)  { return un_op(VAL_OR_REDUCE, x); }
+var pgen::and_reduce(const var &x) { return un_op(VAL_AND_REDUCE, x); }
 
 // Basic comparison operators
 var pgen::operator==(const var &a, const var &b) {
