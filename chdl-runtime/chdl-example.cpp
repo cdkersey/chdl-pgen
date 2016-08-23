@@ -75,10 +75,6 @@ template <typename T, unsigned N, unsigned P> struct staticarray {
   tap(#func "_" #var, func##_##var.value()); \
   tap(#func "_" #var "_valid", func##_##var.valid());
 
-#define STATIC_VAR(func, var, type, initialval, writers) \
-  staticvar<type, writers> func##_##var(initialval); \
-  tap(#func "_" #var, func##_##var.value());
-
 #define LD_STATIC(func, var) \
   (func##_##var.value())
 

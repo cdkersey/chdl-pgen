@@ -42,8 +42,11 @@ static void gen_static_var(
         << array_len(s.t) << "), " << loads << "> " << fname << "_" << s.name
         <<';' << endl;
   } else {
-    out << "  STATIC_VAR(" << fname << ", " << s.name << ", " << type_chdl(s.t)
-        << ", 0x" << to_hex(s.initial_val) << ", " << stores << ");" << endl;
+    out << "  staticvar<" << type_chdl(s.t) << ", " << stores
+        << "> " << fname << '_' << s.name << "(0x" << to_hex(s.initial_val)
+        << ");" << endl
+        << "  tap(\"" << fname << "_" << s.name << "\", " << fname << '_'
+        << s.name << ".value());" << endl;
   }
 }
 
