@@ -10,8 +10,8 @@ tasks/goals in order of planned completion:
     - Based on a branch value, it should be possible to spawn or not spawn.
       - what about a vector<list<if_bb*> > of branch targets? This way, all
         spawns are just a natural consequence of branching.
-      - Add support to front-end and macro system as new suc_l member of if_bb.
-      - Add support for suc_l to assembly printer.
+      . Add support to front-end and macro system as new suc_l member of if_bb.
+      . Add support for suc_l to assembly printer.
       - Add support for suc_l to all intermediate processing steps.
       - Add support for suc_l to CHDL code generator.
       - Add support for suc_l to CPP code generator.

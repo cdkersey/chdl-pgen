@@ -176,16 +176,21 @@ argcollector<std::string> pgen::br(const var &sel) {
   asm_prog_ptr->br(sel.p->id);
   return argcollector<string>(
     [](std::string x){
-      asm_prog_ptr->br_targets[asm_prog_ptr->b].push_back(x);
+      asm_prog_ptr->br_targets[asm_prog_ptr->b].push_back(list<string>(1, x));
     }
   );
 }
 
 argcollector<std::string> pgen::br_spawn() {
-  asm_prog_ptr->br();
+  // If we do not call br(), we enable the use of br_spawn() to declare spawn
+  // groups.
+  // asm_prog_ptr->br();
+
+  asm_prog_ptr->br_targets[asm_prog_ptr->b].push_back(list<string>());
+
   return argcollector<string>(
     [](std::string x){
-      asm_prog_ptr->br_targets[asm_prog_ptr->b].push_back(x);
+      asm_prog_ptr->br_targets[asm_prog_ptr->b].rbegin()->push_back(x);
     }
   );
 }

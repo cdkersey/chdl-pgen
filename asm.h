@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include <vector>
+#include <list>
 #include <map>
 #include <set>
 #include <string>
@@ -40,6 +41,8 @@ namespace pgen {
     asm_prog &br();
     asm_prog &stall(val_id_t in);
     asm_prog &target(std::string label);
+    asm_prog &empty_tgroup();
+    asm_prog &tgroup_add(std::string label);    
 
     std::map<std::string, if_bb*> labels;
     std::map<val_id_t, std::set<if_val*> > id_to_val;
@@ -47,7 +50,7 @@ namespace pgen {
     std::map<if_val*, val_id_t> predicate;
     std::map<if_bb*, val_id_t> br_id;
     std::map<if_bb*, val_id_t> stall_id;
-    std::map<if_bb*, std::vector<std::string> > br_targets;
+    std::map<if_bb*, std::vector<std::list<std::string> > > br_targets;
 
     std::string func_name;
     

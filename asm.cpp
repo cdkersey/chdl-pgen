@@ -42,7 +42,7 @@ void pgen::asm_prog::label(string name) {
   );
 
   if (b && !br_targets[b].size() && !prev_block_returns)
-    br_targets[b].push_back(name);
+    br_targets[b].push_back(list<string>(1, name));
   b = bb;
   
   labels[name] = bb;
@@ -137,9 +137,19 @@ asm_prog &pgen::asm_prog::stall(asm_prog::val_id_t in) {
 }
 
 asm_prog &pgen::asm_prog::target(std::string label) {
-  br_targets[b].push_back(label);
+  br_targets[b].push_back(list<string>(1, label));
 
   return *this;
+}
+
+asm_prog &pgen::asm_prog::empty_tgroup() {
+  br_targets[b].push_back(list<string>());
+
+  return *this;
+}
+
+asm_prog &pgen::asm_prog::tgroup_add(std::string label) {
+  br_targets[b].rbegin()->push_back(label);
 }
 
 // Fill in basic block successor/predecessor information for most
@@ -148,12 +158,16 @@ void pgen::asm_prog::bb_resolveptrs() {
   // Find successors.
   for (auto &b : br_targets) {
     for (unsigned i = 0; i < b.second.size(); ++i) {
-      if (labels.count(b.second[i])) {
-        b.first->suc.push_back(labels[b.second[i]]);
-      } else {
-        cout << "Unresolved label \"" << b.second[i]
-             << "\" in function \"" << func_name << "\"." << endl;
-        abort();
+      b.first->suc_l.push_back(list<if_bb*>());
+      for (auto &l : b.second[i]) {
+        if (labels.count(l)) {
+          b.first->suc.push_back(labels[l]);
+          b.first->suc_l[i].push_back(labels[l]);
+        } else {
+          cout << "Unresolved label \"" << l
+               << "\" in function \"" << func_name << "\"." << endl;
+          abort();
+        }
       }
     }
   }
