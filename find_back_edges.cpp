@@ -10,11 +10,12 @@ using namespace pgen;
 void fbe_dfs(if_bb *b, set<cfg_edge_t> &e, set<if_bb *> &a) {
   a.insert(b);
 
-  for (auto &p : b->suc)
-    if (!a.count(p))
-      fbe_dfs(p, e, a);
-    else
-      e.insert(make_pair(b, p));
+  for (auto &l : b->suc_l)
+    for (auto &p : l)
+      if (!a.count(p))
+        fbe_dfs(p, e, a);
+      else
+        e.insert(make_pair(b, p));
 
   a.erase(b);
 }

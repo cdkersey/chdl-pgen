@@ -12,7 +12,7 @@ tasks/goals in order of planned completion:
         spawns are just a natural consequence of branching.
       . Add support to front-end and macro system as new suc_l member of if_bb.
       . Add support for suc_l to assembly printer.
-      - Add support for suc_l to all intermediate processing steps.
+      . Add support for suc_l to all intermediate processing steps.
       - Add support for suc_l to CHDL code generator.
       - Add support for suc_l to CPP code generator.
       - Remove support for old suc structure.
@@ -20,7 +20,9 @@ tasks/goals in order of planned completion:
     - Add support for cancelling threads.
       - Any target list in our vector<list<if_bb*> > being empty should lead to
         thread cancellation.
-    - Predicated return should work as expected
+    - Add value name annotation for debugging.
+    - Predicated return should work as expected? Or maybe the stall signal is
+      appropriate for this instead.
     - Understand, enumerate, and automatically check (or remove) constraints.
       - Structural constraints:
         - Calls/spawns must be the final instruction in a basic block.

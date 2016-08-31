@@ -174,8 +174,9 @@ void pgen::asm_prog::bb_resolveptrs() {
 
   // Use successors to find predecessors.
   for (auto &b : f->bbs)
-    for (auto &s : b->suc)
-      s->pred.push_back(b);
+    for (auto &l : b->suc_l)
+      for (auto &s : l)
+        s->pred.push_back(b);
 }
 
 static void ssa_liveness_analysis(if_func *f) {
@@ -229,10 +230,11 @@ static void ssa_liveness_analysis(if_func *f) {
         live_in[b] = new_live_in;
       }
 
-      for (auto &s : b->suc)
-        for (auto &v : live_in[s])
-          if (!live_in_mask[b][s].count(v))
-           new_live_out.insert(v);
+      for (auto &l : b->suc_l)
+        for (auto &s : l)
+          for (auto &v : live_in[s])
+            if (!live_in_mask[b][s].count(v))
+              new_live_out.insert(v);
 
       if (new_live_out != live_out[b]) {
         changed = true;
@@ -339,9 +341,10 @@ void pgen::asm_prog::assemble_func() {
         live_in[b] = new_live_in;
       }
 
-      for (auto &p : b->suc)
-        for (auto &v : live_in[p])
-          new_live_out.insert(v);
+      for (auto &l : b->suc_l)
+        for (auto &p : l)
+          for (auto &v : live_in[p])
+            new_live_out.insert(v);
 
       if (new_live_out != live_out[b]) {
         changed = true;
