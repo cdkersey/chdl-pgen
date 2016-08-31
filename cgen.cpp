@@ -128,7 +128,7 @@ static void pgen::gen_val(std::ostream &out, std::string fname, int bbidx, int i
   using std::string;
   using std::vector;
   using std::ostringstream;
-  out << "  ";
+  if (v.op != VAL_PHI) out << "  ";
 
   if (!is_store(v.op) && v.op != VAL_PHI && v.op != VAL_CALL
       && v.op != VAL_RET && v.op != VAL_SPAWN && v.op != VAL_CONCATENATE
@@ -543,6 +543,7 @@ static void pgen::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b
   int n_suc = b.suc.size(), n_pred = b.pred.size();
   
   // Set up arbiter inputs
+  out << "  // BB " << idx << " arbiter input wire-up" << endl;
   for (unsigned i = 0; i < b.pred.size(); ++i) {
     map<int, int> vmap;
     get_val_map(vmap, i, b);
@@ -589,6 +590,8 @@ static void pgen::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b
         << " = _(_(" << fname << "_call, \"contents\"), \"live\");" << endl;
   }
 
+  out << "  // BB " << idx << " arbiter and input buffer" << endl;
+
   // Instantiate arbiter and input buffer.
   out << "  BBArbiter(" << fname << "_bb" << idx << "_in_prebuf, "
       << fname << "_bb" << idx << "_arb_in);" << endl
@@ -597,10 +600,14 @@ static void pgen::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b
   out << "(" << fname << "_bb" << idx << "_in, "
       << fname << "_bb" << idx <<  "_in_prebuf);" << endl;
 
+  out << "  // BB " << idx << " run signal declaration" << endl;
+
   // Declare block's run signal
-  out << "  node " << fname << "_bb" << idx << "_run;"
+  out << "  node " << fname << "_bb" << idx << "_run;" << endl
       << "  TAP(" << fname << "_bb" << idx << "_run);" << endl;
-  
+
+  out << "  // BB " << idx << " values" << endl;
+
   for (unsigned i = 0; i < b.vals.size(); ++i) {
     gen_val(out, fname, idx, i, b, *b.vals[i]);
     if (b.vals[i]->t.type_vec.size() > 0) {
@@ -609,13 +616,17 @@ static void pgen::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b
     }
   }
 
+  out << "  // BB " << idx << " run signal generation" << endl;
+
   // Connect our run signal.
-  out << fname << "_bb" << idx << "_run = "
+  out << "  " << fname << "_bb" << idx << "_run = "
       << "_(" << fname << "_bb" << idx << "_in, \"valid\") && "
       << " _(" << fname << "_bb" << idx << "_in, \"ready\")";
   if (b.stall) out << " && !" << val_name(fname, idx, b, *b.stall);
   out << ';' << endl;
-  
+
+  out << "  // BB " << idx << " output buffer connections" << endl;
+
   // Connect preubuf outputs
   if (call && call->op == VAL_CALL) {
     out << "  " << output_signal(fname, idx, "valid") << " = _("
@@ -646,6 +657,8 @@ static void pgen::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b
     out << ';' << endl;
   }
 
+  out << "  // BB " << idx << " output value connections" << endl;
+
   // Connections of live values to output.
   for (auto &x : b.live_out) {
     if (x == call) continue;
@@ -660,6 +673,8 @@ static void pgen::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b
   out << "  " << output_csignal(fname, idx, "live") << " = "
       << "_(_(" << fname << "_bb" << idx << "_in, \"contents\"), \"live\");"
       << endl;
+
+  out << "  // BB " << idx << " buffer instantiation" << endl;
 
   // Instantiate buffer/switch
   if (!call || call->op == VAL_SPAWN) {
