@@ -8,10 +8,19 @@ tasks/goals in order of planned completion:
 
   - Code gen/back end
     - Based on a branch value, it should be possible to spawn or not spawn.
-      - what about a vector<vector<if_bb*> > of branch targets? This way, all spawns
-        are just a natural consequence of branching.
+      - what about a vector<list<if_bb*> > of branch targets? This way, all
+        spawns are just a natural consequence of branching.
+      - Add support to front-end and macro system as new suc_l member of if_bb.
+      - Add support for suc_l to assembly printer.
+      - Add support for suc_l to all intermediate processing steps.
+      - Add support for suc_l to CHDL code generator.
+      - Add support for suc_l to CPP code generator.
+      - Remove support for old suc structure.
+      - Rename all instances of suc_l to suc.
     - Add support for cancelling threads.
-      - Predicated return should work as expected
+      - Any target list in our vector<list<if_bb*> > being empty should lead to
+        thread cancellation.
+    - Predicated return should work as expected
     - Understand, enumerate, and automatically check (or remove) constraints.
       - Structural constraints:
         - Calls/spawns must be the final instruction in a basic block.

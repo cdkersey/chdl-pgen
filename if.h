@@ -7,6 +7,7 @@
 #include <map>
 #include <string>
 #include <sstream>
+#include <list>
 
 #include "type.h"
 
@@ -92,6 +93,11 @@ namespace pgen {
 
     // Successor and predecessor blocks.
     std::vector<if_bb *> suc, pred;
+
+    // Successor blocks, organized into branch target groups. A branch predicate
+    // value can lead to 0(cancel thread) or more successor blocks. Having more
+    // than one successor in a single target group spawns new threads.
+    std::vector<std::list<if_bb *> > suc_l;
   };
 
   struct if_func {
