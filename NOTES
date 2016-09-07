@@ -1,5 +1,7 @@
 tasks/goals in order of planned completion:
   - Bugs!
+    - The CHDL code for macro-4.cpp fails to compile; (using SingleRepl to
+      replace 8 bits out of 32)
     - The set of running blocks in the C++ simulator does not exactly match the
       CHDL simulator, presumably due to the availability of both input and
       output buffers for pipeline stages and general slack in the pipeline.
@@ -13,7 +15,7 @@ tasks/goals in order of planned completion:
       . Add support to front-end and macro system as new suc_l member of if_bb.
       . Add support for suc_l to assembly printer.
       . Add support for suc_l to all intermediate processing steps.
-      - Add support for suc_l to CHDL code generator.
+      . Add support for suc_l to CHDL code generator.
       - Add support for suc_l to CPP code generator.
       - Remove support for old suc structure.
       - Rename all instances of suc_l to suc.

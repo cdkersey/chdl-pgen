@@ -463,7 +463,7 @@ static void pgen::gen_bb_decls(std::ostream &out, std::string fname, int idx, if
   out << "  TAP(" << fname << "_bb" << idx << "_in);" << endl;
   out << "  TAP(" << fname << "_bb" << idx << "_in_prebuf);" << endl;
 
-  int n_suc = b.suc.size();
+  int n_suc = b.suc_l.size();
   out << "  " << fname << "_bb" << idx << "_out_t " << fname << "_bb" << idx
       << "_out_prebuf;" << endl
       << "  " << fname << "_bb" << idx << "_out_contents_t " << fname << "_bb"
@@ -540,7 +540,7 @@ static void pgen::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b
   
   out << "  // " << fname << " BB " << idx << " body" << endl;
   out << "  hierarchy_enter(\"" << fname << "_bb" << idx << "\");" << endl;  
-  int n_suc = b.suc.size(), n_pred = b.pred.size();
+  int n_pred = b.pred.size();
   
   // Set up arbiter inputs
   out << "  // BB " << idx << " arbiter input wire-up" << endl;
@@ -548,21 +548,31 @@ static void pgen::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b
     map<int, int> vmap;
     get_val_map(vmap, i, b);
 
+    bool is_spawn;
     int pred_id(b.pred[i]->id), pred_sidx = -1;
-    for (unsigned j = 0; j < b.pred[i]->suc.size(); ++j) {
-      if (b.pred[i]->suc[j] == &b) {
-	pred_sidx = j;
-      }
+    for (unsigned j = 0; j < b.pred[i]->suc_l.size(); ++j) {
+      is_spawn = (b.pred[i]->suc_l[j].size() > 1);
+      for (auto &bs : b.pred[i]->suc_l[j])
+        if (bs == &b) pred_sidx = j;
     }
 
     if (pred_sidx == -1) abort();
     
     out << "  " << input_signal(fname, idx, i, "valid")
-        << " = " << output_signal(fname, b.pred[i]->id, pred_sidx, "valid")
-        << ';' << endl
-        << "  " << output_signal(fname, b.pred[i]->id, pred_sidx, "ready")
-        << " = "
-        << input_signal(fname, idx, i, "ready") << ';' << endl;
+        << " = " << output_signal(fname, b.pred[i]->id, pred_sidx, "valid");
+    if (is_spawn) {
+      for (auto &bs : b.pred[i]->suc_l[pred_sidx]) {
+        int pred_idx = -1;
+        for (unsigned j = 0; j < bs->pred.size(); j++)
+          if (bs->pred[j] == b.pred[i]) pred_idx = j;
+
+        if (pred_idx == -1) abort();
+
+        if (bs != &b)
+          out << " && " << input_signal(fname, bs->id, pred_idx, "ready");
+      }
+    }
+    out << ';' << endl;
 
     for (auto &x : vmap) {
       out << "  // BB" << b.pred[i]->id << " val " << x.second << " -> BB "
@@ -674,6 +684,36 @@ static void pgen::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b
       << "_(_(" << fname << "_bb" << idx << "_in, \"contents\"), \"live\");"
       << endl;
 
+  out << "  // BB " << idx << " output ready generation" << endl;
+
+  unsigned suc_idx = 0;
+  for (auto &s : b.suc_l) {
+    out << "  " << output_signal(fname, idx, suc_idx, "ready")
+        << " = ";
+
+    unsigned i = 0;
+    for (auto &sb : s) {
+      int pred_sidx = -1;
+
+      for (int j = 0; j < sb->pred.size(); ++j)
+        if (sb->pred[j] == &b) pred_sidx = j;
+
+      if (pred_sidx == -1) {
+        std::cerr << "1-way successor/predecessor relationship." << endl;
+        abort();
+      }
+
+      out << input_signal(fname, sb->id, pred_sidx, "ready");
+
+      if (i == s.size() - 1) out << ';' << endl;
+      else out << " && ";
+
+      i++;
+    }
+
+    suc_idx++;
+  }
+
   out << "  // BB " << idx << " buffer instantiation" << endl;
 
   // Instantiate buffer/switch
@@ -689,16 +729,16 @@ static void pgen::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b
       out << "  _(_(" << fname << "_bb" << idx << "_out_prebuf, \"contents\"), \"val" << call->id << "\") = " << fname << '_' << call->id << ';' << endl;
   } 
 
-  if (b.suc.size() == 1) {
+  if (b.suc_l.size() == 1) {
     out << "  BBOutputBuf(" << fname << "_bb" << idx << "_out, " << fname
         << "_bb" << idx << "_out_prebuf);" << endl;
-  } else if (b.suc.size() >= 2 && b.branch_pred) {
+  } else if (b.suc_l.size() >= 2 && b.branch_pred) {
     out << "  BBOutputBuf(" << val_name(fname, idx, b, *b.branch_pred) << ", "
         << fname << "_bb" << idx << "_out, " << fname << "_bb" << idx
         << "_out_prebuf);" << endl;
-  } else if (b.suc.size() >= 2) {
-    out << "  BBOutputSpawnBuf(" << fname << "_bb" << idx << "_out, " << fname
-        << "_bb" << idx << "_out_prebuf);" << endl;
+  } else if (b.suc_l.size() >= 2) {
+    std::cerr << "Multiple successors and no branch predicates." << endl;
+    abort();
   }
 
   out << "  hierarchy_exit();" << endl << endl;
