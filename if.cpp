@@ -88,15 +88,6 @@ void pgen::print(std::ostream &out, pgen::if_bb &b) {
   
   out << "    br ";
   if (b.branch_pred) out << '<' << b.branch_pred->id << ">, ";
-  for (unsigned i = 0; i < b.suc.size(); ++i) {
-    out << "bb " << b.suc[i]->id;
-    if (i != b.suc.size() - 1) out << ", ";
-  }
-  out << endl;
-
-  // New print function for multi-target branches.
-  out << "    br ";
-  if (b.branch_pred) out << '<' << b.branch_pred->id << ">, ";
   for (unsigned i = 0; i < b.suc_l.size(); ++i) {
     if (b.suc_l[i].size() != 1) out << '(';
     for (auto it = b.suc_l[i].begin(); it != b.suc_l[i].end(); ++it) {

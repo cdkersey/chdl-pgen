@@ -91,8 +91,8 @@ namespace pgen {
     // Branch predicate; a currently live val (if needed)
     if_val *branch_pred;
 
-    // Successor and predecessor blocks.
-    std::vector<if_bb *> suc, pred;
+    // Predecessor blocks.
+    std::vector<if_bb *> pred;
 
     // Successor blocks, organized into branch target groups. A branch predicate
     // value can lead to 0(cancel thread) or more successor blocks. Having more

@@ -161,7 +161,6 @@ void pgen::asm_prog::bb_resolveptrs() {
       b.first->suc_l.push_back(list<if_bb*>());
       for (auto &l : b.second[i]) {
         if (labels.count(l)) {
-          b.first->suc.push_back(labels[l]);
           b.first->suc_l[i].push_back(labels[l]);
         } else {
           cout << "Unresolved label \"" << l
