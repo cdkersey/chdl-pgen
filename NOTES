@@ -1,5 +1,8 @@
 tasks/goals in order of planned completion:
   - Bugs!
+    - If a block appears in more than one successor group, the code generator
+      will fail to generate a correct valid input signal.
+      - In order to fix this, we should completely rewrite the generators.
     - The CHDL code for macro-4.cpp fails to compile; (using SingleRepl to
       replace 8 bits out of 32)
     - The set of running blocks in the C++ simulator does not exactly match the

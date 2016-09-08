@@ -16,8 +16,9 @@
 using namespace pgen;
 
 static int which_suc(if_bb *a, if_bb *b) {
-  for (unsigned i = 0; i < a->suc.size(); ++i)
-    if (a->suc[i] == b) return i;
+  for (unsigned i = 0; i < a->suc_l.size(); ++i)
+    for (auto &sb : a->suc_l[i])
+      if (sb == b) return i;
   return -1;
 }
 
@@ -434,8 +435,8 @@ static void gen_val(std::ostream &out, std::string fname, if_bb &b, if_val &v, s
 }
 
 static bool last_successor(if_bb *b, if_bb *s) {
-  for (auto &x : b->suc)
-    if (x->id > s->id) return false;
+  for (auto &bs : b->suc_l[which_suc(b, s)])
+      if (bs->id > s->id) return false;
   return true;
 }
 
@@ -452,21 +453,20 @@ static
     for (auto &v : b.vals)
       if (v->op == VAL_PHI)
         phis[v->id] = v->args[phi_arg_idx]->id;
-    
+
     out << "  // input from bb" << p->id << endl;
-    
+
     out << "  if (!s.bb" << b.id <<  "_in.valid && s.bb" << p->id
         << "_out.valid";
-    if (p->suc.size() > 1 && p->branch_pred) {
+    if (p->suc_l.size() > 1) {
       out << " && s.bb" << p->id << "_out.sel == " << which_suc(p, &b);
-    } else if (p->suc.size() > 1) {
-      // If this is an intra-block spawn, all of the other blocks have to be
-      // ready.
-      for (auto &s : p->suc) {
-        if (s != &b)
-          out << " && !s.bb" << s->id << "_in.valid";
-      }
     }
+
+    // If this is an intra-block spawn, all of the other blocks have to be
+    // ready.
+    for (auto &sb : p->suc_l[which_suc(p, &b)])
+      if (sb != &b)
+        out << " && !s.bb" << sb->id << "_in.valid";
     out << ") {" << endl;
 
     // copy caller live values pointer
@@ -481,13 +481,13 @@ static
       else
         out << "s.bb" << p->id << "_out.val" << v->id << ';' << endl;
     }
-    if (p->branch_pred || p->suc.size() == 1) {
+    if (p->suc_l[which_suc(p, &b)].size() == 1) {
       out << "    s.bb" << b.id << "_in.valid = true;" << endl;
       out << "    s.bb" << p->id << "_out.valid = false;" << endl;
     } else if (last_successor(p, &b)) {
-      for (auto &s : p->suc) {
-        out << "    s.bb" << s->id << "_in.valid = true;" << endl;
-      }
+      for (auto &s : p->suc_l)
+        for (auto &bs : s)
+          out << "    s.bb" << bs->id << "_in.valid = true;" << endl;
       out << "    s.bb" << p->id << "_out.valid = false;" << endl;
     }
     
@@ -526,7 +526,7 @@ static void gen_block(std::ostream &out, std::string fname, if_bb &b, std::map<p
   using namespace std;
 
   if_val *call = find_call_or_spawn(b);
-  bool ret = (b.suc.size() == 0);
+  bool ret = (b.suc_l.size() == 0);
 
   if (call) {
     out << "  tick_" << call->func_arg << "(*s.func"
@@ -726,7 +726,7 @@ static void gen_func_decls(std::ostream &out, std::string name, if_func &f, std:
     out << "struct " << name << "_bb" << i << "_out_t {" << endl
         << "  bool valid;" << endl
         << "  void *live;" << endl;
-    if (f.bbs[i]->suc.size() > 1) out << "  int sel;" << endl;
+    if (f.bbs[i]->suc_l.size() > 1) out << "  int sel;" << endl;
     for (unsigned j = 0; j < f.bbs[i]->live_out.size(); ++j) {
       if_val *v = f.bbs[i]->live_out[j];
       ostringstream var_name;
