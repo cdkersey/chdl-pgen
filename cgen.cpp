@@ -691,6 +691,8 @@ static void pgen::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b
     out << "  " << output_signal(fname, idx, suc_idx, "ready")
         << " = ";
 
+    if (s.size() == 0) out << "Lit(1);" << endl;
+
     unsigned i = 0;
     for (auto &sb : s) {
       int pred_sidx = -1;

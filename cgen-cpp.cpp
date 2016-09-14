@@ -605,8 +605,27 @@ static void gen_block(std::ostream &out, std::string fname, if_bb &b, std::map<p
     if (b.stall) out << "if (!" << arg_name(&b, b.stall) << ')';
     out << "    {" << endl;
     
-    if (!find_ret(b))
-      out << "      s.bb" << b.id << "_out.valid = true;" << endl;
+    if (!find_ret(b)) {
+      set<int> cancel_suc_groups;
+      int i = 0;
+      for (auto &s : b.suc_l) {
+        if (s.size() == 0)
+          cancel_suc_groups.insert(i);
+        i++;
+      }
+
+      if (cancel_suc_groups.size() == 0) {
+        out << "      s.bb" << b.id << "_out.valid = true;" << endl;
+      } else if (cancel_suc_groups.size() != b.suc_l.size()) {
+        out << "      s.bb" << b.id << "_out.valid = false;" << endl;
+        for (int cs = 0; cs < b.suc_l.size(); ++cs) {
+          if (cancel_suc_groups.count(cs)) continue;
+
+          out << "      if (s.bb" << b.id << "_out.sel == " << cs << ')' << endl
+              << "        s.bb" << b.id << "_out.valid = true;";
+        }
+      }
+    }
     out << "      s.bb" << b.id << "_in.valid = false;" << endl
         << "      s.bb" << b.id << "_out.live = s.bb" << b.id << "_in.live;"
         << endl;

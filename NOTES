@@ -12,9 +12,6 @@ tasks/goals in order of planned completion:
       struct declaration.
 
   - Code gen/back end
-    - Add support for cancelling threads.
-      - Any target list in our vector<list<if_bb*> > being empty should lead to
-        thread cancellation.
     - Add value name annotation for debugging.
     - Predicated return should work as expected? Or maybe the stall signal is
       appropriate for this instead.
