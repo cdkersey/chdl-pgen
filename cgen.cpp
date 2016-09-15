@@ -60,7 +60,7 @@ static void gen_static_var_bottom
 static bool is_binary(if_op o) {
   return (o == VAL_ADD) || (o == VAL_SUB) || (o == VAL_MUL) || (o == VAL_DIV) ||
          (o == VAL_AND) || (o == VAL_OR) || (o == VAL_XOR) || (o == VAL_EQ) ||
-         (o == VAL_LT);
+         (o == VAL_LT) || (o == VAL_SHL) || (o == VAL_SHR);
 }
 
 static bool is_unary(if_op o) {
@@ -85,6 +85,8 @@ static std::string op_str(if_op o, const type &t, const type &u) {
   case VAL_AND: return bit ? " && " : " & ";
   case VAL_OR:  return bit ? " || " : " | ";
   case VAL_XOR: return bit ? " != " : " ^ ";
+  case VAL_SHL: return bit ? " UNSUPPORTED OP " : " << ";
+  case VAL_SHR: return bit ? " UNSUPPORTED OP " : " >> ";
   case VAL_EQ:  return " == ";
   case VAL_LT:  return " < ";
   };

@@ -42,6 +42,8 @@ namespace pgen {
   var operator-(const var &a, const var &b);
   var operator*(const var &a, const var &b);
   var operator/(const var &a, const var &b);
+  var operator>>(const var &a, const var &b);
+  var operator<<(const var &a, const var &b);
 
   // Basic unary operators
   var operator!(const var &x);

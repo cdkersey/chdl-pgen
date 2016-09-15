@@ -112,6 +112,12 @@ var pgen::operator*(const var &a, const var &b)
 var pgen::operator/(const var &a, const var &b)
   { return bin_op(VAL_DIV, a, b); }
 
+var pgen::operator<<(const var &a, const var &b)
+  { return bin_op(VAL_SHL, a, b); }
+
+var pgen::operator>>(const var &a, const var &b)
+  { return bin_op(VAL_SHR, a, b); }
+
 // Basic unary operators
 static var un_op(pgen::if_op op, const var &a) {
   type t;

@@ -51,6 +51,8 @@ static const char *op_string(if_op op, bool bit) {
   case VAL_XOR: return bit ? "!=" : "^";
   case VAL_EQ: return "==";
   case VAL_LT: return "<";
+  case VAL_SHR: return ">>";
+  case VAL_SHL: return "<<";
   default: return "UNKNOWN_OP";
   }
 }

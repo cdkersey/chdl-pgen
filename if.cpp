@@ -16,6 +16,7 @@ const char *pgen::if_op_str[] = {
   "bcast_valid_static",
   "neg", "not",
   "add", "sub", "mul", "div", "and", "or", "xor",
+  "shr", "shl",
   "eq", "lt",
   "and_reduce", "or_reduce",
   "cat", "build",
