@@ -552,12 +552,12 @@ static void pgen::gen_bb(std::ostream &out, std::string fname, int idx, if_bb &b
 
     bool is_spawn;
     int pred_id(b.pred[i]->id), pred_sidx = -1;
-    for (unsigned j = 0; j < b.pred[i]->suc_l.size(); ++j) {
-      is_spawn = (b.pred[i]->suc_l[j].size() > 1);
+    for (unsigned j = 0; j < b.pred[i]->suc_l.size(); ++j)
       for (auto &bs : b.pred[i]->suc_l[j])
         if (bs == &b) pred_sidx = j;
-    }
 
+    is_spawn = (b.pred[i]->suc_l[pred_sidx].size() > 1);
+    
     if (pred_sidx == -1) abort();
     
     out << "  " << input_signal(fname, idx, i, "valid")
