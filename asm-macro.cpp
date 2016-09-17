@@ -25,6 +25,8 @@ struct pgen::varimpl {
   static pgen::asm_prog::val_id_t next_id;
 };
 
+type pgen::var::get_type() { return p->t; }
+
 pgen::asm_prog::val_id_t pgen::varimpl::next_id;
 
 // Initialize the macro API. This is a thread-unsafe, stateful API designed as

@@ -27,6 +27,7 @@ namespace pgen {
     var();
 
     var &operator=(const var &r); // Assignment, propagates type inference.
+    type get_type();
 
     varimpl *p;
   };
