@@ -487,9 +487,8 @@ static
       out << "    s.bb" << b.id << "_in.valid = true;" << endl;
       out << "    s.bb" << p->id << "_out.valid = false;" << endl;
     } else if (last_successor(p, &b)) {
-      for (auto &s : p->suc_l)
-        for (auto &bs : s)
-          out << "    s.bb" << bs->id << "_in.valid = true;" << endl;
+      for (auto &bs : p->suc_l[which_suc(p, &b)])
+        out << "    s.bb" << bs->id << "_in.valid = true;" << endl;
       out << "    s.bb" << p->id << "_out.valid = false;" << endl;
     }
     
