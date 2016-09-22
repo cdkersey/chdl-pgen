@@ -2,7 +2,7 @@
 #include <vector>
 #include <cstring>
 #include <iomanip>
-
+#include <map>
 
 template <unsigned N> struct ui;
 template <unsigned N> struct si;
@@ -159,10 +159,79 @@ template <typename T> concatenator<T> cat(T &out) {
   return concatenator<T>(out);
 }
 
+std::map<unsigned, array<16, ui<32> > > mem_state;
+
+// mem_write declarations.
+struct mem_write_call_t {
+  bool valid;
+  void *live;
+  ui<26> arg0;
+  array<16, ui<32> > arg1;
+};
+
+struct mem_write_ret_t {
+  bool valid;
+  void *live;
+};
+
+struct mem_write_state_t {
+  mem_write_call_t call;
+  mem_write_ret_t ret;
+};
+
+void init_mem_write(mem_write_state_t &s) {
+  s.call.valid = false;
+  s.ret.valid = false;
+}
+
+void tick_mem_write(mem_write_state_t &s) {
+  if (s.call.valid) {
+    s.call.valid = false;
+    s.ret.valid = true;
+    s.ret.live = s.call.live;
+    mem_state[s.call.arg0] = s.call.arg1;
+  }
+}
+
+// mem_read declarations
+struct mem_read_call_t  { bool valid; void *live; ui<26> arg0; unsigned cyc; };
+struct mem_read_ret_t   { bool valid; void *live; array<16, ui<32> > rval; };
+struct mem_read_state_t {
+  mem_read_call_t call;
+  mem_read_ret_t ret;
+
+  std::vector<mem_read_call_t> reqs;
+};
+
+void init_mem_read(mem_read_state_t &s) {
+  s.call.valid = false;
+  s.ret.valid = false;
+}
+
+void tick_mem_read(mem_read_state_t &s) {
+  const unsigned READ_CYC = 1000;
+  
+  if (s.call.valid) {
+    s.call.valid = false;
+    s.call.cyc = READ_CYC;
+
+    s.reqs.push_back(s.call);
+  }
+
+  for (auto &r : s.reqs) {
+    if (!r.cyc--) {
+      s.ret.valid = true;
+      s.ret.live = r.live;
+      s.ret.rval = mem_state[r.arg0];
+    }
+  }
+}
+
 // print_hex declarations.
 struct print_hex_state_t;
 void init_print_hex(print_hex_state_t&);
 void tick_print_hex(print_hex_state_t&);
+void tick_mem_read(mem_read_state_t&);
 
 struct print_hex_call_t    { bool valid; void *live;  ui<32> arg0; };
 struct print_hex_ret_t     { bool valid; void *live;               };
@@ -277,11 +346,19 @@ template <typename T> T st_idx(T in, int i, bool x) {
   return (in & ~mask) | (((x?1:0)<<i)&mask);
 }
 
+void init_mem_state() {
+  const unsigned N = 64;
+  for (unsigned i = 0; i < N; i++)
+    mem_state[i/16][i%16] = i;
+}
+
 #include "./cgen-out.incl"
 
 int main() {
   using namespace std;
 
+  init_mem_state();
+  
   bmain_state_t s;
   init_bmain(s);
   s.call.valid = true;
@@ -293,6 +370,8 @@ int main() {
     
     cout << "=== cycle " << i << " ===" << endl;
     tick_bmain(s);
+
+    if (s.ret.valid) break;
   }
   
   return 0;
