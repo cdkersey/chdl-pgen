@@ -32,12 +32,12 @@ void asm2(if_prog *pp) {
   a.label("a");
   a.val(u(32), 2, VAL_CONST).const_arg(0x11111111);
   a.val(u(32), 2, VAL_XOR).arg(0).arg(2);
-  a.br(2).target("g1");
+  a.br().target("g1");
 
   a.label("b");
   a.val(u(32), 2, VAL_CONST).const_arg(0x22222222);
   a.val(u(32), 2, VAL_XOR).arg(0).arg(2);
-  a.br(2).target("g1");
+  a.br().target("g1");
 
   a.label("c");
   a.val(u(32), 2, VAL_CONST).const_arg(0x22222222);
@@ -77,7 +77,7 @@ void asm2(if_prog *pp) {
   a.br().target("exit");
   
   a.label("exit");
-  a.val(void_type(), 10, VAL_RET).arg(2);
+  a.val(void_type(), 10, VAL_RET);
 
   a.assemble_func();
 }

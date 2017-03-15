@@ -784,6 +784,12 @@ static void gen_func_decls(std::ostream &out, std::string name, if_func &f, std:
 
 void pgen::gen_prog_cpp(std::ostream &out, if_prog &p) {
   using namespace std;
+
+  out << "#ifndef CHDL_PGEN_RUNTIME_CPP_H" << endl
+      << "#include <chdl/pgen/runtime-cpp.h>" << endl
+      << "#endif" << endl << endl
+      << "namespace pgen { namespace runtime {" << endl;
+
   map<pgen::type, int> m;
   catalog_types(m, p);
   gen_struct_decls(out, m);
@@ -798,4 +804,6 @@ void pgen::gen_prog_cpp(std::ostream &out, if_prog &p) {
 
   for (auto &f : p.functions)
     gen_func(out, f.first, f.second, m);
+
+  out << "}}" << endl;
 }
