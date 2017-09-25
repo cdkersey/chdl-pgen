@@ -181,10 +181,11 @@ void pgen::br(const char *dest) {
 }
 
 argcollector<std::string> pgen::br(const var &sel) {
-  asm_prog_ptr->br(sel.p->id);
   return argcollector<string>(
-    [](std::string x){
-      asm_prog_ptr->br_targets[asm_prog_ptr->b].push_back(list<string>(1, x));
+    [&sel](vector<string> &v){
+      asm_prog_ptr->br(sel.p->id);
+      for (auto &x : v)
+        asm_prog_ptr->br_targets[asm_prog_ptr->b].push_back(list<string>(1, x));
     }
   );
 }
@@ -194,78 +195,86 @@ argcollector<std::string> pgen::br_spawn() {
   // groups.
   // asm_prog_ptr->br();
 
-  asm_prog_ptr->br_targets[asm_prog_ptr->b].push_back(list<string>());
-
   return argcollector<string>(
-    [](std::string x){
-      asm_prog_ptr->br_targets[asm_prog_ptr->b].rbegin()->push_back(x);
+    [](vector<string> &v){
+      asm_prog_ptr->br_targets[asm_prog_ptr->b].push_back(list<string>());
+      for (auto &x : v)
+	asm_prog_ptr->br_targets[asm_prog_ptr->b].rbegin()->push_back(x);
     }
   );
 }
 
 argcollector<var> pgen::spawn(const char *func) {
-  type t(void_type());
+  return argcollector<var>([func](vector<var> &vv){
+    type t(void_type());
+    var r;
+    asm_prog_ptr->val(t, r.p->id, VAL_SPAWN).func_arg(func);
+    r.p->v = asm_prog_ptr->v;
 
-  var r;
-  asm_prog_ptr->val(t, r.p->id, VAL_SPAWN).func_arg(func);
-  r.p->v = asm_prog_ptr->v;
-   
-  return argcollector<var>([](var v){ asm_prog_ptr->arg(v.p->id); });
+    for (auto &v : vv)
+      asm_prog_ptr->arg(v.p->id);
+  });
 }
 
 void pgen::stall(const var &v) { asm_prog_ptr->stall(v.p->id); }
 
 argcollector<var> pgen::call(const char *func) {
-  type t(void_type());
+  return argcollector<var>([func](vector<var> &vv){
+    type t(void_type());
+    var r;
+    asm_prog_ptr->val(t, r.p->id, VAL_CALL).func_arg(func);
+    r.p->v = asm_prog_ptr->v;
 
-  var r;
-  asm_prog_ptr->val(t, r.p->id, VAL_CALL).func_arg(func);
-  r.p->v = asm_prog_ptr->v;
-   
-  return argcollector<var>([](var v){ asm_prog_ptr->arg(v.p->id); });
+    for (auto &v : vv)
+      asm_prog_ptr->arg(v.p->id);
+  });
 }
 
 argcollector<var> pgen::call(const char *func, const var &r) {
-  type t(r.p->t);
+  return argcollector<var>([func, &r](vector<var> &vv){
+    type t(void_type());
+    asm_prog_ptr->val(t, r.p->id, VAL_CALL).func_arg(func);
+    r.p->v = asm_prog_ptr->v;
 
-  asm_prog_ptr->val(t, r.p->id, VAL_CALL).func_arg(func);
-  r.p->v = asm_prog_ptr->v;
-   
-  return argcollector<var>([](var v){ asm_prog_ptr->arg(v.p->id); });
+    for (auto &v : vv)
+      asm_prog_ptr->arg(v.p->id);
+  });
 }
 
 argcollector<var> pgen::sel(const var &out, const var &s) {
-  
-  asm_prog_ptr->val(out.p->t, out.p->id, VAL_SELECT);
-  out.p->v = asm_prog_ptr->v;
+  return argcollector<var>([&out, &s](vector<var> &vv){
+    asm_prog_ptr->val(out.p->t, out.p->id, VAL_SELECT);
+    out.p->v = asm_prog_ptr->v;
 
-  
-  if_val *vp = asm_prog_ptr->v;
+    if_val *vp = asm_prog_ptr->v;
 
-  asm_prog_ptr->arg_ids[vp].push_back(s.p->id);
-  
-  return argcollector<var>(
-    [vp](var v){ asm_prog_ptr->arg_ids[vp].push_back(v.p->id); }
-  );
+    asm_prog_ptr->arg_ids[vp].push_back(s.p->id);
+    for (auto &v : vv)
+      asm_prog_ptr->arg_ids[vp].push_back(v.p->id);
+  });
 }
 
 argcollector<var> pgen::cat(const var &r) {
-  asm_prog_ptr->val(r.p->t, r.p->id, VAL_CONCATENATE);
-  r.p->v = asm_prog_ptr->v;
-
-  if_val *vp = asm_prog_ptr->v;
   return argcollector<var>(
-    [vp](var v){ asm_prog_ptr->arg_ids[vp].push_back(v.p->id); }
+    [&r](vector<var> &vv){
+      asm_prog_ptr->val(r.p->t, r.p->id, VAL_CONCATENATE);
+      if_val *vp = asm_prog_ptr->v;
+      for (auto &v : vv)
+        asm_prog_ptr->arg_ids[vp].push_back(v.p->id);
+      r.p->v=asm_prog_ptr->v;
+    }
   );
 }
 
 argcollector<var> pgen::build(const var &r) {
-  asm_prog_ptr->val(r.p->t, r.p->id, VAL_BUILD);
-  r.p->v = asm_prog_ptr->v;
-
-  if_val *vp = asm_prog_ptr->v;
   return argcollector<var>(
-    [vp](var v){ asm_prog_ptr->arg_ids[vp].push_back(v.p->id); }
+    [&r](vector<var> &vv){
+      asm_prog_ptr->val(r.p->t, r.p->id, VAL_BUILD);
+      if_val *vp = asm_prog_ptr->v;
+      for (auto &v : vv)
+        asm_prog_ptr->arg_ids[vp].push_back(v.p->id);
+      r.p->v=asm_prog_ptr->v;
+    }
   );
 }
 

@@ -63,9 +63,14 @@ namespace pgen {
   var operator<=(const var &a, const var &b);
 
   template <typename T> struct argcollector {
-    argcollector(std::function<void(T)> f): f(f) {}
-    argcollector &operator()(const T& x) { f(x); return *this; }
-    std::function<void(T)> f;
+    argcollector(std::function<void(std::vector<T>&)> f): f(f) {}
+    ~argcollector() { f(args); }
+
+    argcollector &operator()(const T& x) { args.push_back(x); return *this; }
+
+    std::vector<T> args;
+
+    std::function<void(std::vector<T>&)> f;
   };
   
   void static_var(const char *name, const type &t);

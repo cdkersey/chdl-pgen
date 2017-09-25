@@ -63,7 +63,8 @@ void pgen::print(std::ostream &out, pgen::if_val &v) {
     for (auto &a : v.args) {
       if (comma) out << ',';
       else comma = true;
-      out << " <" << a->id << '>';
+      if (a) out << " <" << a->id << '>';
+      else out << " <NULL>";
     }
   }
 
