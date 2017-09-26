@@ -37,6 +37,7 @@ namespace pgen {
 
     // Full set of comparison operators for sorting, etc.
     int compare(const type &x) const;
+    bool operator!=(const type &x) const;
     bool operator==(const type &x) const;
     bool operator<(const type &x) const;
     bool operator>(const type &x) const;

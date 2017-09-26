@@ -232,7 +232,7 @@ argcollector<var> pgen::call(const char *func) {
 
 argcollector<var> pgen::call(const char *func, const var &r) {
   return argcollector<var>([func, &r](vector<var> &vv){
-    type t(void_type());
+    type t(r.p->t);
     asm_prog_ptr->val(t, r.p->id, VAL_CALL).func_arg(func);
     r.p->v = asm_prog_ptr->v;
 

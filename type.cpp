@@ -38,6 +38,7 @@ int pgen::type::compare(const type &x) const {
   return 0;
 }
 
+bool pgen::type::operator!=(const type &x) const { return (compare(x) != 0); }
 bool pgen::type::operator==(const type &x) const { return (compare(x) == 0); }
 bool pgen::type::operator>(const type &x) const {  return (compare(x) > 0); }
 bool pgen::type::operator<(const type &x) const {  return (compare(x) < 0); }
