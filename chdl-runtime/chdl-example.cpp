@@ -289,6 +289,9 @@ int main() {
 
   ofstream nand("chdl-example.nand");
   print_netlist(nand);
-  
+
+  ofstream vl("chdl-example.v");
+  print_verilog("pgenmod", vl, true);
+
   return 0;
 }
